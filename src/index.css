@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-slate-950 text-slate-50 font-sans;
+}
+
+html, body, #root {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #1f2933;
+  border-radius: 999px;
+}
+
+@keyframes rb-marquee {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+.rb-marquee-track {
+  white-space: nowrap;
+  will-change: transform;
+  animation: rb-marquee 18s linear infinite;
+}
