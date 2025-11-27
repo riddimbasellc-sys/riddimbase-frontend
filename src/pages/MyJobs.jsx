@@ -1,0 +1,208 @@
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import useSupabaseUser from '../hooks/useSupabaseUser'
+import { listUserJobRequests, updateJobStatus, markJobPaid, releaseJobFunds, getJobEscrow, declineBid } from '../services/serviceJobRequestsService'
+import { addNotification } from '../services/notificationsRepository'
+
+export function MyJobs() {
+  const { user, loading } = useSupabaseUser()
+  const navigate = useNavigate()
+  const [jobs, setJobs] = useState([])
+  const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState('')
+  const [expandedJobId, setExpandedJobId] = useState(null)
+
+  useEffect(() => { if (user) refresh() }, [user])
+
+  async function refresh() {
+    if (!user) return
+    setRefreshing(true); setError('')
+    try {
+      const { data } = await listUserJobRequests(user.id)
+      setJobs(data)
+    } catch (e) { setError(e.message || 'Failed to load jobs') } finally { setRefreshing(false) }
+  }
+
+  const handleMarkPaid = (jobId) => {
+    markJobPaid(jobId)
+    refresh()
+  }
+  const handleRelease = (jobId) => {
+    releaseJobFunds(jobId)
+    refresh()
+  }
+  const handleCancel = async (jobId) => {
+    try { await updateJobStatus(jobId, 'cancelled'); refresh() } catch (e) { setError(e.message || 'Cancel failed') }
+  }
+
+  const handleAcceptProposal = async (job, bid) => {
+    try {
+      setError('')
+      await updateJobStatus(job.id, 'assigned', bid.providerId)
+      try {
+        await addNotification({
+          recipientId: bid.providerId,
+          actorId: user.id,
+          type: 'job-accepted',
+          data: { title: job.title, amount: bid.amount },
+        })
+      } catch {}
+      try {
+        fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            kind: 'job-request',
+            event: 'accepted',
+            payload: {
+              title: job.title,
+              providerId: bid.providerId,
+              amount: bid.amount,
+            },
+          }),
+        }).catch(() => {})
+      } catch {}
+      navigate(`/jobs/${job.id}/delivery`)
+    } catch (e) {
+      setError(e.message || 'Accept failed')
+    }
+  }
+
+  const handleDeclineProposal = async (jobId, bidId) => {
+    try {
+      setError('')
+      await declineBid(jobId, bidId)
+      refresh()
+    } catch (e) {
+      setError(e.message || 'Decline failed')
+    }
+  }
+
+  if (loading) return <section className="min-h-screen flex items-center justify-center bg-slate-950/95"><p className="text-sm text-slate-300">Loading…</p></section>
+  if (!user) return <section className="min-h-screen flex items-center justify-center bg-slate-950/95"><p className="text-sm text-slate-300">Please log in.</p></section>
+
+  return (
+    <section className="bg-slate-950/95 min-h-screen">
+      <div className="mx-auto max-w-6xl px-4 py-8 space-y-6">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.25em] text-emerald-300">Dashboard</p>
+            <h1 className="text-2xl font-semibold text-slate-50">My Jobs</h1>
+            <p className="text-sm text-slate-400">Funds stay on hold until you release them.</p>
+          </div>
+          <button onClick={()=>navigate('/jobs/post')} className="rounded-full bg-gradient-to-r from-emerald-500 to-orange-400 px-5 py-2 text-sm font-semibold text-slate-950">Post new job</button>
+        </div>
+        {error && <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-[11px] text-red-300">{error}</div>}
+        {refreshing && <div className="text-sm text-slate-400">Refreshing…</div>}
+        <div className="grid gap-4 md:grid-cols-2">
+          {jobs.map(job => {
+            const escrow = getJobEscrow(job.id)
+            const paid = escrow.paid
+            const released = escrow.released
+            return (
+              <div key={job.id} className="rounded-2xl border border-slate-800/70 bg-slate-900/70 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.35)]">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-100">{job.title}</p>
+                    <p className="text-[11px] text-slate-400">{job.status} • ${job.budget}</p>
+                  </div>
+                  <span className="rounded-full border border-emerald-400/50 bg-emerald-500/10 px-3 py-1 text-[10px] font-semibold text-emerald-200">{job.bids?.length || 0} proposals</span>
+                </div>
+                <p className="mt-2 line-clamp-3 text-[11px] text-slate-300">{job.description}</p>
+                {job.bids && job.bids.length > 0 && (
+                  <div className="mt-3 rounded-xl border border-slate-800/70 bg-slate-950/70 p-3 text-[11px] text-slate-200">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-semibold text-slate-100">
+                        Proposals ({job.bids.length})
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpandedJobId(expandedJobId === job.id ? null : job.id)
+                        }
+                        className="rounded-full border border-slate-600 px-3 py-1 text-[10px] text-slate-200 hover:border-emerald-400/70 hover:text-emerald-300"
+                      >
+                        {expandedJobId === job.id ? 'Hide proposals' : 'View proposals'}
+                      </button>
+                    </div>
+                    {expandedJobId === job.id && (
+                      <ul className="mt-2 space-y-2">
+                        {job.bids.map((bid) => (
+                          <li
+                            key={bid.id}
+                            className="rounded-lg border border-slate-800/80 bg-slate-900/80 p-2 flex flex-col gap-1"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-emerald-300 font-semibold">
+                                ${Number(bid.amount || 0).toFixed(2)}
+                              </span>
+                              <span className="text-[9px] text-slate-500">
+                                {bid.createdAt
+                                  ? new Date(bid.createdAt).toLocaleDateString()
+                                  : ''}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-slate-300 line-clamp-2">
+                              {bid.message || 'No message provided.'}
+                            </p>
+                            <div className="mt-1 flex flex-wrap gap-2 text-[10px]">
+                              {job.status === 'open' && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAcceptProposal(job, bid)}
+                                    className="rounded-full border border-emerald-400/70 bg-emerald-500/10 px-3 py-1 font-semibold text-emerald-200 hover:bg-emerald-500/20"
+                                  >
+                                    Accept
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeclineProposal(job.id, bid.id)}
+                                    className="rounded-full border border-rose-500/70 bg-rose-500/10 px-3 py-1 font-semibold text-rose-200 hover:bg-rose-500/20"
+                                  >
+                                    Decline
+                                  </button>
+                                </>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => navigate('/producer/inbox')}
+                                className="rounded-full border border-slate-600 px-3 py-1 font-semibold text-slate-200 hover:bg-slate-800/80"
+                              >
+                                Contact provider
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+                <div className="mt-3 rounded-xl border border-slate-800/60 bg-slate-950/60 p-3 text-[11px] text-slate-200 flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-slate-100">Escrow Status</p>
+                    <p className="text-[10px] text-slate-400">{released ? 'Funds released to provider' : paid ? 'Payment received, waiting to release' : 'Awaiting payment'}</p>
+                  </div>
+                  <div className="flex flex-col gap-1 text-[11px]">
+                    {!paid && <button onClick={()=>handleMarkPaid(job.id)} className="rounded-full border border-emerald-400/70 bg-emerald-500/10 px-3 py-1 text-emerald-200 hover:bg-emerald-500/20">Mark paid</button>}
+                    {paid && !released && <button onClick={()=>handleRelease(job.id)} className="rounded-full border border-emerald-400/70 bg-emerald-500/10 px-3 py-1 text-emerald-200 hover:bg-emerald-500/20">Release funds</button>}
+                    {released && <span className="rounded-full border border-emerald-400/50 bg-emerald-500/10 px-3 py-1 text-center text-emerald-200">Released</span>}
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center justify-between text-[11px] text-slate-400">
+                  <button onClick={()=>navigate(`/jobs/${job.id}`)} className="rounded-full border border-slate-700/70 px-3 py-1 text-slate-200 hover:border-emerald-400/70">View job</button>
+                  <div className="flex gap-2">
+                    <button onClick={()=>handleCancel(job.id)} className="rounded-full border border-red-500/60 px-3 py-1 text-red-300 hover:bg-red-500/10">Cancel</button>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+        {jobs.length === 0 && <div className="rounded-2xl border border-slate-800/70 bg-slate-900/70 p-6 text-sm text-slate-400">No jobs yet. Post a job to see release controls here.</div>}
+      </div>
+    </section>
+  )
+}
+
+export default MyJobs

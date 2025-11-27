@@ -1,0 +1,76 @@
+import { useAdminRole } from '../hooks/useAdminRole'
+import BackButton from '../components/BackButton'
+import { listCoupons, createCoupon, deleteCoupon, toggleCoupon } from '../services/couponsService'
+import { useEffect, useState } from 'react'
+
+export function AdminCoupons() {
+  const { isAdmin, loading } = useAdminRole()
+  const [items, setItems] = useState([])
+  const [code, setCode] = useState('')
+  const [type, setType] = useState('fixed')
+  const [value, setValue] = useState('')
+  const [maxRedemptions, setMaxRedemptions] = useState('')
+  useEffect(()=> { if (isAdmin) setItems(listCoupons()) }, [isAdmin])
+  if (loading) return <section className="min-h-screen flex items-center justify-center bg-slate-950/95"><p className="text-sm text-slate-400">Loading auth…</p></section>
+  if (!isAdmin) return <section className="min-h-screen flex items-center justify-center bg-slate-950/95"><p className="text-sm text-slate-400">Access denied.</p></section>
+
+  const create = (e) => {
+    e.preventDefault()
+    if (!code || !value) return
+    createCoupon({ code, type, value: Number(value), maxRedemptions: Number(maxRedemptions||0) })
+    setItems(listCoupons())
+    setCode(''); setValue(''); setMaxRedemptions('')
+  }
+
+  return (
+    <section className="bg-slate-950/95">
+      <div className="mx-auto max-w-5xl px-4 py-10">
+        <div className="flex items-center gap-3">
+          <BackButton />
+          <h1 className="font-display text-2xl font-semibold text-slate-50">Subscription Coupons</h1>
+        </div>
+        <p className="mt-1 text-sm text-slate-300">Create and manage discount codes for subscription plans only.</p>
+        <form onSubmit={create} className="mt-6 grid gap-3 rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 md:grid-cols-5">
+          <div className="flex flex-col">
+            <label className="text-[10px] font-semibold text-slate-400">Code</label>
+            <input value={code} onChange={e=>setCode(e.target.value)} placeholder="SUMMER25" className="mt-1 rounded-lg border border-slate-700/70 bg-slate-950/70 px-2 py-1.5 text-[12px] text-slate-100" />
+          </div>
+          <div className="flex flex-col">
+            <label className="text-[10px] font-semibold text-slate-400">Type</label>
+            <select value={type} onChange={e=>setType(e.target.value)} className="mt-1 rounded-lg border border-slate-700/70 bg-slate-950/70 px-2 py-1.5 text-[12px] text-slate-100">
+              <option value="fixed">Fixed $</option>
+              <option value="percent">Percent %</option>
+            </select>
+          </div>
+          <div className="flex flex-col">
+            <label className="text-[10px] font-semibold text-slate-400">Value</label>
+            <input value={value} onChange={e=>setValue(e.target.value)} type="number" min="0" step="0.01" className="mt-1 rounded-lg border border-slate-700/70 bg-slate-950/70 px-2 py-1.5 text-[12px] text-slate-100" />
+          </div>
+          <div className="flex flex-col">
+            <label className="text-[10px] font-semibold text-slate-400">Max Uses (0=∞)</label>
+            <input value={maxRedemptions} onChange={e=>setMaxRedemptions(e.target.value)} type="number" min="0" step="1" className="mt-1 rounded-lg border border-slate-700/70 bg-slate-950/70 px-2 py-1.5 text-[12px] text-slate-100" />
+          </div>
+          <div className="flex items-end">
+            <button type="submit" className="w-full rounded-full bg-emerald-500 px-4 py-2 text-[11px] font-semibold text-slate-950 hover:bg-emerald-400">Create</button>
+          </div>
+        </form>
+        <div className="mt-6 space-y-3">
+          {items.map(c => (
+            <div key={c.id} className="rounded-xl border border-slate-800/80 bg-slate-900/80 p-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between text-[12px]">
+              <div>
+                <p className="font-semibold text-slate-100">{c.code}</p>
+                <p className="text-[10px] text-slate-400">{c.type==='fixed'?'$'+c.value: c.value+'%'} • Used {c.used}{c.maxRedemptions?'/'+c.maxRedemptions:''} • {c.active?'Active':'Disabled'}</p>
+              </div>
+              <div className="flex gap-2 text-[10px]">
+                <button onClick={()=>{toggleCoupon(c.id); setItems(listCoupons())}} className="rounded-full border border-emerald-500/60 px-3 py-1 text-emerald-300 hover:bg-emerald-500/10">{c.active?'Disable':'Enable'}</button>
+                <button onClick={()=>{deleteCoupon(c.id); setItems(listCoupons())}} className="rounded-full border border-red-500/60 px-3 py-1 text-red-300 hover:bg-red-500/10">Delete</button>
+              </div>
+            </div>
+          ))}
+          {items.length===0 && <p className="text-xs text-slate-500">No coupons yet.</p>}
+        </div>
+        <p className="mt-6 text-[10px] text-slate-500">Coupons only apply to paid subscription plans. They cannot be used for beats or services.</p>
+      </div>
+    </section>
+  )
+}
