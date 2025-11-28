@@ -15,6 +15,7 @@ export function Chat() {
   const emailFromQuery = new URLSearchParams(location.search).get('email') || ''
   const [searchEmail, setSearchEmail] = useState(emailFromQuery)
   const [suggested, setSuggested] = useState([])
+  const [searchSuggestions, setSearchSuggestions] = useState([])
 
   useEffect(() => {
     ;(async () => {
@@ -41,6 +42,28 @@ export function Chat() {
     })()
   }, [])
 
+  useEffect(() => {
+    const term = searchEmail.trim()
+    if (!term) {
+      setSearchSuggestions([])
+      return
+    }
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, display_name, email, role')
+          .or(
+            `email.ilike.%${term}%,display_name.ilike.%${term}%`,
+          )
+          .limit(8)
+        setSearchSuggestions(data || [])
+      } catch {
+        setSearchSuggestions([])
+      }
+    })()
+  }, [searchEmail])
+
   const profileFor = (id) => profiles.find((p) => p.id === id)
   const recipient = selected
     ? {
@@ -66,12 +89,37 @@ export function Chat() {
             </p>
           </div>
           <div className="mt-2 flex w-full max-w-sm gap-2 md:mt-0">
-            <input
-              value={searchEmail}
-              onChange={(e) => setSearchEmail(e.target.value)}
-              placeholder="Search by email or username"
-              className="flex-1 rounded-lg border border-slate-700/70 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100"
-            />
+            <div className="relative flex-1">
+              <input
+                value={searchEmail}
+                onChange={(e) => setSearchEmail(e.target.value)}
+                placeholder="Search by email or username"
+                className="w-full rounded-lg border border-slate-700/70 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100"
+              />
+              {searchSuggestions.length > 0 && (
+                <div className="absolute z-20 mt-1 w-full max-h-60 overflow-auto rounded-xl border border-slate-800/80 bg-slate-950/95 text-[11px] text-slate-100 shadow-lg">
+                  {searchSuggestions.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        if (!p.email) return
+                        setSearchEmail(p.email)
+                        setSearchSuggestions([])
+                      }}
+                      className="flex w-full flex-col items-start px-3 py-2 text-left hover:bg-slate-900/90"
+                    >
+                      <span className="w-full truncate font-semibold">
+                        {p.display_name || p.email || 'User'}
+                      </span>
+                      <span className="mt-0.5 w-full truncate text-[10px] text-slate-400">
+                        {p.role || 'Member'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <button
               type="button"
               onClick={() => {

@@ -16,6 +16,8 @@ export function Beats() {
     followerCounts: {},
   })
   const [shareTarget, setShareTarget] = useState(null)
+  const [search, setSearch] = useState('')
+  const [suggestions, setSuggestions] = useState([])
   const { boosts: boostedBeatsRaw } = useBoostedBeats()
 
   const openShare = (beat) => setShareTarget(beat)
@@ -24,7 +26,7 @@ export function Beats() {
   useEffect(() => {
     ;(async () => {
       if (!beats.length) return
-      const ids = beats.map((b) => b.id)
+      const ids = filteredBeats.map((b) => b.id)
       const { likeCounts, favoriteCounts } = await fetchCountsForBeats(ids)
       const followerCounts = {}
       for (const b of beats) {
@@ -47,6 +49,39 @@ export function Beats() {
     [beats, boostedMap],
   )
 
+  const normalizedSearch = search.trim().toLowerCase()
+
+  const filteredBeats = useMemo(() => {
+    if (!normalizedSearch) return beats
+    return beats.filter((b) => {
+      const title = (b.title || '').toLowerCase()
+      const producer = (b.producer || '').toLowerCase()
+      return title.includes(normalizedSearch) || producer.includes(normalizedSearch)
+    })
+  }, [beats, normalizedSearch])
+
+  useEffect(() => {
+    if (!normalizedSearch) {
+      setSuggestions([])
+      return
+    }
+    const matches = beats.filter((b) => {
+      const title = (b.title || '').toLowerCase()
+      const producer = (b.producer || '').toLowerCase()
+      return title.includes(normalizedSearch) || producer.includes(normalizedSearch)
+    })
+    setSuggestions(matches.slice(0, 8))
+  }, [beats, normalizedSearch])
+
+  const handleSearchChange = (e) => {
+    setSearch(e.target.value)
+  }
+
+  const handleSuggestionClick = (beat) => {
+    setSearch(beat.title || '')
+    setSuggestions([])
+  }
+
   return (
     <section className="bg-slate-950/95">
       <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-10">
@@ -62,15 +97,36 @@ export function Beats() {
           </p>
         </div>
         <div className="flex flex-col gap-6 md:grid md:grid-cols-[260px,1fr] md:gap-8">
-          <aside className="order-1 space-y-6 rounded-2xl border border-slate-800/80 bg-slate-950/90 bg-rb-gloss-stripes bg-blend-soft-light p-4 shadow-rb-gloss-panel md:order-none md:h-fit">
-            <div>
+          <aside className="order-0 space-y-6 rounded-2xl border border-slate-800/80 bg-slate-950/90 bg-rb-gloss-stripes bg-blend-soft-light p-4 shadow-rb-gloss-panel md:order-none md:h-fit">
+            <div className="relative">
               <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-rb-sun-gold">
                 Search
               </h2>
               <input
+                value={search}
+                onChange={handleSearchChange}
                 className="mt-2 w-full rounded-lg border border-slate-700/80 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100 placeholder:text-slate-500 focus:border-rb-trop-cyan focus:outline-none"
                 placeholder="Keywords or producer"
               />
+              {suggestions.length > 0 && (
+                <div className="absolute z-20 mt-1 w-full max-h-60 overflow-auto rounded-xl border border-slate-800/80 bg-slate-950/95 text-[11px] text-slate-100 shadow-lg">
+                  {suggestions.map((b) => (
+                    <button
+                      key={b.id}
+                      type="button"
+                      onClick={() => handleSuggestionClick(b)}
+                      className="flex w-full flex-col items-start px-3 py-2 text-left hover:bg-slate-900/90"
+                    >
+                      <span className="w-full truncate font-semibold">
+                        {b.title || 'Untitled beat'}
+                      </span>
+                      <span className="mt-0.5 w-full truncate text-[10px] text-slate-400">
+                        {b.producer || 'Producer'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div>
               <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-rb-sun-gold">
@@ -137,7 +193,7 @@ export function Beats() {
                   </span>
                 </div>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {boostedBeats.map((b) => (
+                  {boostedfilteredBeats.map((b) => (
                     <BeatCard
                       key={b.id}
                       {...b}
@@ -157,7 +213,7 @@ export function Beats() {
             )}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {!loading &&
-                beats.map((b) => (
+                filteredBeats.map((b) => (
                   <BeatCard
                     key={b.id}
                     {...b}

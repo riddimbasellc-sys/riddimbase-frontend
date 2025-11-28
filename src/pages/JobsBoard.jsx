@@ -13,6 +13,7 @@ export function JobsBoard() {
   const [pageSize] = useState(12)
   const [total, setTotal] = useState(0)
   const [search, setSearch] = useState('')
+  const [jobSuggestions, setJobSuggestions] = useState([])
   const [status, setStatus] = useState('open')
   const [category, setCategory] = useState('all')
   const [genre, setGenre] = useState('all')
@@ -57,6 +58,28 @@ export function JobsBoard() {
     'rnb',
   ]
 
+  useEffect(() => {
+    const term = search.trim().toLowerCase()
+    if (!term) {
+      setJobSuggestions([])
+      return
+    }
+    const matches = jobs.filter((j) =>
+      (j.title || '').toLowerCase().includes(term),
+    )
+    setJobSuggestions(matches.slice(0, 8))
+  }, [search, jobs])
+
+  const handleSearchChange = (e) => {
+    setSearch(e.target.value)
+    setPage(1)
+  }
+
+  const handleJobSuggestionClick = (job) => {
+    setSearch(job.title || '')
+    setJobSuggestions([])
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-3 py-6 sm:px-4 sm:py-8">
       <div className="mb-5 flex flex-col gap-3 md:mb-6 md:flex-row md:items-center md:justify-between">
@@ -74,15 +97,33 @@ export function JobsBoard() {
       </div>
       <div className="grid gap-4 rounded-xl border border-slate-800/70 bg-slate-950/90 bg-rb-gloss-stripes bg-blend-soft-light p-4 shadow-rb-gloss-panel md:grid-cols-3">
         <div className="space-y-3">
-          <input
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setPage(1)
-            }}
-            placeholder="Search title"
-            className="w-full rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2 text-xs text-slate-100"
-          />
+          <div className="relative">
+            <input
+              value={search}
+              onChange={handleSearchChange}
+              placeholder="Search title"
+              className="w-full rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2 text-xs text-slate-100"
+            />
+            {jobSuggestions.length > 0 && (
+              <div className="absolute z-20 mt-1 w-full max-h-60 overflow-auto rounded-xl border border-slate-800/80 bg-slate-950/95 text-[11px] text-slate-100 shadow-lg">
+                {jobSuggestions.map((j) => (
+                  <button
+                    key={j.id}
+                    type="button"
+                    onClick={() => handleJobSuggestionClick(j)}
+                    className="flex w-full flex-col items-start px-3 py-2 text-left hover:bg-slate-900/90"
+                  >
+                    <span className="w-full truncate font-semibold">
+                      {j.title || 'Untitled job'}
+                    </span>
+                    <span className="mt-0.5 w-full truncate text-[10px] text-slate-400">
+                      {j.genres && j.genres.length ? j.genres.join(', ') : ''}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <select
             value={status}
             onChange={(e) => {
