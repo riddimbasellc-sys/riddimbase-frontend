@@ -66,11 +66,8 @@ export function Navbar() {
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-rb-trop-sunrise shadow-rb-gloss-btn">
               <span className="text-lg font-black tracking-tight text-slate-950 drop-shadow-rb-glow">RB</span>
             </div>
-            <div className="leading-tight">
-              <div className="font-display text-lg font-semibold tracking-tight">RiddimBase</div>
-              <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-emerald-300/80">
-                Home of Caribbean Beats
-              </div>
+            <div className="font-display text-lg font-semibold tracking-tight">
+              RiddimBase
             </div>
           </Link>
           {user ? (
