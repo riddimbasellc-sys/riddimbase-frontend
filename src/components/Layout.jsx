@@ -1,9 +1,13 @@
 import { Navbar } from './Navbar'
 import { Footer } from './Footer'
 import { useEffect, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import AnnouncementRotator from './AnnouncementRotator'
 import { getAnnouncements, getRotationInterval } from '../services/announcementService'
-import { Link } from 'react-router-dom'
+import useSupabaseUser from '../hooks/useSupabaseUser'
+import { useAdminRole } from '../hooks/useAdminRole'
+import { useCart } from '../context/CartContext'
+import CartPanel from './CartPanel'
 
 export function Layout({ children }) {
   const [announcements, setAnnouncements] = useState([])
@@ -37,10 +41,11 @@ export function Layout({ children }) {
         </div>
       )}
       <Navbar />
-      <main className="relative flex-1">
+      <main className="relative flex-1 pb-20 md:pb-0">
         {children}
         <HelpBubble />
       </main>
+      <MobileBottomNav />
       <Footer />
     </div>
   )
@@ -51,7 +56,7 @@ function HelpBubble() {
   const whatsappHref = 'https://wa.me/18762797956'
 
   return (
-    <div className="pointer-events-none fixed bottom-5 right-5 z-40">
+    <div className="pointer-events-none fixed bottom-20 right-4 z-40 md:bottom-5 md:right-5">
       {open && (
         <div className="pointer-events-auto mb-3 w-56 rounded-2xl border border-slate-800/80 bg-slate-950/95 p-3 shadow-rb-gloss-panel">
           <p className="text-[11px] font-semibold text-slate-100 mb-2">Need a hand?</p>
@@ -90,5 +95,141 @@ function HelpBubble() {
         ?
       </button>
     </div>
+  )
+}
+
+function MobileBottomNav() {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { user } = useSupabaseUser()
+  const { isAdmin } = useAdminRole()
+  const { count } = useCart() || { count: 0 }
+  const [cartOpen, setCartOpen] = useState(false)
+
+  // Only show bottom bar for logged-in users, on mobile sizes
+  if (!user) return null
+
+  const path = location.pathname || ''
+
+  const go = (to) => {
+    navigate(to)
+  }
+
+  if (isAdmin) {
+    return (
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-800 bg-slate-950/95 backdrop-blur md:hidden">
+        <div className="mx-auto flex max-w-6xl items-center justify-around px-4 py-2">
+          <button
+            type="button"
+            onClick={() => go('/admin')}
+            className="flex flex-col items-center gap-1 text-[11px] font-medium"
+          >
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-rb-sun-gold text-slate-950">
+              A
+            </span>
+            <span className="text-slate-200">Admin</span>
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const isActive = (match) => {
+    if (match === '/') return path === '/'
+    return path.startsWith(match)
+  }
+
+  return (
+    <>
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-800 bg-slate-950/95 backdrop-blur md:hidden">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-3 py-2 text-[11px] font-medium text-slate-300">
+          <button
+            type="button"
+            onClick={() => go('/')}
+            className={`flex flex-1 flex-col items-center gap-0.5 ${isActive('/') ? 'text-emerald-400' : ''}`}
+          >
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-800/90">
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" stroke="currentColor" fill="none" strokeWidth="2">
+                <path d="M3 11.5 12 4l9 7.5" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M5 10.5V20h5v-4h4v4h5v-9.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+            <span>Home</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => go('/beats')}
+            className={`flex flex-1 flex-col items-center gap-0.5 ${isActive('/beats') ? 'text-emerald-400' : ''}`}
+          >
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-800/90">
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" stroke="currentColor" fill="none" strokeWidth="2">
+                <rect x="4" y="4" width="4" height="16" rx="1" />
+                <rect x="10" y="8" width="4" height="12" rx="1" />
+                <rect x="16" y="6" width="4" height="14" rx="1" />
+              </svg>
+            </span>
+            <span>Beats</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => go('/services')}
+            className={`flex flex-1 flex-col items-center gap-0.5 ${isActive('/services') ? 'text-emerald-400' : ''}`}
+          >
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-800/90">
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" stroke="currentColor" fill="none" strokeWidth="2">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M4.5 9a7.5 7.5 0 0 1 15 0c0 5.25-7.5 10.5-7.5 10.5S4.5 14.25 4.5 9Z" />
+              </svg>
+            </span>
+            <span>Services</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => go('/jobs')}
+            className={`flex flex-1 flex-col items-center gap-0.5 ${isActive('/jobs') ? 'text-emerald-400' : ''}`}
+          >
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-800/90">
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" stroke="currentColor" fill="none" strokeWidth="2">
+                <rect x="3" y="7" width="18" height="13" rx="2" />
+                <path d="M9 7V5a3 3 0 0 1 6 0v2" />
+              </svg>
+            </span>
+            <span>Jobs</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => go('/profile/edit')}
+            className={`flex flex-1 flex-col items-center gap-0.5 ${isActive('/profile') ? 'text-emerald-400' : ''}`}
+          >
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-800/90">
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" stroke="currentColor" fill="none" strokeWidth="2">
+                <circle cx="12" cy="8" r="3" />
+                <path d="M5 20c1.5-3 3.5-4.5 7-4.5s5.5 1.5 7 4.5" />
+              </svg>
+            </span>
+            <span>Profile</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setCartOpen(true)}
+            className={`flex flex-1 flex-col items-center gap-0.5 ${cartOpen ? 'text-emerald-400' : ''}`}
+          >
+            <span className="relative inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-800/90">
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" stroke="currentColor" fill="none" strokeWidth="2">
+                <path d="M6 8l2-4h8l2 4" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M3 8h18l-1.5 11a2 2 0 0 1-2 1.8H6.5a2 2 0 0 1-2-1.8L3 8z" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {count > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-bold text-slate-950">
+                  {count}
+                </span>
+              )}
+            </span>
+            <span>Cart</span>
+          </button>
+        </div>
+      </div>
+      {cartOpen && <CartPanel onClose={() => setCartOpen(false)} />}
+    </>
   )
 }
