@@ -58,9 +58,9 @@ export function JobsBoard() {
   ]
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-100">
+    <div className="mx-auto max-w-7xl px-3 py-6 sm:px-4 sm:py-8">
+      <div className="mb-5 flex flex-col gap-3 md:mb-6 md:flex-row md:items-center md:justify-between">
+        <h1 className="text-xl font-semibold tracking-tight text-slate-100 sm:text-2xl">
           Job Requests
         </h1>
         <div className="flex gap-3">
@@ -72,7 +72,7 @@ export function JobsBoard() {
           </button>
         </div>
       </div>
-      <div className="grid gap-4 rounded-xl border border-slate-800/70 bg-slate-950/90 bg-rb-gloss-stripes bg-blend-soft-light p-4 md:grid-cols-3 shadow-rb-gloss-panel">
+      <div className="grid gap-4 rounded-xl border border-slate-800/70 bg-slate-950/90 bg-rb-gloss-stripes bg-blend-soft-light p-4 shadow-rb-gloss-panel md:grid-cols-3">
         <div className="space-y-3">
           <input
             value={search}
@@ -232,4 +232,3 @@ function JobCard({ job }) {
 }
 
 export default JobsBoard
-

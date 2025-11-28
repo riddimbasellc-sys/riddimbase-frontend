@@ -56,7 +56,7 @@ export function Home() {
     <>
       <Hero />
       <section className="bg-slate-950/95">
-        <div className="mx-auto max-w-6xl px-4 py-10 space-y-10">
+        <div className="mx-auto max-w-6xl px-3 py-6 space-y-8 sm:px-4 sm:py-10">
           {activeBanner ? (
             <div className="relative overflow-hidden rounded-3xl border border-rb-sun-gold/40 bg-slate-950/90 shadow-rb-gloss-panel">
               {(activeBanner.kind === 'video' || (activeBanner.contentType && activeBanner.contentType.startsWith('video'))) ? (
@@ -82,7 +82,7 @@ export function Home() {
             </div>
           ) : <SpotlightBanner />}
           {beats.length > 0 && boostedMap.size > 0 && (
-            <section className="rounded-3xl border border-yellow-500/40 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 shadow-rb-gloss-panel">
+            <section className="rounded-3xl border border-yellow-500/40 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 shadow-rb-gloss-panel sm:p-6">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-yellow-300">Boosted Beats</p>
@@ -145,7 +145,7 @@ export function Home() {
                   <a href="/beats" className="text-xs font-medium text-emerald-300 hover:text-emerald-200">View all</a>
                 </div>
                 {loading && <p className="text-sm text-slate-400">Loading…</p>}
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3">
                   {!loading && trending.map(b => (
                     <BeatCard key={b.id} {...b} coverUrl={b.coverUrl || null} audioUrl={b.audioUrl} />
                   ))}

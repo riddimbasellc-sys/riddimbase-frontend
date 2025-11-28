@@ -7,15 +7,15 @@ export function Services() {
   const providers = listProviders()
   return (
     <section className="bg-slate-950/95">
-      <div className="mx-auto max-w-6xl px-4 py-10">
+      <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-10">
         <div className="flex items-center gap-3">
           <BackButton />
-          <h1 className="font-display text-2xl font-semibold text-slate-50">Production Services</h1>
+          <h1 className="font-display text-xl font-semibold text-slate-50 sm:text-2xl">Production Services</h1>
         </div>
-        <p className="mt-1 max-w-2xl text-sm text-slate-300">
+        <p className="mt-1 max-w-2xl text-xs text-slate-300 sm:text-sm">
           Browse engineers and producers offering mix & master, custom beats, studio sessions and more.
         </p>
-        <div className="mt-8 grid gap-6 md:grid-cols-3">
+        <div className="mt-6 grid gap-4 sm:mt-8 sm:grid-cols-2 lg:grid-cols-3">
           {providers.map((p) => (
             <Link
               key={p.id}

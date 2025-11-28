@@ -49,18 +49,20 @@ export function Beats() {
 
   return (
     <section className="bg-slate-950/95">
-      <div className="mx-auto max-w-6xl px-4 py-10">
-        <div className="mb-6">
-          <BackButton />
-          <h1 className="font-display text-2xl font-semibold text-slate-50">
-            Browse Beats
-          </h1>
-          <p className="mt-1 text-sm text-slate-300">
+      <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-10">
+        <div className="mb-5 flex flex-col gap-2 sm:mb-6">
+          <div className="flex items-center gap-3">
+            <BackButton />
+            <h1 className="font-display text-xl font-semibold text-slate-50 sm:text-2xl">
+              Browse Beats
+            </h1>
+          </div>
+          <p className="text-xs text-slate-300 sm:text-sm">
             Discover curated Caribbean beats, riddims and instrumentals across genres.
           </p>
         </div>
-        <div className="grid gap-8 md:grid-cols-[240px,1fr]">
-          <aside className="space-y-6 rounded-2xl border border-slate-800/80 bg-slate-950/90 bg-rb-gloss-stripes bg-blend-soft-light p-4 h-fit shadow-rb-gloss-panel">
+        <div className="flex flex-col gap-6 md:grid md:grid-cols-[260px,1fr] md:gap-8">
+          <aside className="order-1 space-y-6 rounded-2xl border border-slate-800/80 bg-slate-950/90 bg-rb-gloss-stripes bg-blend-soft-light p-4 shadow-rb-gloss-panel md:order-none md:h-fit">
             <div>
               <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-rb-sun-gold">
                 Search
@@ -114,8 +116,7 @@ export function Beats() {
               </div>
             </div>
             <p className="text-[10px] text-slate-500 leading-relaxed">
-              Refine your search to find the perfect riddim. Advanced filters coming
-              soon.
+              Refine your search to find the perfect riddim.
             </p>
           </aside>
           <div className="min-w-0">
@@ -187,4 +188,3 @@ export function Beats() {
 }
 
 export default Beats
-
