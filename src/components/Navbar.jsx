@@ -222,6 +222,46 @@ export function Navbar() {
                     </button>
                   </div>
                 )}
+                {user && (
+                  <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-800/70 pt-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-slate-700/70 bg-slate-800/70">
+                        {profile?.avatarUrl ? (
+                          <img src={profile.avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+                        ) : (
+                          <span className="text-[11px] font-semibold text-slate-300">
+                            {(profile?.displayName || user.email).slice(0,2).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[11px] font-medium text-slate-200 truncate max-w-[140px]">
+                          {profile?.displayName || user.email}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMobileOpen(false)
+                            navigate('/profile/edit')
+                          }}
+                          className="text-[10px] text-emerald-300 underline-offset-2 hover:underline"
+                        >
+                          View profile
+                        </button>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setMobileOpen(false)
+                        await handleLogout()
+                      }}
+                      className="rounded-full border border-red-500/70 px-3 py-1.5 text-[11px] font-semibold text-red-300 hover:bg-red-500/10"
+                    >
+                      Log out
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </nav>
