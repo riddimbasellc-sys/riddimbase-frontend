@@ -70,24 +70,9 @@ export function Navbar() {
               RiddimBase
             </div>
           </Link>
-          {user ? (
-            <button
-              type="button"
-              onClick={() => setOpen((o) => !o)}
-              className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-slate-700/70 bg-slate-800/70"
-              aria-label="Open profile menu"
-            >
-              {profile?.avatarUrl ? (
-                <img src={profile.avatarUrl} alt="avatar" className="h-full w-full object-cover" />
-              ) : (
-                <span className="text-[11px] font-semibold text-slate-300">
-                  {(profile?.displayName || user.email).slice(0,2).toUpperCase()}
-                </span>
-              )}
-            </button>
-          ) : (
-            <div className="w-9" />
-          )}
+          <div className="flex h-9 w-9 items-center justify-center">
+            <NotificationsBell />
+          </div>
         </div>
 
         {/* Desktop row */}
