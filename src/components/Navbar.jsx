@@ -73,7 +73,24 @@ export function Navbar() {
               </div>
             </div>
           </Link>
-          <div className="w-9" />
+          {user ? (
+            <button
+              type="button"
+              onClick={() => setOpen((o) => !o)}
+              className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-slate-700/70 bg-slate-800/70"
+              aria-label="Open profile menu"
+            >
+              {profile?.avatarUrl ? (
+                <img src={profile.avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+              ) : (
+                <span className="text-[11px] font-semibold text-slate-300">
+                  {(profile?.displayName || user.email).slice(0,2).toUpperCase()}
+                </span>
+              )}
+            </button>
+          ) : (
+            <div className="w-9" />
+          )}
         </div>
 
         {/* Desktop row */}
@@ -180,15 +197,17 @@ export function Navbar() {
         <div className="md:hidden border-t border-slate-900/80 bg-slate-950/98">
           <nav className="mx-auto max-w-6xl px-4 py-3 space-y-1 text-sm font-medium text-slate-200">
             {isAdmin ? (
-              <NavLink
-                to="/admin"
-                onClick={() => setMobileOpen(false)}
-                className={({ isActive }) =>
-                  `block rounded-lg px-2 py-2 hover:bg-slate-900/90 ${isActive ? 'text-emerald-400' : ''}`
-                }
-              >
-                Admin
-              </NavLink>
+              <>
+                <NavLink
+                  to="/admin"
+                  onClick={() => setMobileOpen(false)}
+                  className={({ isActive }) =>
+                    `block rounded-lg px-2 py-2 hover:bg-slate-900/90 ${isActive ? 'text-emerald-400' : ''}`
+                  }
+                >
+                  Admin
+                </NavLink>
+              </>
             ) : (
               <>
                 <NavLink to="/" onClick={() => setMobileOpen(false)} className={({ isActive }) => `block rounded-lg px-2 py-2 hover:bg-slate-900/90 ${isActive ? 'text-emerald-400' : ''}`}>Home</NavLink>
@@ -198,71 +217,71 @@ export function Navbar() {
                 <NavLink to="/services" onClick={() => setMobileOpen(false)} className={({ isActive }) => `block rounded-lg px-2 py-2 hover:bg-slate-900/90 ${isActive ? 'text-emerald-400' : ''}`}>Services</NavLink>
                 <NavLink to="/jobs" onClick={() => setMobileOpen(false)} className={({ isActive }) => `block rounded-lg px-2 py-2 hover:bg-slate-900/90 ${isActive ? 'text-emerald-400' : ''}`}>Jobs</NavLink>
                 <NavLink to="/pricing" onClick={() => setMobileOpen(false)} className={({ isActive }) => `block rounded-lg px-2 py-2 hover:bg-slate-900/90 ${isActive ? 'text-emerald-400' : ''}`}>Pricing</NavLink>
-                {!user && (
-                  <div className="mt-3 flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMobileOpen(false)
-                        navigate('/login')
-                      }}
-                      className="flex-1 rounded-full border border-slate-700/80 px-3 py-1.5 text-[12px] font-medium text-slate-200"
-                    >
-                      Log in
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMobileOpen(false)
-                        navigate('/signup')
-                      }}
-                      className="flex-1 rounded-full bg-emerald-500 px-3 py-1.5 text-[12px] font-semibold text-slate-950"
-                    >
-                      Sign up
-                    </button>
-                  </div>
-                )}
-                {user && (
-                  <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-800/70 pt-3">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-slate-700/70 bg-slate-800/70">
-                        {profile?.avatarUrl ? (
-                          <img src={profile.avatarUrl} alt="avatar" className="h-full w-full object-cover" />
-                        ) : (
-                          <span className="text-[11px] font-semibold text-slate-300">
-                            {(profile?.displayName || user.email).slice(0,2).toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-[11px] font-medium text-slate-200 truncate max-w-[140px]">
-                          {profile?.displayName || user.email}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setMobileOpen(false)
-                            navigate('/profile/edit')
-                          }}
-                          className="text-[10px] text-emerald-300 underline-offset-2 hover:underline"
-                        >
-                          View profile
-                        </button>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        setMobileOpen(false)
-                        await handleLogout()
-                      }}
-                      className="rounded-full border border-red-500/70 px-3 py-1.5 text-[11px] font-semibold text-red-300 hover:bg-red-500/10"
-                    >
-                      Log out
-                    </button>
-                  </div>
-                )}
               </>
+            )}
+            {!user && (
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileOpen(false)
+                    navigate('/login')
+                  }}
+                  className="flex-1 rounded-full border border-slate-700/80 px-3 py-1.5 text-[12px] font-medium text-slate-200"
+                >
+                  Log in
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileOpen(false)
+                    navigate('/signup')
+                  }}
+                  className="flex-1 rounded-full bg-emerald-500 px-3 py-1.5 text-[12px] font-semibold text-slate-950"
+                >
+                  Sign up
+                </button>
+              </div>
+            )}
+            {user && (
+              <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-800/70 pt-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-slate-700/70 bg-slate-800/70">
+                    {profile?.avatarUrl ? (
+                      <img src={profile.avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="text-[11px] font-semibold text-slate-300">
+                        {(profile?.displayName || user.email).slice(0,2).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[11px] font-medium text-slate-200 truncate max-w-[140px]">
+                      {profile?.displayName || user.email}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileOpen(false)
+                        navigate('/profile/edit')
+                      }}
+                      className="text-[10px] text-emerald-300 underline-offset-2 hover:underline"
+                    >
+                      View profile
+                    </button>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setMobileOpen(false)
+                    await handleLogout()
+                  }}
+                  className="rounded-full border border-red-500/70 px-3 py-1.5 text-[11px] font-semibold text-red-300 hover:bg-red-500/10"
+                >
+                  Log out
+                </button>
+              </div>
             )}
           </nav>
         </div>
