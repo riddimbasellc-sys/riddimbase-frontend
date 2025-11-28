@@ -198,6 +198,30 @@ export function Navbar() {
                 <NavLink to="/services" onClick={() => setMobileOpen(false)} className={({ isActive }) => `block rounded-lg px-2 py-2 hover:bg-slate-900/90 ${isActive ? 'text-emerald-400' : ''}`}>Services</NavLink>
                 <NavLink to="/jobs" onClick={() => setMobileOpen(false)} className={({ isActive }) => `block rounded-lg px-2 py-2 hover:bg-slate-900/90 ${isActive ? 'text-emerald-400' : ''}`}>Jobs</NavLink>
                 <NavLink to="/pricing" onClick={() => setMobileOpen(false)} className={({ isActive }) => `block rounded-lg px-2 py-2 hover:bg-slate-900/90 ${isActive ? 'text-emerald-400' : ''}`}>Pricing</NavLink>
+                {!user && (
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileOpen(false)
+                        navigate('/login')
+                      }}
+                      className="flex-1 rounded-full border border-slate-700/80 px-3 py-1.5 text-[12px] font-medium text-slate-200"
+                    >
+                      Log in
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileOpen(false)
+                        navigate('/signup')
+                      }}
+                      className="flex-1 rounded-full bg-emerald-500 px-3 py-1.5 text-[12px] font-semibold text-slate-950"
+                    >
+                      Sign up
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </nav>
