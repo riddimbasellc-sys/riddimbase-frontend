@@ -3,7 +3,10 @@ export default function GenreFilters({ genres = [], onSelect }) {
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-semibold text-slate-100">Filter by Genre</h3>
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div
+        className="flex gap-2 overflow-x-auto overflow-y-hidden pb-2 -mx-1 px-1"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         {list.map(g => (
           <button
             key={g}

@@ -5,7 +5,10 @@ export default function FeaturedCarousel({ beats = [] }) {
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-semibold text-slate-100">Featured Beats</h3>
-      <div className="flex gap-4 overflow-x-auto pb-2">
+      <div
+        className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 -mx-1 px-1"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         {featured.map(b => (
           <div key={b.id} className="min-w-[190px] flex-shrink-0">
             <BeatCard {...b} coverUrl={b.coverUrl || null} audioUrl={b.audioUrl} />
