@@ -247,21 +247,21 @@ export function ProducerDashboard() {
   return (
     <ProducerLayout>
       <section className="bg-slate-950/95">
-        <div className="mx-auto max-w-6xl px-4 py-8">
+        <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-8">
           <div className="flex items-center gap-3">
             <BackButton />
             <div>
-              <h1 className="font-display text-2xl font-semibold text-slate-50">
+              <h1 className="font-display text-xl font-semibold text-slate-50 sm:text-2xl">
                 Producer Dashboard
               </h1>
-              <p className="mt-1 text-sm text-slate-400">
+              <p className="mt-1 text-xs text-slate-400 sm:text-sm">
                 Welcome back, {displayName}. Track catalog, sales, ads and jobs in one
                 place.
               </p>
             </div>
           </div>
 
-          <div className="mt-6 grid gap-6 md:grid-cols-4">
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard label="Total earnings" value={`$${earnings.toFixed(2)}`} />
             <StatCard
               label="Available balance"
@@ -271,7 +271,7 @@ export function ProducerDashboard() {
             <StatCard label="Monthly sales" value={monthSales} />
           </div>
 
-          <div className="mt-5 grid gap-6 md:grid-cols-2">
+          <div className="mt-6 grid gap-6 md:grid-cols-2">
             <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 shadow-rb-gloss-panel">
               <h2 className="text-sm font-semibold text-slate-100">
                 Audience & Reach
