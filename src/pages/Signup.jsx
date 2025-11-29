@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import countries from '../constants/countries'
+import { signup as apiSignup, login as apiLogin } from '../services/authService'
 
 export function Signup() {
   const [email, setEmail] = useState('')
@@ -36,48 +37,55 @@ export function Signup() {
     setError('')
     setLoading(true)
 
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-    })
+    try {
+      // 1) Create user via backend (Supabase admin)
+      await apiSignup(email, password, displayName)
 
-    if (authError) {
-      setError(friendlyError(authError.message))
-      setLoading(false)
-      return
-    }
+      // 2) Log the user in so Supabase session exists on the frontend
+      const loginPayload = await apiLogin(email, password)
+      const user = loginPayload?.user
 
-    const user = authData.user
-    if (user) {
-      try {
-        await supabase.from('profiles').upsert({
-          id: user.id,
-          role,
-          display_name: displayName,
-        })
-      } catch (err) {
-        console.warn('Supabase profile upsert failed (non-blocking)', err.message)
-      }
-      try {
-        const extended = {
-          country,
-          phone: '',
-          bio: '',
-          website: '',
-          instagram: '',
-          twitterX: '',
-          youtube: '',
-          genres: [],
+      // 3) Store profile info in Supabase profiles table using the user session
+      if (user) {
+        try {
+          await supabase.from('profiles').upsert({
+            id: user.id,
+            role,
+            display_name: displayName,
+          })
+        } catch (err) {
+          console.warn(
+            'Supabase profile upsert failed (non-blocking)',
+            err.message,
+          )
         }
-        localStorage.setItem(`extendedProfile:${user.id}`, JSON.stringify(extended))
-      } catch {
-        // ignore localStorage failures
+        try {
+          const extended = {
+            country,
+            phone: '',
+            bio: '',
+            website: '',
+            instagram: '',
+            twitterX: '',
+            youtube: '',
+            genres: [],
+          }
+          localStorage.setItem(
+            `extendedProfile:${user.id}`,
+            JSON.stringify(extended),
+          )
+        } catch {
+          // ignore localStorage failures
+        }
       }
-    }
 
-    setLoading(false)
-    // You can route differently based on role if you want
-    navigate('/producer/dashboard')
+      setLoading(false)
+      // You can route differently based on role if you want
+      navigate('/producer/dashboard')
+    } catch (err) {
+      setError(friendlyError(err.message))
+      setLoading(false)
+    }
   }
 
   return (
@@ -95,7 +103,7 @@ export function Signup() {
               Display name
             </label>
             <input
-              className="mt-1 w-full rounded-xl border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/80 focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-red-400/80 focus:outline-none"
               placeholder="e.g. YaadWave"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
@@ -108,7 +116,7 @@ export function Signup() {
             </label>
             <input
               type="email"
-              className="mt-1 w-full rounded-xl border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/80 focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-red-400/80 focus:outline-none"
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -121,7 +129,7 @@ export function Signup() {
             </label>
             <input
               type="password"
-              className="mt-1 w-full rounded-xl border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/80 focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-red-400/80 focus:outline-none"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -134,7 +142,7 @@ export function Signup() {
               Country
             </label>
             <select
-              className="mt-1 w-full rounded-xl border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/80 focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 focus:border-red-400/80 focus:outline-none"
               value={country}
               onChange={(e) => setCountry(e.target.value)}
               required
@@ -152,7 +160,7 @@ export function Signup() {
             <select
               value={role}
               onChange={e=>setRole(e.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-xs text-slate-100 focus:border-emerald-400/80 focus:outline-none"
+              className="mt-2 w-full rounded-xl border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-xs text-slate-100 focus:border-red-400/80 focus:outline-none"
             >
               {ACCOUNT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>

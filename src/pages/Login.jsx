@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabaseClient'
+import { login as apiLogin } from '../services/authService'
 
 export function Login() {
   const [email, setEmail] = useState('')
@@ -16,7 +16,7 @@ export function Login() {
       return 'Invalid credentials. Check email & password. If you just signed up and email confirmations are enabled, verify your email first.'
     }
     if (lower.includes('supabase not configured')) {
-      return 'Auth service not configured. Ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY exist in .env.local and restart dev server.'
+      return 'Auth service not configured. Ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY exist, and backend auth is deployed.'
     }
     return msg
   }
@@ -26,21 +26,15 @@ export function Login() {
     setError('')
     setLoading(true)
 
-    const { data, error: loginError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (loginError) {
-      setError(friendlyError(loginError.message))
+    try {
+      const data = await apiLogin(email, password)
+      console.log('Logged in user:', data.user)
       setLoading(false)
-      return
+      navigate('/producer/dashboard')
+    } catch (err) {
+      setError(friendlyError(err.message))
+      setLoading(false)
     }
-
-    // Optionally, you can fetch the profile and route based on role later
-    console.log('Logged in user:', data.user)
-    setLoading(false)
-    navigate('/producer/dashboard')
   }
 
   return (
@@ -91,13 +85,13 @@ export function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-full bg-emerald-500 px-4 py-2 text-xs font-semibold text-slate-950 shadow-rb-soft hover:bg-emerald-400 transition disabled:opacity-60"
+            className="w-full rounded-full bg-red-500 px-4 py-2 text-xs font-semibold text-slate-50 shadow-rb-soft hover:bg-red-400 transition disabled:opacity-60"
           >
             {loading ? 'Logging in…' : 'Log in'}
           </button>
           <p className="text-[11px] text-slate-400">
             Don&apos;t have an account?{' '}
-            <a href="/signup" className="text-emerald-300 hover:text-emerald-200">
+            <a href="/signup" className="text-red-300 hover:text-red-200">
               Sign up
             </a>
           </p>
