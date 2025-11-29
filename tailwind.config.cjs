@@ -10,8 +10,9 @@ module.exports = {
         'rb-bg': '#020617',
         'rb-surface': '#051423',
         'rb-surface-alt': '#071b2e',
-        'rb-accent': '#10B981',
-        'rb-accent-soft': '#22C55E',
+        // Accent now uses a red/orange vibe instead of green
+        'rb-accent': '#ef4444',
+        'rb-accent-soft': '#f97316',
         'rb-orange': '#F97316',
         // Caribbean palette additions
         'rb-trop-blue': '#00b4d8',
@@ -25,6 +26,14 @@ module.exports = {
         'rb-palm-green': '#0ba360',
         'rb-palm-dark': '#06623b',
         'rb-glow': '#faff00',
+        // Override emerald utility shades to render as red tones
+        emerald: {
+          200: '#fecaca',
+          300: '#fca5a5',
+          400: '#f87171',
+          500: '#ef4444',
+          600: '#dc2626',
+        },
       },
       boxShadow: {
         'rb-soft': '0 18px 45px rgba(15,23,42,0.8)',
