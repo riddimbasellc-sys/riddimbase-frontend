@@ -37,9 +37,8 @@ export function computeBeatQuote({ beat, license, currency = 'USD', coupon }) {
   }
 }
 
-// Aggregate cart quote with bulk discount logic
+// Aggregate cart quote (no bulk discount).
 // items: [{ beat, license }]; options { currency='USD', coupon }
-// Bulk rule v1: If >=2 Basic license items -> cheapest Basic item (after license multiplier, before coupon) becomes free.
 export function computeCartQuote({ items = [], currency = 'USD', coupon }) {
   const valid = items.filter(it => it.beat && it.license)
   const rates = { USD: 1, EUR: 0.93, GBP: 0.79, CAD: 1.37, JMD: 157, TTD: 6.78 }
@@ -55,17 +54,9 @@ export function computeCartQuote({ items = [], currency = 'USD', coupon }) {
     return { ...it, multiplier: 1, subtotalUSD: itemSubtotalUSD }
   })
 
-  // Bulk discount (USD)
-  const basicItems = perItem.filter(p => p && p.license === 'Basic')
-  let bulkDiscountUSD = 0
-  if (basicItems.length >= 2) {
-    bulkDiscountUSD = Math.min(...basicItems.map(b => b.subtotalUSD))
-  }
-
   const subtotalUSD = perItem.reduce((sum, p) => sum + p.subtotalUSD, 0)
-  const afterBulkUSD = subtotalUSD - bulkDiscountUSD
-  const couponDiscountUSD = afterBulkUSD * discountRate
-  const totalUSD = afterBulkUSD - couponDiscountUSD
+  const couponDiscountUSD = subtotalUSD * discountRate
+  const totalUSD = subtotalUSD - couponDiscountUSD
   const serviceFeeRate = 0.12
   const serviceFeeUSD = totalUSD * serviceFeeRate
   const grandUSD = totalUSD + serviceFeeUSD
@@ -83,11 +74,9 @@ export function computeCartQuote({ items = [], currency = 'USD', coupon }) {
       subtotalUSD: p.subtotalUSD,
       subtotal: fx(p.subtotalUSD)
     })),
-    counts: { total: perItem.length, basic: basicItems.length },
+    counts: { total: perItem.length },
     subtotalUSD,
     subtotal: fx(subtotalUSD),
-    bulkDiscountUSD,
-    bulkDiscount: fx(bulkDiscountUSD),
     couponDiscountUSD,
     couponDiscount: fx(couponDiscountUSD),
     discountRate,
