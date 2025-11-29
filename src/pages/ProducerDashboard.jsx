@@ -301,7 +301,7 @@ export function ProducerDashboard() {
           </div>
 
           <div className="mt-6 grid gap-6 md:grid-cols-2">
-            <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 shadow-rb-gloss-panel">
+            <div className="rounded-2xl border border-white/10 bg-black/70 bg-rb-gloss-stripes bg-blend-soft-light p-4 shadow-rb-gloss-panel">
               <h2 className="text-sm font-semibold text-slate-100">
                 Audience & Reach
               </h2>
@@ -337,7 +337,7 @@ export function ProducerDashboard() {
                 </div>
               </div>
             </div>
-            <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 shadow-rb-gloss-panel">
+            <div className="rounded-2xl border border-white/10 bg-black/70 bg-rb-gloss-stripes bg-blend-soft-light p-4 shadow-rb-gloss-panel">
               <h2 className="text-sm font-semibold text-slate-100">
                 Boosted Ads & Jobs
               </h2>
@@ -591,7 +591,7 @@ export function ProducerDashboard() {
             </div>
           </div>
 
-          <div className="mt-8 rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 shadow-rb-gloss-panel">
+          <div className="mt-8 rounded-2xl border border-white/10 bg-black/70 bg-rb-gloss-stripes bg-blend-soft-light p-4 shadow-rb-gloss-panel">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
                 <h2 className="text-sm font-semibold text-slate-100">Performance</h2>

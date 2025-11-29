@@ -95,7 +95,7 @@ export function JobsBoard() {
           </button>
         </div>
       </div>
-      <div className="grid gap-4 rounded-xl border border-slate-800/70 bg-slate-950/90 bg-rb-gloss-stripes bg-blend-soft-light p-4 shadow-rb-gloss-panel md:grid-cols-3">
+      <div className="grid gap-4 rounded-xl border border-white/10 bg-black/70 bg-rb-gloss-stripes bg-blend-soft-light p-4 shadow-rb-gloss-panel md:grid-cols-3">
         <div className="space-y-3">
           <div className="relative">
             <input
@@ -239,7 +239,7 @@ function JobCard({ job }) {
   return (
     <Link
       to={`/jobs/${job.id}`}
-      className="group rounded-2xl border border-slate-800/70 bg-slate-900/60 p-4 transition hover:border-rb-trop-cyan hover:bg-slate-900/90 shadow-rb-gloss-panel"
+      className="group rounded-2xl border border-white/10 bg-black/60 p-4 transition hover:border-red-500/60 hover:bg-white/5 shadow-[0_18px_45px_rgba(0,0,0,0.85)]"
     >
       <div className="mb-3 flex items-center justify-between">
         <h2 className="line-clamp-1 text-sm font-semibold text-slate-100 group-hover:text-rb-trop-cyan">
