@@ -128,12 +128,12 @@ export function BeatCard({
   return (
     <Wrapper
       {...wrapperProps}
-      className={`group flex flex-col rounded-2xl border border-slate-800/80 bg-slate-900/70 ${
+      className={`group flex flex-col rounded-2xl border border-white/10 bg-black/60 ${
         compact ? 'p-2' : 'p-3'
-      } shadow-[0_10px_24px_rgba(15,23,42,0.7)] transition hover:border-emerald-400/70 hover:bg-slate-900/90 min-w-0`}
+      } shadow-[0_18px_45px_rgba(0,0,0,0.85)] transition hover:border-red-500/60 hover:bg-white/5 min-w-0`}
     >
       <div
-        className={`relative w-full overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500 via-emerald-400 to-orange-500 ${coverHeightClass}`}
+        className={`relative w-full overflow-hidden rounded-xl bg-gradient-to-br from-rb-fiery-red via-rb-sun-gold to-rb-trop-cyan ${coverHeightClass}`}
       >
         {coverUrl ? (
           <img
@@ -282,4 +282,3 @@ export function BeatCard({
     </Wrapper>
   )
 }
-
