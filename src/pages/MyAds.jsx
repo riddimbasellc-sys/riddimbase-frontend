@@ -135,7 +135,7 @@ export function MyAds() {
         )}
         {!loading && boosts.length === 0 && (
           <div className="rounded-2xl border border-slate-800/80 bg-slate-900/90 p-4 text-sm text-slate-400">
-            You haven&apos;t boosted any beats yet. Use the Boost button from your producer dashboard to start a campaign.
+            You haven&apos;t boosted any beats yet. Use the Boost button from your dashboard to start a campaign.
           </div>
         )}
         {!loading && boosts.length > 0 && (
@@ -266,4 +266,3 @@ export function MyAds() {
     </section>
   )
 }
-

@@ -4,6 +4,7 @@ import ProducerLayout from '../components/ProducerLayout'
 import ProfileShareModal from '../components/ProfileShareModal'
 import { BeatCard } from '../components/BeatCard'
 import useSupabaseUser from '../hooks/useSupabaseUser'
+import useUserProfile from '../hooks/useUserProfile'
 import BackButton from '../components/BackButton'
 import {
   totalEarnings,
@@ -42,12 +43,18 @@ export function ProducerDashboard() {
   const [boostedMap, setBoostedMap] = useState({})
   const [assignedJobs, setAssignedJobs] = useState([])
   const [openJobs, setOpenJobs] = useState([])
+  const [mixActiveJobs, setMixActiveJobs] = useState([])
+  const [mixCompletedJobs, setMixCompletedJobs] = useState([])
   const [metricKind, setMetricKind] = useState('plays')
   const [rangeKey, setRangeKey] = useState('30d')
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
   const [metricSeries, setMetricSeries] = useState([])
   const [metricLoading, setMetricLoading] = useState(false)
+  const { profile } = useUserProfile()
+  const accountType = profile?.accountType || ''
+  const roleTokens = accountType.split('+').map(t => t.trim().toLowerCase()).filter(Boolean)
+  const isMixEngineer = roleTokens.includes('mix-master engineer') || roleTokens.includes('mixing') || roleTokens.includes('engineer')
 
   useEffect(() => {
     if (!loading && !user) navigate('/login')
@@ -128,11 +135,33 @@ export function ProducerDashboard() {
             .filter((j) => j.assignedProviderId === user.id)
             .slice(0, 5),
         )
+        if (isMixEngineer) {
+          const activeMix = (assignedAll || []).filter(
+            (j) =>
+              j.assignedProviderId === user.id &&
+              (j.category === 'mixing' || j.category === 'mix-master'),
+          )
+          const { data: completedMixAll } = await queryJobRequests({
+            status: 'completed',
+            page: 1,
+            pageSize: 50,
+          })
+          const completedMix = (completedMixAll || []).filter(
+            (j) =>
+              j.assignedProviderId === user.id &&
+              (j.category === 'mixing' || j.category === 'mix-master'),
+          )
+          setMixActiveJobs(activeMix.slice(0, 5))
+          setMixCompletedJobs(completedMix.slice(0, 5))
+        } else {
+          setMixActiveJobs([])
+          setMixCompletedJobs([])
+        }
       } catch {
         // ignore
       }
     }
-  }, [user])
+  }, [user, isMixEngineer])
 
   useEffect(() => {
     async function loadMetrics() {
@@ -252,7 +281,7 @@ export function ProducerDashboard() {
             <BackButton />
             <div>
               <h1 className="font-display text-xl font-semibold text-slate-50 sm:text-2xl">
-                Producer Dashboard
+                My Dashboard
               </h1>
               <p className="mt-1 text-xs text-slate-400 sm:text-sm">
                 Welcome back, {displayName}. Track catalog, sales, ads and jobs in one
@@ -376,6 +405,67 @@ export function ProducerDashboard() {
               </div>
             </div>
           </div>
+
+          {isMixEngineer && (
+            <div className="mt-6 grid gap-6 md:grid-cols-2">
+              <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 shadow-rb-gloss-panel">
+                <h2 className="text-sm font-semibold text-slate-100">
+                  Active service orders
+                </h2>
+                <p className="mt-1 text-[11px] text-slate-400">
+                  Jobs where you&apos;re currently mixing or mastering.
+                </p>
+                <ul className="mt-3 space-y-2 text-[11px] text-slate-300">
+                  {mixActiveJobs.map((j) => (
+                    <li
+                      key={j.id}
+                      className="flex items-center justify-between rounded-lg border border-slate-800/80 bg-slate-950/80 px-3 py-2"
+                    >
+                      <span className="max-w-[10rem] truncate">
+                        {j.title}
+                      </span>
+                      <span className="text-emerald-300">
+                        ${j.budget}
+                      </span>
+                    </li>
+                  ))}
+                  {mixActiveJobs.length === 0 && (
+                    <li className="text-[11px] text-slate-500">
+                      No active mix &amp; master orders.
+                    </li>
+                  )}
+                </ul>
+              </div>
+              <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 shadow-rb-gloss-panel">
+                <h2 className="text-sm font-semibold text-slate-100">
+                  Completed mixes
+                </h2>
+                <p className="mt-1 text-[11px] text-slate-400">
+                  Recent jobs you&apos;ve delivered.
+                </p>
+                <ul className="mt-3 space-y-2 text-[11px] text-slate-300">
+                  {mixCompletedJobs.map((j) => (
+                    <li
+                      key={j.id}
+                      className="flex items-center justify-between rounded-lg border border-slate-800/80 bg-slate-950/80 px-3 py-2"
+                    >
+                      <span className="max-w-[10rem] truncate">
+                        {j.title}
+                      </span>
+                      <span className="text-slate-400 text-[10px]">
+                        Completed
+                      </span>
+                    </li>
+                  ))}
+                  {mixCompletedJobs.length === 0 && (
+                    <li className="text-[11px] text-slate-500">
+                      Completed mix &amp; master jobs will appear here.
+                    </li>
+                  )}
+                </ul>
+              </div>
+            </div>
+          )}
 
           <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr,1fr]">
             <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 shadow-rb-gloss-panel">
