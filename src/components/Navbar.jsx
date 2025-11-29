@@ -176,8 +176,11 @@ export function Navbar() {
         </div>
       </div>
       {mobileOpen && (
-        <div className="fixed inset-x-0 top-[56px] bottom-0 z-40 border-t border-slate-900/80 bg-slate-950/98/95 backdrop-blur md:hidden">
-          <nav className="mx-auto max-w-6xl px-4 py-3 space-y-1 text-sm font-medium text-slate-200 overflow-y-auto">
+        <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden" onClick={() => setMobileOpen(false)}>
+          <nav
+            className="absolute inset-x-0 top-[56px] bottom-0 border-t border-slate-900/80 bg-slate-950/98 mx-auto max-w-6xl px-4 py-3 space-y-1 text-sm font-medium text-slate-200 overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             {isAdmin ? (
               <>
                 <NavLink
