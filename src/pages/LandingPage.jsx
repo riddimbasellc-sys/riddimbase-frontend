@@ -52,11 +52,6 @@ export default function LandingPage() {
         <section className="grid gap-10 py-10 md:grid-cols-[1.1fr,0.9fr] md:py-14 lg:py-18">
           {/* Left - Text */}
           <div className="flex flex-col justify-center space-y-6">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-medium text-emerald-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              Now live • Caribbean-first beat marketplace
-            </div>
-
             <div>
               <h1 className="text-balance text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-[2.9rem]">
                 The <span className="text-red-500">Home of Caribbean</span> Beats.
@@ -105,7 +100,6 @@ export default function LandingPage() {
 
             <div className="flex flex-wrap items-center gap-5 text-[11px] text-slate-400">
               <div className="flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                 Instant licensing & delivery
               </div>
               <div className="flex items-center gap-1.5">
