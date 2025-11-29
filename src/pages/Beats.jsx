@@ -48,16 +48,6 @@ export function Beats() {
     return byId
   }, [boostedBeatsRaw])
 
-  const boostedBeats = useMemo(
-    () => beats.filter((b) => boostedMap.has(b.id)),
-    [beats, boostedMap],
-  )
-
-  const boostedFilteredBeats = useMemo(
-    () => filteredBeats.filter((b) => boostedMap.has(b.id)),
-    [filteredBeats, boostedMap],
-  )
-
   const normalizedSearch = search.trim().toLowerCase()
 
   const filteredBeats = useMemo(() => {
@@ -68,6 +58,16 @@ export function Beats() {
       return title.includes(normalizedSearch) || producer.includes(normalizedSearch)
     })
   }, [beats, normalizedSearch])
+
+  const boostedBeats = useMemo(
+    () => beats.filter((b) => boostedMap.has(b.id)),
+    [beats, boostedMap],
+  )
+
+  const boostedFilteredBeats = useMemo(
+    () => filteredBeats.filter((b) => boostedMap.has(b.id)),
+    [filteredBeats, boostedMap],
+  )
 
   useEffect(() => {
     if (!normalizedSearch) {
