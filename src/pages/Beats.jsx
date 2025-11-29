@@ -6,6 +6,7 @@ import useSupabaseUser from '../hooks/useSupabaseUser'
 import ProfileShareModal from '../components/ProfileShareModal'
 import { fetchCountsForBeats, followerCount } from '../services/socialService'
 import { useBoostedBeats } from '../hooks/useBoostedBeats'
+import { useLocation } from 'react-router-dom'
 
 export function Beats() {
   const { beats, loading } = useBeats()
@@ -16,7 +17,10 @@ export function Beats() {
     followerCounts: {},
   })
   const [shareTarget, setShareTarget] = useState(null)
-  const [search, setSearch] = useState('')
+  const location = useLocation()
+  const params = new URLSearchParams(location.search)
+  const initialSearch = params.get('search') || ''
+  const [search, setSearch] = useState(initialSearch)
   const [suggestions, setSuggestions] = useState([])
   const { boosts: boostedBeatsRaw } = useBoostedBeats()
 
@@ -26,7 +30,7 @@ export function Beats() {
   useEffect(() => {
     ;(async () => {
       if (!beats.length) return
-      const ids = filteredBeats.map((b) => b.id)
+      const ids = beats.map((b) => b.id)
       const { likeCounts, favoriteCounts } = await fetchCountsForBeats(ids)
       const followerCounts = {}
       for (const b of beats) {
@@ -47,6 +51,11 @@ export function Beats() {
   const boostedBeats = useMemo(
     () => beats.filter((b) => boostedMap.has(b.id)),
     [beats, boostedMap],
+  )
+
+  const boostedFilteredBeats = useMemo(
+    () => filteredBeats.filter((b) => boostedMap.has(b.id)),
+    [filteredBeats, boostedMap],
   )
 
   const normalizedSearch = search.trim().toLowerCase()
@@ -193,7 +202,7 @@ export function Beats() {
                   </span>
                 </div>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {boostedfilteredBeats.map((b) => (
+                  {boostedFilteredBeats.map((b) => (
                     <BeatCard
                       key={b.id}
                       {...b}
