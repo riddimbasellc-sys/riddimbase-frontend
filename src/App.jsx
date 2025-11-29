@@ -59,6 +59,7 @@ import { AdminSubscriptions } from './pages/AdminSubscriptions'
 import AdminTheme from './pages/AdminTheme'
 import AdminEmailTemplates from './pages/AdminEmailTemplates'
 import AdminAnalytics from './pages/AdminAnalytics'
+import AdminDesign from './pages/AdminDesign'
 import ProducerInbox from './pages/ProducerInbox'
 import { JobDelivery } from './pages/JobDelivery'
 import { MyJobs } from './pages/MyJobs'
@@ -140,6 +141,7 @@ function App() {
         <Route path="/admin/theme" element={<AdminTheme />} />
         <Route path="/admin/email-templates" element={<AdminEmailTemplates />} />
         <Route path="/admin/analytics" element={<AdminAnalytics />} />
+        <Route path="/admin/design" element={<AdminDesign />} />
         </Routes>
       </Layout>
       </CartProvider>
