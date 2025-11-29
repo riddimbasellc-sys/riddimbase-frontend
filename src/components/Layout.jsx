@@ -9,6 +9,7 @@ import useUserProfile from '../hooks/useUserProfile'
 import { useAdminRole } from '../hooks/useAdminRole'
 import { useCart } from '../context/CartContext'
 import CartPanel from './CartPanel'
+import { supabase } from '../lib/supabaseClient'
 
 export function Layout({ children }) {
   const [announcements, setAnnouncements] = useState([])
@@ -244,10 +245,16 @@ function MobileMainMenuSheet({ onClose }) {
   const { isAdmin } = useAdminRole()
   const navigate = useNavigate()
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    onClose()
+    navigate('/')
+  }
+
   return (
     <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden" onClick={onClose}>
       <div
-        className="absolute inset-x-0 bottom-0 max-h-[80vh] rounded-t-3xl border border-slate-800/80 bg-slate-950/98 p-4 shadow-rb-gloss-panel"
+        className="absolute inset-x-0 top-[56px] max-h-[80vh] rounded-b-3xl border border-slate-800/80 bg-slate-950/98 p-4 shadow-rb-gloss-panel"
         onClick={(e) => e.stopPropagation()}
       >
         <nav className="mx-auto max-w-6xl space-y-1 text-sm font-medium text-slate-200 overflow-y-auto">
@@ -336,7 +343,7 @@ function MobileMainMenuSheet({ onClose }) {
               </button>
             </>
           )}
-          {!user && (
+          {!user ? (
             <div className="mt-3 flex gap-2">
               <button
                 type="button"
@@ -354,9 +361,19 @@ function MobileMainMenuSheet({ onClose }) {
                   onClose()
                   navigate('/signup')
                 }}
-                className="flex-1 rounded-full bg-emerald-500 px-3 py-1.5 text-[12px] font-semibold text-slate-950"
+                className="flex-1 rounded-full bg-red-500 px-3 py-1.5 text-[12px] font-semibold text-slate-50"
               >
                 Sign up
+              </button>
+            </div>
+          ) : (
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded-full border border-red-500/70 px-3 py-1.5 text-[11px] font-semibold text-red-300 hover:bg-red-500/10"
+              >
+                Log out
               </button>
             </div>
           )}
