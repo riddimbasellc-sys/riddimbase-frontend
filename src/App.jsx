@@ -64,6 +64,8 @@ import { JobDelivery } from './pages/JobDelivery'
 import { MyJobs } from './pages/MyJobs'
 import { MyAds } from './pages/MyAds'
 import { Chat } from './pages/Chat'
+import UploadSoundkit from './pages/UploadSoundkit'
+import Soundkits from './pages/Soundkits'
 
 function App() {
   const { isAdmin } = useAdminRole()
@@ -78,6 +80,7 @@ function App() {
         {/* Keep /home for old links but show the same landing experience */}
         <Route path="/home" element={<LandingPage />} />
         <Route path="/beats" element={<Beats />} />
+        <Route path="/soundkits" element={<Soundkits />} />
         <Route path="/beat/:id" element={<BeatDetails />} />
         <Route path="/beat/:idSlug" element={<BeatDetails />} />
         <Route path="/producer/dashboard" element={<ProducerDashboard />} />
@@ -86,6 +89,7 @@ function App() {
         <Route path="/producers" element={<Producers />} />
         <Route path="/favorites" element={<Favorites />} />
         <Route path="/producer/upload" element={<UploadBeat />} />
+        <Route path="/producer/soundkits" element={<UploadSoundkit />} />
         <Route path="/producer/withdraw" element={<WithdrawEarnings />} />
         <Route path="/producer/inbox" element={<ProducerInbox />} />
         <Route path="/artist/dashboard" element={<ArtistDashboard />} />
