@@ -148,7 +148,7 @@ export function Navbar() {
                     <ul className="space-y-1 text-[12px] font-medium text-slate-200">
                       <li><button onClick={()=>{navigate('/profile/edit'); setOpen(false)}} className="w-full rounded-lg px-2 py-1 text-left hover:bg-slate-800/80">Edit Profile</button></li>
                       {hasProducer && (
-                        <li><button onClick={()=>{navigate('/producer/dashboard'); setOpen(false)}} className="w-full rounded-lg px-2 py-1 text-left hover:bg-slate-800/80">Producer Dashboard</button></li>
+                    <li><button onClick={()=>{navigate('/producer/dashboard'); setOpen(false)}} className="w-full rounded-lg px-2 py-1 text-left hover:bg-slate-800/80">My Dashboard</button></li>
                       )}
                       {hasProducer && (
                         <li><button onClick={()=>{navigate('/my-ads'); setOpen(false)}} className="w-full rounded-lg px-2 py-1 text-left hover:bg-slate-800/80">My Ads</button></li>
@@ -226,7 +226,7 @@ export function Navbar() {
               </div>
             )}
             {user && (
-              <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-800/70 pt-3">
+              <div className="mt-4 border-t border-slate-800/70 pt-3 space-y-3">
                 <div className="flex items-center gap-2">
                   <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-slate-700/70 bg-slate-800/70">
                     {profile?.avatarUrl ? (
@@ -253,16 +253,102 @@ export function Navbar() {
                     </button>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setMobileOpen(false)
-                    await handleLogout()
-                  }}
-                  className="rounded-full border border-red-500/70 px-3 py-1.5 text-[11px] font-semibold text-red-300 hover:bg-red-500/10"
-                >
-                  Log out
-                </button>
+                <div className="space-y-1 text-[12px] font-medium text-slate-200">
+                  <button
+                    onClick={() => {
+                      setMobileOpen(false)
+                      navigate('/favorites')
+                    }}
+                    className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-slate-900/90"
+                  >
+                    <span>Favorites</span>
+                  </button>
+                  {hasProducer && (
+                    <button
+                      onClick={() => {
+                        setMobileOpen(false)
+                        navigate('/producer/dashboard')
+                      }}
+                      className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-slate-900/90"
+                    >
+                      <span>My Dashboard</span>
+                    </button>
+                  )}
+                  {hasArtist && (
+                    <button
+                      onClick={() => {
+                        setMobileOpen(false)
+                        navigate('/artist/dashboard')
+                      }}
+                      className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-slate-900/90"
+                    >
+                      <span>Artist Dashboard</span>
+                    </button>
+                  )}
+                  {hasProducer && (
+                    <button
+                      onClick={() => {
+                        setMobileOpen(false)
+                        navigate('/producer/upload')
+                      }}
+                      className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-slate-900/90"
+                    >
+                      <span>Upload Beat</span>
+                    </button>
+                  )}
+                  {hasProducer && (
+                    <button
+                      onClick={() => {
+                        setMobileOpen(false)
+                        navigate('/my-ads')
+                      }}
+                      className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-slate-900/90"
+                    >
+                      <span>My Ads</span>
+                    </button>
+                  )}
+                  {hasProducer && (
+                    <button
+                      onClick={() => {
+                        setMobileOpen(false)
+                        navigate('/services/manage')
+                      }}
+                      className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-slate-900/90"
+                    >
+                      <span>My Services</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setMobileOpen(false)
+                      navigate('/chat')
+                    }}
+                    className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-slate-900/90"
+                  >
+                    <span>Chat</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMobileOpen(false)
+                      navigate('/pricing')
+                    }}
+                    className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-slate-900/90"
+                  >
+                    <span>Manage Plan</span>
+                  </button>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setMobileOpen(false)
+                      await handleLogout()
+                    }}
+                    className="rounded-full border border-red-500/70 px-3 py-1.5 text-[11px] font-semibold text-red-300 hover:bg-red-500/10"
+                  >
+                    Log out
+                  </button>
+                </div>
               </div>
             )}
           </nav>
