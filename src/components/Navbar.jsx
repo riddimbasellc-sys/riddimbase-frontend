@@ -10,7 +10,7 @@ import { useCart } from '../context/CartContext'
 import CartPanel from './CartPanel'
 import NotificationsBell from './NotificationsBell'
 
-export function Navbar() {
+export function Navbar({ onMobileMenuToggle = () => {} }) {
   const { user } = useSupabaseUser()
   const { plan } = useUserPlan()
   const { profile } = useUserProfile()
@@ -23,7 +23,6 @@ export function Navbar() {
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [cartOpen, setCartOpen] = useState(false)
-  const [mobileOpen, setMobileOpen] = useState(false)
   const menuRef = useRef(null)
   const { count } = useCart() || { count: 0 }
 
@@ -47,7 +46,7 @@ export function Navbar() {
         <div className="flex items-center justify-between md:hidden">
           <button
             type="button"
-            onClick={() => setMobileOpen((v) => !v)}
+            onClick={onMobileMenuToggle}
             className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-700/70 bg-slate-900/80 text-slate-200 hover:border-emerald-400/70 hover:text-emerald-300 transition"
             aria-label="Open navigation"
           >
@@ -175,78 +174,6 @@ export function Navbar() {
           {cartOpen && <CartPanel onClose={()=>setCartOpen(false)} />}
         </div>
       </div>
-      {mobileOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm md:hidden" onClick={() => setMobileOpen(false)}>
-          <div
-            className="absolute inset-x-0 bottom-0 max-h-[80vh] rounded-t-3xl border border-slate-800/80 bg-slate-950/98 px-4 py-3 shadow-rb-gloss-panel"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <nav className="mx-auto max-w-6xl space-y-1 text-sm font-medium text-slate-200 overflow-y-auto">
-            {isAdmin ? (
-              <>
-                <NavLink
-                  to="/admin"
-                  onClick={() => setMobileOpen(false)}
-                  className={({ isActive }) =>
-                    `block rounded-lg px-2 py-2 hover:bg-slate-900/90 ${isActive ? 'text-emerald-400' : ''}`
-                  }
-                >
-                  Admin
-                </NavLink>
-              </>
-            ) : (
-              <>
-                <NavLink to="/" onClick={() => setMobileOpen(false)} className={({ isActive }) => `block rounded-lg px-2 py-2 hover:bg-slate-900/90 ${isActive ? 'text-emerald-400' : ''}`}>Home</NavLink>
-                <NavLink to="/beats" onClick={() => setMobileOpen(false)} className={({ isActive }) => `block rounded-lg px-2 py-2 hover:bg-slate-900/90 ${isActive ? 'text-emerald-400' : ''}`}>Beats</NavLink>
-                <NavLink to="/riddims" onClick={() => setMobileOpen(false)} className={({ isActive }) => `block rounded-lg px-2 py-2 hover:bg-slate-900/90 ${isActive ? 'text-emerald-400' : ''}`}>Riddims</NavLink>
-                <NavLink to="/producers" onClick={() => setMobileOpen(false)} className={({ isActive }) => `block rounded-lg px-2 py-2 hover:bg-slate-900/90 ${isActive ? 'text-emerald-400' : ''}`}>Producers</NavLink>
-                <NavLink to="/services" onClick={() => setMobileOpen(false)} className={({ isActive }) => `block rounded-lg px-2 py-2 hover:bg-slate-900/90 ${isActive ? 'text-emerald-400' : ''}`}>Services</NavLink>
-                <NavLink to="/jobs" onClick={() => setMobileOpen(false)} className={({ isActive }) => `block rounded-lg px-2 py-2 hover:bg-slate-900/90 ${isActive ? 'text-emerald-400' : ''}`}>Jobs</NavLink>
-                <NavLink to="/pricing" onClick={() => setMobileOpen(false)} className={({ isActive }) => `block rounded-lg px-2 py-2 hover:bg-slate-900/90 ${isActive ? 'text-emerald-400' : ''}`}>Pricing</NavLink>
-              </>
-            )}
-            {!user && (
-              <div className="mt-3 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileOpen(false)
-                    navigate('/login')
-                  }}
-                  className="flex-1 rounded-full border border-slate-700/80 px-3 py-1.5 text-[12px] font-medium text-slate-200"
-                >
-                  Log in
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileOpen(false)
-                    navigate('/signup')
-                  }}
-                  className="flex-1 rounded-full bg-emerald-500 px-3 py-1.5 text-[12px] font-semibold text-slate-950"
-                >
-                  Sign up
-                </button>
-              </div>
-            )}
-            {user && (
-              <div className="mt-4 border-t border-slate-800/70 pt-3 space-y-3 text-[11px] text-slate-400">
-                <p>Profile actions are available from the bottom Profile tab.</p>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setMobileOpen(false)
-                    await handleLogout()
-                  }}
-                  className="mt-1 rounded-full border border-red-500/70 px-3 py-1.5 text-[11px] font-semibold text-red-300 hover:bg-red-500/10"
-                >
-                  Log out
-                </button>
-              </div>
-            )}
-          </nav>
-        </div>
-      )}
     </header>
   )
 }

@@ -13,6 +13,7 @@ import CartPanel from './CartPanel'
 export function Layout({ children }) {
   const [announcements, setAnnouncements] = useState([])
   const [intervalSec, setIntervalSec] = useState(3)
+  const [mainMenuOpen, setMainMenuOpen] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -41,12 +42,13 @@ export function Layout({ children }) {
           </div>
         </div>
       )}
-      <Navbar />
+      <Navbar onMobileMenuToggle={() => setMainMenuOpen((v) => !v)} />
       <main className="relative flex-1 pb-20 md:pb-0">
         {children}
         <HelpBubble />
       </main>
       <MobileBottomNav />
+      {mainMenuOpen && <MobileMainMenuSheet onClose={() => setMainMenuOpen(false)} />}
       <Footer />
     </div>
   )
@@ -234,6 +236,133 @@ function MobileBottomNav() {
       {cartOpen && <CartPanel onClose={() => setCartOpen(false)} />}
       {profileOpen && <MobileProfileSheet onClose={() => setProfileOpen(false)} />}
     </>
+  )
+}
+
+function MobileMainMenuSheet({ onClose }) {
+  const { user } = useSupabaseUser()
+  const { isAdmin } = useAdminRole()
+  const navigate = useNavigate()
+
+  return (
+    <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden" onClick={onClose}>
+      <div
+        className="absolute inset-x-0 bottom-0 max-h-[80vh] rounded-t-3xl border border-slate-800/80 bg-slate-950/98 p-4 shadow-rb-gloss-panel"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <nav className="mx-auto max-w-6xl space-y-1 text-sm font-medium text-slate-200 overflow-y-auto">
+          {isAdmin ? (
+            <button
+              type="button"
+              onClick={() => {
+                onClose()
+                navigate('/admin')
+              }}
+              className="block w-full rounded-lg px-2 py-2 text-left hover:bg-slate-900/90"
+            >
+              Admin
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose()
+                  navigate('/')
+                }}
+                className="block w-full rounded-lg px-2 py-2 text-left hover:bg-slate-900/90"
+              >
+                Home
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose()
+                  navigate('/beats')
+                }}
+                className="block w-full rounded-lg px-2 py-2 text-left hover:bg-slate-900/90"
+              >
+                Beats
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose()
+                  navigate('/riddims')
+                }}
+                className="block w-full rounded-lg px-2 py-2 text-left hover:bg-slate-900/90"
+              >
+                Riddims
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose()
+                  navigate('/producers')
+                }}
+                className="block w-full rounded-lg px-2 py-2 text-left hover:bg-slate-900/90"
+              >
+                Producers
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose()
+                  navigate('/services')
+                }}
+                className="block w-full rounded-lg px-2 py-2 text-left hover:bg-slate-900/90"
+              >
+                Services
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose()
+                  navigate('/jobs')
+                }}
+                className="block w-full rounded-lg px-2 py-2 text-left hover:bg-slate-900/90"
+              >
+                Jobs
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose()
+                  navigate('/pricing')
+                }}
+                className="block w-full rounded-lg px-2 py-2 text-left hover:bg-slate-900/90"
+              >
+                Pricing
+              </button>
+            </>
+          )}
+          {!user && (
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  onClose()
+                  navigate('/login')
+                }}
+                className="flex-1 rounded-full border border-slate-700/80 px-3 py-1.5 text-[12px] font-medium text-slate-200"
+              >
+                Log in
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose()
+                  navigate('/signup')
+                }}
+                className="flex-1 rounded-full bg-emerald-500 px-3 py-1.5 text-[12px] font-semibold text-slate-950"
+              >
+                Sign up
+              </button>
+            </div>
+          )}
+        </nav>
+      </div>
+    </div>
   )
 }
 
