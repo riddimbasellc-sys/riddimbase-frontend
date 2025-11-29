@@ -35,7 +35,8 @@ module.exports = {
         'rb-glow': '0 0 8px rgba(255,195,0,0.45)',
       },
       backgroundImage: theme => ({
-        'rb-caribbean': 'linear-gradient(135deg, #02111d 0%, #051f33 40%, #092f4a 70%, #0b3d5e 100%)',
+        // Match the darker, glossy landing-page look across the whole app
+        'rb-caribbean': 'linear-gradient(180deg, #050505 0%, #05070a 40%, #020617 100%)',
         'rb-gloss-stripes': 'repeating-linear-gradient(45deg, rgba(255,255,255,0.08) 0 6px, rgba(255,255,255,0.02) 6px 12px)',
         'rb-trop-sunrise': 'linear-gradient(90deg, #0077b6 0%, #00b4d8 35%, #ffc300 70%, #ff4d4f 100%)',
         'rb-trop-radial': 'radial-gradient(circle at 30% 30%, rgba(0,180,216,0.35), transparent 60%)',
