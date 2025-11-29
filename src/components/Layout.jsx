@@ -92,7 +92,7 @@ function HelpBubble() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="pointer-events-auto inline-flex h-11 w-11 items-center justify-center rounded-full bg-rb-sun-gold text-slate-950 shadow-rb-gloss-btn hover:bg-rb-sun-yellow transition"
+        className="pointer-events-auto inline-flex h-11 w-11 items-center justify-center rounded-full bg-red-500 text-slate-50 shadow-rb-gloss-btn hover:bg-red-400 transition"
         aria-label="Help me"
       >
         ?

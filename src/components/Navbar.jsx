@@ -62,8 +62,8 @@ export function Navbar({ onMobileMenuToggle = () => {} }) {
             </svg>
           </button>
           <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-rb-trop-sunrise shadow-rb-gloss-btn">
-              <span className="text-lg font-black tracking-tight text-slate-950 drop-shadow-rb-glow">RB</span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-red-500 via-red-600 to-amber-400 shadow-rb-gloss-btn">
+              <span className="text-lg font-black tracking-tight text-white drop-shadow-rb-glow">RB</span>
             </div>
             <div className="font-display text-lg font-semibold tracking-tight">
               RiddimBase
@@ -77,8 +77,8 @@ export function Navbar({ onMobileMenuToggle = () => {} }) {
         {/* Desktop row */}
         <div className="hidden items-center justify-between md:flex">
           <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-rb-trop-sunrise shadow-rb-gloss-btn">
-              <span className="text-lg font-black tracking-tight text-slate-950 drop-shadow-rb-glow">RB</span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-red-500 via-red-600 to-amber-400 shadow-rb-gloss-btn">
+              <span className="text-lg font-black tracking-tight text-white drop-shadow-rb-glow">RB</span>
             </div>
             <div className="leading-tight">
               <div className="font-display text-lg font-semibold tracking-tight">RiddimBase</div>
