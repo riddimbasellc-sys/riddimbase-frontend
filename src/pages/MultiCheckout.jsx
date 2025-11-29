@@ -83,7 +83,6 @@ export function MultiCheckout() {
               {quote && (
                 <div className="space-y-1 text-[11px] text-slate-300">
                   <p>Items Total: {quote.currency} {quote.subtotal.toFixed(2)}</p>
-                  {quote.bulkDiscount > 0 && <p className="text-emerald-300">Bulk Discount: −{quote.currency} {quote.bulkDiscount.toFixed(2)}</p>}
                   {quote.couponDiscount > 0 && <p className="text-emerald-300">Coupon ({(quote.discountRate*100).toFixed(0)}%): −{quote.currency} {quote.couponDiscount.toFixed(2)}</p>}
                   <p>Service Fee: {quote.currency} {quote.serviceFee.toFixed(2)}</p>
                   <p className="font-semibold">Grand Total: <span className="text-emerald-400">{quote.currency} {quote.grand.toFixed(2)}</span></p>

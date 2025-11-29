@@ -12,10 +12,10 @@ export function Cart() {
   const cartQuote = computeCartQuote({ items: enriched.map(e => ({ beat: e.beat, license: e.license })) })
 
   return (
-    <section className="bg-slate-950/95 py-10 min-h-screen">
-      <div className="mx-auto max-w-6xl px-4 flex flex-col md:flex-row gap-8">
+    <section className="bg-slate-950/95 py-6 min-h-screen sm:py-10">
+      <div className="mx-auto max-w-6xl px-3 flex flex-col gap-6 sm:px-4 md:flex-row md:gap-8">
         <div className="flex-1 space-y-4">
-          <div className="rounded-2xl border border-slate-800/70 bg-slate-900/80 p-4 flex items-center justify-between">
+          <div className="rounded-2xl border border-slate-800/70 bg-slate-900/80 p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm font-semibold text-slate-100">Billing and licensing information</p>
             <div className="flex gap-2">
               <button onClick={clearCart} className="rounded-full bg-slate-800/70 px-3 py-1 text-[11px] font-medium text-slate-300 hover:bg-slate-700/70">Clear</button>
@@ -42,18 +42,15 @@ export function Cart() {
                   </div>
                 </div>
               </div>
-              {/* Promo example */}
-              {it.license === 'Basic' && <div className="rounded-md bg-emerald-600/20 px-3 py-1 text-[11px] text-emerald-300">Add 1 more TRACK with a Basic License New Contract to activate Buy 1 track, Get 1 Free! bulk discount.</div>}
             </div>
           ))}
         </div>
-        <aside className="w-full md:w-80">
+        <aside className="w-full md:w-80 mt-4 md:mt-0">
           <div className="rounded-2xl border border-slate-800/70 bg-slate-900/80 p-5 space-y-4">
             <p className="text-sm font-semibold text-slate-100">Cart Summary</p>
             {cartQuote && (
               <div className="space-y-1 text-[12px] text-slate-300">
                 <p className="flex justify-between"><span>Items Total</span><span>${cartQuote.subtotal.toFixed(2)}</span></p>
-                {cartQuote.bulkDiscount > 0 && <p className="flex justify-between text-emerald-300"><span>Bulk Discount</span><span>-${cartQuote.bulkDiscount.toFixed(2)}</span></p>}
                 {cartQuote.couponDiscount > 0 && <p className="flex justify-between text-emerald-300"><span>Coupon ({(cartQuote.discountRate*100).toFixed(0)}%)</span><span>-${cartQuote.couponDiscount.toFixed(2)}</span></p>}
                 <p className="flex justify-between"><span>Service Fee <span className="text-slate-500" title="Platform fee">ⓘ</span></span><span>${cartQuote.serviceFee.toFixed(2)}</span></p>
                 <p className="mt-2 flex justify-between text-[13px] font-semibold text-slate-50"><span>Total ({enriched.length} {enriched.length===1?'item':'items'})</span><span>${cartQuote.grand.toFixed(2)}</span></p>
