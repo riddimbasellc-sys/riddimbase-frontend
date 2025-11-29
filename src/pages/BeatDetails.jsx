@@ -33,6 +33,7 @@ export function BeatDetails() {
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const { beats: allBeats } = useBeats()
+  const { addBeat } = useCart() || {}
   useEffect(()=> { (async () => {
     setLikes(await likeCount(id))
     setFavs(await favoriteCount(id))
@@ -122,7 +123,7 @@ export function BeatDetails() {
 
   return (
     <section className="bg-slate-950/95">
-      <div className="mx-auto max-w-6xl px-4 py-10">
+      <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-10">
         <div className="grid gap-10 lg:grid-cols-[420px,1fr]">
           {/* Left column (cover + meta) */}
           <div className="space-y-6">
