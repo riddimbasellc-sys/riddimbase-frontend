@@ -176,8 +176,8 @@ export function Navbar() {
         </div>
       </div>
       {mobileOpen && (
-        <div className="md:hidden border-t border-slate-900/80 bg-slate-950/98">
-          <nav className="mx-auto max-w-6xl px-4 py-3 space-y-1 text-sm font-medium text-slate-200">
+        <div className="fixed inset-x-0 top-[56px] bottom-0 z-40 border-t border-slate-900/80 bg-slate-950/98/95 backdrop-blur md:hidden">
+          <nav className="mx-auto max-w-6xl px-4 py-3 space-y-1 text-sm font-medium text-slate-200 overflow-y-auto">
             {isAdmin ? (
               <>
                 <NavLink
@@ -226,129 +226,18 @@ export function Navbar() {
               </div>
             )}
             {user && (
-              <div className="mt-4 border-t border-slate-800/70 pt-3 space-y-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-slate-700/70 bg-slate-800/70">
-                    {profile?.avatarUrl ? (
-                      <img src={profile.avatarUrl} alt="avatar" className="h-full w-full object-cover" />
-                    ) : (
-                      <span className="text-[11px] font-semibold text-slate-300">
-                        {(profile?.displayName || user.email).slice(0,2).toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[11px] font-medium text-slate-200 truncate max-w-[140px]">
-                      {profile?.displayName || user.email}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMobileOpen(false)
-                        navigate('/profile/edit')
-                      }}
-                      className="text-[10px] text-emerald-300 underline-offset-2 hover:underline"
-                    >
-                      View profile
-                    </button>
-                  </div>
-                </div>
-                <div className="space-y-1 text-[12px] font-medium text-slate-200">
-                  <button
-                    onClick={() => {
-                      setMobileOpen(false)
-                      navigate('/favorites')
-                    }}
-                    className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-slate-900/90"
-                  >
-                    <span>Favorites</span>
-                  </button>
-                  {hasProducer && (
-                    <button
-                      onClick={() => {
-                        setMobileOpen(false)
-                        navigate('/producer/dashboard')
-                      }}
-                      className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-slate-900/90"
-                    >
-                      <span>My Dashboard</span>
-                    </button>
-                  )}
-                  {hasArtist && (
-                    <button
-                      onClick={() => {
-                        setMobileOpen(false)
-                        navigate('/artist/dashboard')
-                      }}
-                      className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-slate-900/90"
-                    >
-                      <span>Artist Dashboard</span>
-                    </button>
-                  )}
-                  {hasProducer && (
-                    <button
-                      onClick={() => {
-                        setMobileOpen(false)
-                        navigate('/producer/upload')
-                      }}
-                      className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-slate-900/90"
-                    >
-                      <span>Upload Beat</span>
-                    </button>
-                  )}
-                  {hasProducer && (
-                    <button
-                      onClick={() => {
-                        setMobileOpen(false)
-                        navigate('/my-ads')
-                      }}
-                      className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-slate-900/90"
-                    >
-                      <span>My Ads</span>
-                    </button>
-                  )}
-                  {hasProducer && (
-                    <button
-                      onClick={() => {
-                        setMobileOpen(false)
-                        navigate('/services/manage')
-                      }}
-                      className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-slate-900/90"
-                    >
-                      <span>My Services</span>
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      setMobileOpen(false)
-                      navigate('/chat')
-                    }}
-                    className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-slate-900/90"
-                  >
-                    <span>Chat</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setMobileOpen(false)
-                      navigate('/pricing')
-                    }}
-                    className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-slate-900/90"
-                  >
-                    <span>Manage Plan</span>
-                  </button>
-                </div>
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setMobileOpen(false)
-                      await handleLogout()
-                    }}
-                    className="rounded-full border border-red-500/70 px-3 py-1.5 text-[11px] font-semibold text-red-300 hover:bg-red-500/10"
-                  >
-                    Log out
-                  </button>
-                </div>
+              <div className="mt-4 border-t border-slate-800/70 pt-3 space-y-3 text-[11px] text-slate-400">
+                <p>Profile actions are available from the bottom Profile tab.</p>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setMobileOpen(false)
+                    await handleLogout()
+                  }}
+                  className="mt-1 rounded-full border border-red-500/70 px-3 py-1.5 text-[11px] font-semibold text-red-300 hover:bg-red-500/10"
+                >
+                  Log out
+                </button>
               </div>
             )}
           </nav>

@@ -105,6 +105,7 @@ function MobileBottomNav() {
   const { isAdmin } = useAdminRole()
   const { count } = useCart() || { count: 0 }
   const [cartOpen, setCartOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
 
   // Only show bottom bar for logged-in users, on mobile sizes
   if (!user) return null
@@ -198,8 +199,8 @@ function MobileBottomNav() {
           </button>
           <button
             type="button"
-            onClick={() => go('/profile/edit')}
-            className={`flex flex-1 flex-col items-center gap-0.5 ${isActive('/profile') ? 'text-emerald-400' : ''}`}
+            onClick={() => setProfileOpen(true)}
+            className={`flex flex-1 flex-col items-center gap-0.5 ${profileOpen ? 'text-emerald-400' : ''}`}
           >
             <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-800/90">
               <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" stroke="currentColor" fill="none" strokeWidth="2">
@@ -230,6 +231,152 @@ function MobileBottomNav() {
         </div>
       </div>
       {cartOpen && <CartPanel onClose={() => setCartOpen(false)} />}
+      {profileOpen && <MobileProfileSheet onClose={() => setProfileOpen(false)} />}
     </>
+  )
+}
+
+function MobileProfileSheet({ onClose }) {
+  const { user } = useSupabaseUser()
+  const { profile } = useUserProfile()
+  const { isAdmin } = useAdminRole()
+  const navigate = useNavigate()
+  const producerLike = ['producer','beat maker','mix-master engineer','hybrid']
+  const artistLike = ['artist','hybrid']
+  const roleTokens = (profile?.accountType || '').split('+')
+  const hasProducer = roleTokens.some(r => producerLike.includes(r))
+  const hasArtist = roleTokens.some(r => artistLike.includes(r))
+
+  if (!user) return null
+
+  return (
+    <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden" onClick={onClose}>
+      <div
+        className="absolute inset-x-0 bottom-0 max-h-[80vh] rounded-t-3xl border border-slate-800/80 bg-slate-950/98 p-4 shadow-rb-gloss-panel"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-2">
+          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-slate-700/70 bg-slate-800/70">
+            {profile?.avatarUrl ? (
+              <img src={profile.avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-[11px] font-semibold text-slate-300">
+                {(profile?.displayName || user.email).slice(0, 2).toUpperCase()}
+              </span>
+            )}
+          </div>
+          <div className="flex flex-col">
+            <span className="max-w-[180px] truncate text-[11px] font-medium text-slate-200">
+              {profile?.displayName || user.email}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                onClose()
+                navigate('/profile/edit')
+              }}
+              className="text-[10px] text-emerald-300 underline-offset-2 hover:underline"
+            >
+              View profile
+            </button>
+          </div>
+        </div>
+        <div className="mt-3 space-y-1 text-[12px] font-medium text-slate-200">
+          <button
+            onClick={() => {
+              onClose()
+              navigate('/favorites')
+            }}
+            className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-slate-900/90"
+          >
+            <span>Favorites</span>
+          </button>
+          {hasProducer && (
+            <button
+              onClick={() => {
+                onClose()
+                navigate('/producer/dashboard')
+              }}
+              className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-slate-900/90"
+            >
+              <span>My Dashboard</span>
+            </button>
+          )}
+          {hasArtist && (
+            <button
+              onClick={() => {
+                onClose()
+                navigate('/artist/dashboard')
+              }}
+              className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-slate-900/90"
+            >
+              <span>Artist Dashboard</span>
+            </button>
+          )}
+          {hasProducer && (
+            <button
+              onClick={() => {
+                onClose()
+                navigate('/producer/upload')
+              }}
+              className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-slate-900/90"
+            >
+              <span>Upload Beat</span>
+            </button>
+          )}
+          {hasProducer && (
+            <button
+              onClick={() => {
+                onClose()
+                navigate('/my-ads')
+              }}
+              className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-slate-900/90"
+            >
+              <span>My Ads</span>
+            </button>
+          )}
+          {hasProducer && (
+            <button
+              onClick={() => {
+                onClose()
+                navigate('/services/manage')
+              }}
+              className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-slate-900/90"
+            >
+              <span>My Services</span>
+            </button>
+          )}
+          <button
+            onClick={() => {
+              onClose()
+              navigate('/chat')
+            }}
+            className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-slate-900/90"
+          >
+            <span>Chat</span>
+          </button>
+          <button
+            onClick={() => {
+              onClose()
+              navigate('/pricing')
+            }}
+            className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-slate-900/90"
+          >
+            <span>Manage Plan</span>
+          </button>
+          {isAdmin && (
+            <button
+              onClick={() => {
+                onClose()
+                navigate('/admin')
+              }}
+              className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left hover:bg-slate-900/90"
+            >
+              <span>Admin</span>
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
