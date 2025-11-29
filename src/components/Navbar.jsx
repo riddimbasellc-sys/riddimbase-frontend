@@ -176,11 +176,12 @@ export function Navbar() {
         </div>
       </div>
       {mobileOpen && (
-        <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden" onClick={() => setMobileOpen(false)}>
-          <nav
-            className="absolute inset-x-0 top-[56px] bottom-0 border-t border-slate-900/80 bg-slate-950/98 mx-auto max-w-6xl px-4 py-3 space-y-1 text-sm font-medium text-slate-200 overflow-y-auto"
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm md:hidden" onClick={() => setMobileOpen(false)}>
+          <div
+            className="absolute inset-x-0 bottom-0 max-h-[80vh] rounded-t-3xl border border-slate-800/80 bg-slate-950/98 px-4 py-3 shadow-rb-gloss-panel"
             onClick={(e) => e.stopPropagation()}
           >
+            <nav className="mx-auto max-w-6xl space-y-1 text-sm font-medium text-slate-200 overflow-y-auto">
             {isAdmin ? (
               <>
                 <NavLink
