@@ -697,6 +697,28 @@ export function ProducerDashboard() {
             )}
           </div>
 
+          {subscription?.planId === 'pro' && (
+            <div className="mt-6 rounded-2xl border border-white/10 bg-black/70 bg-rb-gloss-stripes bg-blend-soft-light p-4 shadow-rb-gloss-panel">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-100">Your Soundkits</h2>
+                  <p className="text-[11px] text-slate-400">
+                    Upload drum kits, loop packs and sample folders as part of Producer Pro.
+                  </p>
+                </div>
+                <a
+                  href="/producer/soundkits"
+                  className="rounded-full bg-white px-4 py-1.5 text-[11px] font-semibold text-slate-950 shadow-rb-gloss-btn hover:bg-slate-100"
+                >
+                  Upload Soundkit
+                </a>
+              </div>
+              <p className="text-[11px] text-slate-500">
+                Soundkit management will show here once you start uploading packs.
+              </p>
+            </div>
+          )}
+
           <ProfileShareModal
             open={shareOpen}
             onClose={() => setShareOpen(false)}
