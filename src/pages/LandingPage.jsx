@@ -1,12 +1,14 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useBeats } from '../hooks/useBeats'
 import { topBeatsByPlays } from '../services/analyticsService'
+import { listPlans } from '../services/plansRepository'
 
 export default function LandingPage() {
   const { beats } = useBeats()
   const navigate = useNavigate()
   const [heroSearch, setHeroSearch] = useState('')
+  const [plans, setPlans] = useState([])
 
   const trendingBeats = useMemo(() => {
     if (!beats.length) return []
@@ -31,6 +33,17 @@ export default function LandingPage() {
     const target = query ? `/beats?search=${encodeURIComponent(query)}` : '/beats'
     navigate(target)
   }
+
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const loaded = await listPlans()
+        setPlans(loaded || [])
+      } catch {
+        setPlans([])
+      }
+    })()
+  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#050505] via-[#05070a] to-black text-slate-100">
@@ -339,42 +352,26 @@ export default function LandingPage() {
           </p>
 
           <div className="mt-6 grid gap-4 md:grid-cols-3">
-            <PricingCard
-              name="Starter"
-              price="$0"
-              tagline="Perfect for artists & new producers testing the waters."
-              features={[
-                'Upload up to 10 beats',
-                'Unlimited basic leases',
-                'Standard contracts & delivery',
-                'Access to marketplace',
-              ]}
-              highlight={false}
-            />
-            <PricingCard
-              name="Premium AI"
-              price="$59.99"
-              tagline="For serious producers ready to grow with AI & analytics."
-              features={[
-                'Unlimited beat uploads',
-                'Advanced analytics & insights',
-                'AI tagging & pricing suggestions',
-                'Priority marketplace placement',
-              ]}
-              highlight
-            />
-            <PricingCard
-              name="Business Suite"
-              price="$195"
-              tagline="For labels, teams and studios managing multiple catalogs."
-              features={[
-                'Team accounts & roles',
-                'Royalty split tools',
-                'Boosted placements & ad credits',
-                'Dedicated support',
-              ]}
-              highlight={false}
-            />
+            {(plans.length ? plans : []).slice(0, 3).map((plan) => (
+              <PricingCard
+                key={plan.id}
+                name={plan.name}
+                price={
+                  plan.monthly === 0
+                    ? 'Free'
+                    : `$${Number(plan.monthly).toFixed(0)}/mo`
+                }
+                tagline={plan.badge || ''}
+                features={plan.features || []}
+                highlight={plan.id === 'pro'}
+                planId={plan.id}
+              />
+            ))}
+            {plans.length === 0 && (
+              <div className="rounded-2xl border border-white/10 bg-black/60 p-4 text-xs text-slate-300">
+                Live pricing will appear here once plans are loaded.
+              </div>
+            )}
           </div>
         </section>
       </main>
@@ -404,7 +401,7 @@ function StepCard({ step, title, body }) {
   )
 }
 
-function PricingCard({ name, price, tagline, features, highlight }) {
+function PricingCard({ name, price, tagline, features, highlight, planId }) {
   return (
     <div
       className={`flex flex-col rounded-2xl border p-4 text-xs ${
@@ -427,16 +424,15 @@ function PricingCard({ name, price, tagline, features, highlight }) {
       </ul>
 
       <Link
-        to="/signup"
+        to={planId ? `/subscribe/${planId}` : '/signup'}
         className={`mt-4 inline-flex items-center justify-center rounded-full px-4 py-2 text-[11px] font-semibold ${
           highlight
             ? 'bg-white text-black hover:bg-slate-100'
             : 'border border-white/15 text-slate-100 hover:border-white/40 hover:bg-white/5'
         } transition`}
       >
-        Get started
+        {planId ? 'Choose plan' : 'Get started'}
       </Link>
     </div>
   )
 }
-
