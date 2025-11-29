@@ -4,23 +4,55 @@ import { GenreChips } from './GenreChips'
 export function Hero() {
   return (
     <section className="border-b border-slate-900/70 bg-rb-trop-radial">
-      <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4 py-10 md:flex-row md:items-center md:py-16">
+      <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4 py-8 md:flex-row md:items-center md:py-14">
         <div className="flex-1">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-rb-sun-gold drop-shadow-rb-glow">
             RiddimBase • Home of Caribbean Beats
           </p>
-          <h1 className="mt-3 font-display text-4xl font-semibold leading-tight text-slate-50 md:text-5xl">
+          <h1 className="mt-3 font-display text-3xl font-semibold leading-tight text-slate-50 md:text-5xl">
             Discover & sell authentic{' '}
             <span className="bg-rb-trop-sunrise bg-clip-text text-transparent drop-shadow-rb-glow">
               Caribbean riddims
             </span>
             .
           </h1>
-          <p className="mt-4 max-w-xl text-sm text-slate-200">
+          <p className="mt-3 max-w-xl text-sm text-slate-200">
             A marketplace built for dancehall, reggae, soca, Afrobeats and TrapHall. Connect
             producers and artists across the Caribbean and the world.
           </p>
-          <div className="mt-6 flex flex-wrap gap-3">
+          {/* Primary search pill */}
+          <div className="mt-5">
+            <div className="flex items-center justify-center">
+              <div className="flex w-full max-w-xl items-center gap-2 rounded-full bg-slate-950/90 px-4 py-2 shadow-rb-gloss-panel ring-1 ring-slate-800/70 md:px-6 md:py-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900/90 text-slate-300 md:h-9 md:w-9">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    className="h-4 w-4 md:h-5 md:w-5"
+                  >
+                    <circle cx="11" cy="11" r="6" />
+                    <path d="m16 16 4 4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Explore new sounds — search beats, producers, services"
+                  className="h-9 flex-1 bg-transparent text-[11px] text-slate-100 placeholder:text-slate-500 focus:outline-none md:h-10 md:text-sm"
+                />
+                <Link
+                  to="/beats"
+                  className="hidden shrink-0 rounded-full border border-emerald-400/70 bg-emerald-500/10 px-4 py-1.5 text-[11px] font-semibold text-emerald-200 hover:bg-emerald-500/20 md:inline-flex"
+                >
+                  Search
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-5 flex flex-wrap gap-3">
             <Link
               to="/beats"
               className="rounded-full bg-rb-trop-sunrise px-5 py-2 text-xs font-semibold text-slate-950 shadow-rb-gloss-btn hover:brightness-110 transition duration-200 ease-snappy"
@@ -35,7 +67,7 @@ export function Hero() {
             </Link>
           </div>
           <GenreChips />
-          <p className="mt-4 text-[11px] text-slate-400">
+          <p className="mt-3 text-[11px] text-slate-400">
             Upload riddims, set your licenses, and turn your sound into income.
           </p>
         </div>
@@ -91,4 +123,3 @@ export function Hero() {
     </section>
   )
 }
-
