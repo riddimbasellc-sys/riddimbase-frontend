@@ -295,6 +295,16 @@ function MobileMainMenuSheet({ onClose }) {
                 type="button"
                 onClick={() => {
                   onClose()
+                  navigate('/soundkits')
+                }}
+                className="block w-full rounded-lg px-2 py-2 text-left hover:bg-slate-900/90"
+              >
+                Soundkits
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose()
                   navigate('/riddims')
                 }}
                 className="block w-full rounded-lg px-2 py-2 text-left hover:bg-slate-900/90"
