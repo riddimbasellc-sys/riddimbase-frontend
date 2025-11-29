@@ -3,6 +3,7 @@ import { Signup } from './pages/Signup'
 import { Routes, Route } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { Home } from './pages/Home'
+import LandingPage from './pages/LandingPage'
 import { Beats } from './pages/Beats'
 import { BeatDetails } from './pages/BeatDetails'
 import { ProducerDashboard } from './pages/ProducerDashboard'
@@ -73,7 +74,9 @@ function App() {
         <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<LandingPage />} />
+        {/* Keep /home for old links but show the same landing experience */}
+        <Route path="/home" element={<LandingPage />} />
         <Route path="/beats" element={<Beats />} />
         <Route path="/beat/:id" element={<BeatDetails />} />
         <Route path="/beat/:idSlug" element={<BeatDetails />} />
