@@ -675,23 +675,40 @@ export function ProducerDashboard() {
             {!beatsLoading && myBeats.length > 0 && (
               <div className="mt-3 grid gap-4 md:grid-cols-3 sm:grid-cols-2">
                 {myBeats.slice(0, 6).map((b) => (
-                  <BeatCard
-                    key={b.id}
-                    id={b.id}
-                    title={b.title}
-                    producer={b.producer || displayName}
-                    userId={b.userId || user.id}
-                    genre={b.genre}
-                    bpm={b.bpm}
-                    price={Number(b.price) || 0}
-                    coverUrl={b.coverUrl}
-                    audioUrl={b.audioUrl}
-                    freeDownload={b.freeDownload}
-                    initialLikes={b.likes || 0}
-                    initialFavs={b.favs || 0}
-                    initialFollowers={0}
-                    compact
-                  />
+                  <div key={b.id} className="space-y-2">
+                    <BeatCard
+                      id={b.id}
+                      title={b.title}
+                      producer={b.producer || displayName}
+                      userId={b.userId || user.id}
+                      genre={b.genre}
+                      bpm={b.bpm}
+                      price={Number(b.price) || 0}
+                      coverUrl={b.coverUrl}
+                      audioUrl={b.audioUrl}
+                      freeDownload={b.freeDownload}
+                      initialLikes={b.likes || 0}
+                      initialFavs={b.favs || 0}
+                      initialFollowers={0}
+                      compact
+                    />
+                    <div className="flex flex-wrap items-center gap-2 text-[10px]">
+                      <button
+                        type="button"
+                        onClick={() => boostBeat(b.id)}
+                        className="rounded-full bg-red-500 px-3 py-1 text-[10px] font-semibold text-slate-50 hover:bg-red-400"
+                      >
+                        Boost beat
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeBeat(b.id)}
+                        className="rounded-full border border-slate-700/80 px-3 py-1 text-[10px] font-medium text-slate-300 hover:border-red-400/70 hover:text-red-200"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
