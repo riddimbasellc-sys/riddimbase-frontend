@@ -1,0 +1,10 @@
+{
+  "//": "Ensure all client-side routes (e.g. /login, /signup, /beat/:id) are served by the SPA index.html so React Router can handle them.",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
+  ]
+}
+
