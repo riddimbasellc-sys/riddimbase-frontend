@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useCart } from '../context/CartContext'
 import useSupabaseUser from '../hooks/useSupabaseUser'
 import {
@@ -24,9 +24,9 @@ export function BeatCard({
   audioUrl,
   freeDownload = false,
   initialLikes = 0,
-  initialFavs = 0, // kept for compatibility
-  initialFollowers = 0, // kept for compatibility
-  onShare, // no longer shown on card
+  initialFavs = 0, // compatibility
+  initialFollowers = 0, // compatibility
+  onShare,
   noLink = false,
   sponsored = false,
   compact = false,
@@ -40,6 +40,8 @@ export function BeatCard({
   const [likes, setLikes] = useState(initialLikes)
   const [reposts, setReposts] = useState(0)
   const [pro, setPro] = useState(false)
+  const [playing, setPlaying] = useState(false)
+  const audioRef = useRef(null)
 
   useEffect(() => {
     let cancelled = false
@@ -77,6 +79,16 @@ export function BeatCard({
       cancelled = true
     }
   }, [id, user, userId, initialLikes])
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    if (playing) {
+      audio.play().catch(() => setPlaying(false))
+    } else {
+      audio.pause()
+    }
+  }, [playing])
 
   const initials =
     producer && producer.trim()
@@ -123,10 +135,16 @@ export function BeatCard({
     }
   }
 
+  const handlePlayToggle = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!audioUrl || !audioRef.current) return
+    setPlaying((p) => !p)
+  }
+
   const Wrapper = noLink ? 'div' : Link
   const wrapperProps = noLink ? {} : { to: `/beat/${id}` }
 
-  // Compact padding and no internal player to keep cards closer to square
   const sizeClasses = compact ? 'p-3' : 'p-3'
 
   return (
@@ -165,9 +183,13 @@ export function BeatCard({
 
       {/* Center: small hero area */}
       <div className="mt-3 flex flex-col items-center text-center">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-white/5 text-[11px] text-slate-50 shadow-[0_0_18px_rgba(248,250,252,0.25)]">
-          ▶
-        </div>
+        <button
+          type="button"
+          onClick={handlePlayToggle}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-white/5 text-[11px] text-slate-50 shadow-[0_0_18px_rgba(248,250,252,0.25)]"
+        >
+          {playing ? '⏸' : '▶'}
+        </button>
         <h3
           className="mt-2 line-clamp-2 text-[13px] font-semibold text-slate-50"
           title={title}
@@ -181,6 +203,9 @@ export function BeatCard({
           ${price?.toFixed ? price.toFixed(2) : Number(price || 0).toFixed(2)}
         </p>
       </div>
+
+      {/* Hidden audio element controlled by the play button */}
+      <audio ref={audioRef} src={audioUrl || ''} preload="metadata" className="hidden" />
 
       {/* Bottom row: cart + like + repost + profile icon */}
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
