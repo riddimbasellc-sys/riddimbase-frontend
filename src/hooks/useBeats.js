@@ -26,6 +26,8 @@ export function useBeats() {
           untaggedUrl: b.untagged_url || null,
           coverUrl: b.cover_url || null,
           bundleUrl: b.bundle_url || null,
+          description: b.description || '',
+          licensePrices: b.license_prices || b.licensePrices || null,
           freeDownload: !!(b.free_download || b.freeDownload),
         })))
       }
