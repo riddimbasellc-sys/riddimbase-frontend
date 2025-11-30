@@ -258,7 +258,7 @@ export function BeatCard({
       )}
 
       {/* Bottom row: cart + social actions */}
-      <div className="mt-4 flex items-center justify-between gap-3">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <button
           onClick={handleAdd}
           onMouseDown={(e) => e.stopPropagation()}
@@ -270,7 +270,7 @@ export function BeatCard({
           <span>${price?.toFixed ? price.toFixed(2) : Number(price || 0).toFixed(2)}</span>
         </button>
 
-        <div className="flex items-center gap-2 text-[10px] text-slate-300">
+        <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-300 justify-end">
           <button
             onClick={handleLike}
             onMouseDown={(e) => e.stopPropagation()}
@@ -358,4 +358,3 @@ export function BeatCard({
     </Wrapper>
   )
 }
-
