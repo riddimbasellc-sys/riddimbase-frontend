@@ -37,6 +37,8 @@ export function UploadBeat() {
   const [error, setError] = useState('')
   const [shareBeat, setShareBeat] = useState(null)
   const [freeDownload, setFreeDownload] = useState(false)
+  const [artworkPreviewUrl, setArtworkPreviewUrl] = useState(null)
+  const [audioPreviewUrl, setAudioPreviewUrl] = useState(null)
 
   // cancellation tokens
   const [artworkToken, setArtworkToken] = useState(null)
@@ -141,7 +143,7 @@ export function UploadBeat() {
 
   return (
     <section className="bg-slate-950/95">
-      <div className="mx-auto max-w-6xl px-4 py-10">
+      <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-10">
         <div className="flex items-center gap-3">
           <BackButton />
           <h1 className="font-display text-2xl font-semibold text-slate-50">Upload Beat</h1>
@@ -161,7 +163,7 @@ export function UploadBeat() {
           </div>
         )}
         {!limitReached && (
-          <div className="mt-8 grid gap-8 lg:grid-cols-[1.1fr,0.9fr]">
+          <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr,0.9fr]">
             {/* Left: form steps */}
             <form onSubmit={handleSubmit} className="space-y-8">
               {/* Step 1: Metadata */}
@@ -204,7 +206,7 @@ export function UploadBeat() {
               {/* Step 2: Files */}
               <div className="rounded-3xl border border-slate-800/80 bg-slate-900/80 p-6 space-y-6">
                 <h2 className="text-sm font-semibold text-slate-100 flex items-center gap-2">Assets <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300">Step 2</span></h2>
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <div>
                     <FilePickerButton
                       label="Artwork (JPG/PNG/WebP)"
