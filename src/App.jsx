@@ -67,6 +67,7 @@ import { MyAds } from './pages/MyAds'
 import { Chat } from './pages/Chat'
 import UploadSoundkit from './pages/UploadSoundkit'
 import Soundkits from './pages/Soundkits'
+import Feed from './pages/Feed'
 
 function App() {
   const { isAdmin } = useAdminRole()
@@ -81,6 +82,7 @@ function App() {
         {/* Keep /home for old links but show the same landing experience */}
         <Route path="/home" element={<LandingPage />} />
         <Route path="/beats" element={<Beats />} />
+        <Route path="/feed" element={<Feed />} />
         <Route path="/soundkits" element={<Soundkits />} />
         <Route path="/beat/:id" element={<BeatDetails />} />
         <Route path="/beat/:idSlug" element={<BeatDetails />} />
