@@ -10,9 +10,6 @@ import {
   favoriteCount,
   isLiked,
   isFavorited,
-  followerCount,
-  toggleFollow,
-  isFollowing,
   toggleRepost,
   isReposted,
   repostCount,
@@ -48,9 +45,6 @@ export function BeatCard({
   const [likes, setLikes] = useState(initialLikes)
   const [favs, setFavs] = useState(initialFavs)
   const [reposts, setReposts] = useState(0)
-  const [followers, setFollowers] = useState(initialFollowers)
-
-  const [following, setFollowing] = useState(false)
   const [pro, setPro] = useState(false)
 
   // Load social state
@@ -69,11 +63,6 @@ export function BeatCard({
         const rc = await repostCount(id)
         if (!cancelled) setReposts(rc)
 
-        if (userId && initialFollowers === 0) {
-          const fc = await followerCount(userId)
-          if (!cancelled) setFollowers(fc)
-        }
-
         if (user) {
           const [l, f, r] = await Promise.all([
             isLiked({ userId: user.id, beatId: id }),
@@ -84,13 +73,6 @@ export function BeatCard({
             setLiked(l)
             setFavorited(f)
             setReposted(r)
-          }
-          if (userId) {
-            const follow = await isFollowing({
-              followerId: user.id,
-              producerId: userId,
-            })
-            if (!cancelled) setFollowing(follow)
           }
         }
 
@@ -155,20 +137,6 @@ export function BeatCard({
     if (res.favorited !== !favorited) {
       setFavorited(res.favorited)
       setFavs(await favoriteCount(id))
-    }
-  }
-
-  const handleFollow = async (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!user || !userId || user.id === userId) return
-    const optimistic = following ? followers - 1 : followers + 1
-    setFollowing(!following)
-    setFollowers(Math.max(0, optimistic))
-    const res = await toggleFollow({ followerId: user.id, producerId: userId })
-    if (res.following !== !following) {
-      setFollowing(res.following)
-      setFollowers(await followerCount(userId))
     }
   }
 
@@ -271,7 +239,7 @@ export function BeatCard({
         </button>
 
         <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-300 justify-end">
-          <button
+//FOLLOW_REPOST_START\n          <button
             onClick={handleLike}
             onMouseDown={(e) => e.stopPropagation()}
             className={`flex items-center gap-1 rounded-full px-2.5 py-1 border text-[10px] ${
@@ -284,7 +252,7 @@ export function BeatCard({
             <span>{likes}</span>
           </button>
 
-          <button
+//FOLLOW_REPOST_START\n          <button
             onClick={handleFav}
             onMouseDown={(e) => e.stopPropagation()}
             className={`flex items-center gap-1 rounded-full px-2.5 py-1 border text-[10px] ${
@@ -298,7 +266,7 @@ export function BeatCard({
           </button>
 
           {onShare && (
-            <button
+  //FOLLOW_REPOST_START\n          <button
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
@@ -311,7 +279,7 @@ export function BeatCard({
             </button>
           )}
 
-          <button
+//FOLLOW_REPOST_START\n          <button
             onClick={handleRepost}
             onMouseDown={(e) => e.stopPropagation()}
             className={`flex items-center gap-1 rounded-full px-2.5 py-1 border text-[10px] ${
@@ -325,20 +293,9 @@ export function BeatCard({
             <span>{reposts}</span>
           </button>
 
-          {userId && userId !== (user && user.id) && (
-            <button
-              onClick={handleFollow}
-              onMouseDown={(e) => e.stopPropagation()}
-              className={`flex items-center gap-1 rounded-full px-2.5 py-1 border text-[10px] ${
-                following
-                  ? 'border-red-400/80 bg-red-500/20 text-red-200'
-                  : 'border-slate-700/80 bg-slate-900/60 hover:border-red-400/70 hover:text-red-200'
-              }`}
-            >
-              <span>{following ? 'Following' : 'Follow'}</span>
-              <span>{followers}</span>
-            </button>
-          )}
+          <div className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-700/80 bg-slate-900/60 text-[11px] text-slate-300">
+            👤
+          </div>
         </div>
       </div>
 
