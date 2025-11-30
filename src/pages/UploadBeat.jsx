@@ -87,10 +87,16 @@ export function UploadBeat() {
     e.preventDefault()
     setError('')
     setUploadingBeat(true)
+    // Local preview URLs for immediate UX
     const localAudioUrl = audioUrlRemote || (audioFile ? URL.createObjectURL(audioFile) : null)
     const localUntaggedUrl = untaggedUrl || (untaggedFile ? URL.createObjectURL(untaggedFile) : null)
     const localCoverUrl = artworkUrl || (artworkFile ? URL.createObjectURL(artworkFile) : null)
     const localBundleUrl = bundleUrl || null
+    // Supabase should only store stable remote URLs (from S3), never blob: URLs
+    const supabaseAudioUrl = audioUrlRemote || null
+    const supabaseUntaggedUrl = untaggedUrl || null
+    const supabaseCoverUrl = artworkUrl || null
+    const supabaseBundleUrl = bundleUrl || null
     const licensePrices = {
       Basic: basicPrice,
       Premium: premiumPrice,
@@ -121,10 +127,10 @@ export function UploadBeat() {
       price: Number(price),
       producer: user?.email || 'You',
       user_id: user?.id || null,
-      audio_url: localAudioUrl,
-      untagged_url: localUntaggedUrl,
-      cover_url: localCoverUrl,
-      bundle_url: localBundleUrl,
+      audio_url: supabaseAudioUrl,
+      untagged_url: supabaseUntaggedUrl,
+      cover_url: supabaseCoverUrl,
+      bundle_url: supabaseBundleUrl,
       bundle_name: bundleFile?.name || null,
       license_prices: licensePrices,
       free_download: freeDownload,
