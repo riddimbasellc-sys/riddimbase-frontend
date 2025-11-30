@@ -74,6 +74,43 @@ export async function followerCount(producerId) {
   return count || 0
 }
 
+// Reposts (share beats into follower feeds)
+export async function toggleRepost({ userId, beatId }) {
+  if (!userId || !beatId) return { success: false }
+  const existing = await supabase
+    .from('reposts')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('beat_id', beatId)
+    .maybeSingle()
+  if (existing.data && existing.data.id) {
+    await supabase.from('reposts').delete().eq('id', existing.data.id)
+    return { reposted: false }
+  } else {
+    await supabase.from('reposts').insert({ user_id: userId, beat_id: beatId })
+    return { reposted: true }
+  }
+}
+
+export async function isReposted({ userId, beatId }) {
+  if (!userId) return false
+  const { data } = await supabase
+    .from('reposts')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('beat_id', beatId)
+    .limit(1)
+  return !!(data && data.length)
+}
+
+export async function repostCount(beatId) {
+  const { count } = await supabase
+    .from('reposts')
+    .select('*', { head: true, count: 'exact' })
+    .eq('beat_id', beatId)
+  return count || 0
+}
+
 // Messages
 export async function sendMessage({ senderId, recipientId, content }) {
   if (!senderId || !recipientId || !content) return { success: false }
@@ -172,6 +209,27 @@ export async function fetchProfilesByIds(ids = []) {
   if (!ids.length) return []
   const { data } = await supabase.from('profiles').select('id, display_name, email').in('id', ids)
   return data || []
+}
+
+// Beats reposted by people the user follows (for feed sections)
+export async function fetchRepostedBeatIdsForUser(userId, { limit = 24 } = {}) {
+  if (!userId) return []
+  // Get producers this user follows
+  const { data: followRows } = await supabase
+    .from('follows')
+    .select('producer_id')
+    .eq('follower_id', userId)
+  const producerIds = (followRows || []).map((r) => r.producer_id)
+  if (!producerIds.length) return []
+
+  const { data: repostRows } = await supabase
+    .from('reposts')
+    .select('beat_id, user_id, created_at')
+    .in('user_id', producerIds)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  return repostRows || []
 }
 
 // Bulk like/favorite counts for multiple beats
