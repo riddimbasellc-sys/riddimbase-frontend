@@ -252,7 +252,7 @@ export function BeatCard({
             <span>{likes}</span>
           </button>
 
-//FOLLOW_REPOST_START\n          <button
+          <button
             onClick={handleFav}
             onMouseDown={(e) => e.stopPropagation()}
             className={`flex items-center gap-1 rounded-full px-2.5 py-1 border text-[10px] ${
@@ -266,7 +266,7 @@ export function BeatCard({
           </button>
 
           {onShare && (
-  //FOLLOW_REPOST_START\n          <button
+          <button
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
@@ -279,7 +279,7 @@ export function BeatCard({
             </button>
           )}
 
-//FOLLOW_REPOST_START\n          <button
+          <button
             onClick={handleRepost}
             onMouseDown={(e) => e.stopPropagation()}
             className={`flex items-center gap-1 rounded-full px-2.5 py-1 border text-[10px] ${
