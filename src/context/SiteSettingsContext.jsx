@@ -15,11 +15,12 @@ const defaultSettings = {
     accentColor: '#f97316',
     backgroundColor: '#020617',
     surfaceColor: '#020617',
-    fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif',
+    fontFamily:
+      'Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif',
   },
   announcement: {
     enabled: true,
-    text: 'Welcome to RiddimBase — the home of Caribbean beats.',
+    text: 'Welcome to RiddimBase – the home of Caribbean beats.',
     backgroundColor: '#111827',
     textColor: '#e5e7eb',
   },
