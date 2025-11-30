@@ -56,8 +56,13 @@ export function BeatDetails() {
         userId: data.user_id || null,
         genre: data.genre || 'Dancehall',
         bpm: data.bpm || 0,
+        price: data.price || 29,
         audioUrl: data.audio_url || null,
+        untaggedUrl: data.untagged_url || null,
         coverUrl: data.cover_url || null,
+        bundleUrl: data.bundle_url || null,
+        description: data.description || '',
+        licensePrices: data.license_prices || null,
         freeDownload: !!data.free_download,
       })
     }
@@ -120,6 +125,24 @@ export function BeatDetails() {
       .slice(0, 4)
       .map(row => row.beat)
   }, [beat, allBeats])
+
+  const licensePrices = useMemo(() => {
+    const fallback = {
+      Basic: 29,
+      Premium: 59,
+      Unlimited: 149,
+      Exclusive: 399,
+    }
+    if (!beat) return fallback
+    const lp = beat.licensePrices || beat.license_prices
+    if (!lp) return fallback
+    return {
+      Basic: lp.Basic ?? lp.basic ?? fallback.Basic,
+      Premium: lp.Premium ?? lp.premium ?? fallback.Premium,
+      Unlimited: lp.Unlimited ?? lp.unlimited ?? fallback.Unlimited,
+      Exclusive: lp.Exclusive ?? lp.exclusive ?? fallback.Exclusive,
+    }
+  }, [beat])
 
   return (
     <section className="bg-slate-950/95">
@@ -185,7 +208,7 @@ export function BeatDetails() {
                   name="Basic"
                   full="Basic MP3 License"
                   desc="MP3 file, non-exclusive, up to 50k streams."
-                  price={29}
+                  price={licensePrices.Basic}
                   active={selected==='Basic'}
                   onSelect={()=>setSelected('Basic')}
                 />
@@ -193,7 +216,7 @@ export function BeatDetails() {
                   name="Premium"
                   full="Premium WAV License"
                   desc="WAV + MP3, non-exclusive, up to 200k streams."
-                  price={59}
+                  price={licensePrices.Premium}
                   active={selected==='Premium'}
                   onSelect={()=>setSelected('Premium')}
                 />
@@ -201,7 +224,7 @@ export function BeatDetails() {
                   name="Unlimited"
                   full="Unlimited License"
                   desc="Untagged files, unlimited streams, monetization."
-                  price={149}
+                  price={licensePrices.Unlimited}
                   active={selected==='Unlimited'}
                   onSelect={()=>setSelected('Unlimited')}
                 />
@@ -209,14 +232,28 @@ export function BeatDetails() {
                   name="Exclusive"
                   full="Exclusive Rights"
                   desc="Full exclusive rights, beat removed after purchase."
-                  price={399}
+                  price={licensePrices.Exclusive}
                   active={selected==='Exclusive'}
                   onSelect={()=>setSelected('Exclusive')}
                 />
               </div>
               <TermsPreview selected={selected} />
               <div className="mt-4 flex flex-col gap-2">
-                <button disabled={!selected} onClick={()=> setCheckoutOpen(true)} className={`w-full rounded-full px-4 py-2 text-xs font-semibold ${selected ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400' : 'bg-slate-700/60 text-slate-400 cursor-not-allowed'}`}>{selected ? `Buy Now – $${selected==='Basic'?29:selected==='Premium'?59:selected==='Unlimited'?149:399}` : 'Select a License'}</button>
+                <button
+                  disabled={!selected}
+                  onClick={()=> setCheckoutOpen(true)}
+                  className={`w-full rounded-full px-4 py-2 text-xs font-semibold ${selected ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400' : 'bg-slate-700/60 text-slate-400 cursor-not-allowed'}`}
+                >
+                  {selected
+                    ? `Buy Now - $${selected==='Basic'
+                      ? licensePrices.Basic
+                      : selected==='Premium'
+                      ? licensePrices.Premium
+                      : selected==='Unlimited'
+                      ? licensePrices.Unlimited
+                      : licensePrices.Exclusive}`
+                    : 'Select a License'}
+                </button>
                 <button disabled={!selected} onClick={handleAddToCart} className={`w-full rounded-full px-4 py-2 text-xs font-semibold ${selected ? 'bg-slate-800 text-slate-200 hover:bg-slate-700' : 'bg-slate-700/60 text-slate-400 cursor-not-allowed'}`}>Add to Cart</button>
               </div>
               <p className="mt-3 text-[11px] text-slate-500 leading-relaxed">Instant delivery of files & license PDF after payment. Taxes may apply.</p>
