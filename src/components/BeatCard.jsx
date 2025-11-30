@@ -1,15 +1,11 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { BeatPlayer } from './BeatPlayer'
 import { useCart } from '../context/CartContext'
 import useSupabaseUser from '../hooks/useSupabaseUser'
 import {
   toggleLike,
-  toggleFavorite,
   likeCount,
-  favoriteCount,
   isLiked,
-  isFavorited,
   toggleRepost,
   isReposted,
   repostCount,
@@ -28,9 +24,9 @@ export function BeatCard({
   audioUrl,
   freeDownload = false,
   initialLikes = 0,
-  initialFavs = 0,
-  initialFollowers = 0,
-  onShare,
+  initialFavs = 0, // kept for compatibility
+  initialFollowers = 0, // kept for compatibility
+  onShare, // no longer shown on card
   noLink = false,
   sponsored = false,
   compact = false,
@@ -39,15 +35,12 @@ export function BeatCard({
   const { user } = useSupabaseUser()
 
   const [liked, setLiked] = useState(false)
-  const [favorited, setFavorited] = useState(false)
   const [reposted, setReposted] = useState(false)
 
   const [likes, setLikes] = useState(initialLikes)
-  const [favs, setFavs] = useState(initialFavs)
   const [reposts, setReposts] = useState(0)
   const [pro, setPro] = useState(false)
 
-  // Load social state
   useEffect(() => {
     let cancelled = false
     ;(async () => {
@@ -56,44 +49,34 @@ export function BeatCard({
           const c = await likeCount(id)
           if (!cancelled) setLikes(c)
         }
-        if (initialFavs === 0) {
-          const c = await favoriteCount(id)
-          if (!cancelled) setFavs(c)
-        }
         const rc = await repostCount(id)
         if (!cancelled) setReposts(rc)
 
         if (user) {
-          const [l, f, r] = await Promise.all([
+          const [l, r] = await Promise.all([
             isLiked({ userId: user.id, beatId: id }),
-            isFavorited({ userId: user.id, beatId: id }),
             isReposted({ userId: user.id, beatId: id }),
           ])
           if (!cancelled) {
             setLiked(l)
-            setFavorited(f)
             setReposted(r)
           }
         }
 
         if (userId) {
-          try {
-            const proAcc = await isProducerPro(userId)
-            if (!cancelled) setPro(proAcc)
-          } catch {
-            if (!cancelled) setPro(false)
-          }
+          const proAcc = await isProducerPro(userId)
+          if (!cancelled) setPro(!!proAcc)
         } else if (!cancelled) {
           setPro(false)
         }
       } catch {
-        // ignore background social errors
+        // ignore background errors
       }
     })()
     return () => {
       cancelled = true
     }
-  }, [id, user, userId, initialLikes, initialFavs, initialFollowers])
+  }, [id, user, userId, initialLikes])
 
   const initials =
     producer && producer.trim()
@@ -126,20 +109,6 @@ export function BeatCard({
     }
   }
 
-  const handleFav = async (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!user) return
-    const optimistic = favorited ? favs - 1 : favs + 1
-    setFavorited(!favorited)
-    setFavs(Math.max(0, optimistic))
-    const res = await toggleFavorite({ userId: user.id, beatId: id })
-    if (res.favorited !== !favorited) {
-      setFavorited(res.favorited)
-      setFavs(await favoriteCount(id))
-    }
-  }
-
   const handleRepost = async (e) => {
     e.preventDefault()
     e.stopPropagation()
@@ -157,89 +126,80 @@ export function BeatCard({
   const Wrapper = noLink ? 'div' : Link
   const wrapperProps = noLink ? {} : { to: `/beat/${id}` }
 
-  const sizeClasses = compact ? 'p-3' : 'p-4'
+  // Compact padding and no internal player to keep cards closer to square
+  const sizeClasses = compact ? 'p-3' : 'p-3'
 
   return (
     <Wrapper
       {...wrapperProps}
-      className={`group flex flex-col rounded-[24px] border border-white/10 bg-slate-900/80 ${sizeClasses} shadow-[0_22px_60px_rgba(0,0,0,0.9)] backdrop-blur transition hover:border-red-500/70 hover:bg-slate-900/95 min-w-0`}
+      className={`group flex flex-col rounded-[20px] border border-white/10 bg-slate-900/80 ${sizeClasses} shadow-[0_18px_48px_rgba(0,0,0,0.9)] backdrop-blur transition hover:border-red-500/70 hover:bg-slate-900/95 min-w-0`}
     >
       {/* Top row: avatar + producer + badges */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-slate-900/80 text-[11px] font-semibold text-slate-100 shadow-[0_0_14px_rgba(15,23,42,0.9)]">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-slate-900/80 text-[10px] font-semibold text-slate-100">
             {initials}
           </div>
           <div className="min-w-0">
-            <p className="truncate text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+            <p className="truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
               Producer
             </p>
-            <p className="truncate text-xs font-semibold text-slate-50">
+            <p className="truncate text-[11px] font-semibold text-slate-50">
               {producer || 'Unknown'}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {pro && (
-            <span className="inline-flex items-center rounded-full border border-amber-400/80 bg-amber-500/15 px-2 py-[2px] text-[10px] font-semibold text-amber-200">
+            <span className="inline-flex items-center rounded-full border border-amber-400/80 bg-amber-500/15 px-2 py-[1px] text-[9px] font-semibold text-amber-200">
               PRO
             </span>
           )}
           {sponsored && (
-            <span className="inline-flex items-center rounded-full border border-red-400/80 bg-red-500/15 px-2 py-[2px] text-[10px] font-semibold text-red-200">
-              Sponsored
+            <span className="inline-flex items-center rounded-full border border-red-400/80 bg-red-500/15 px-2 py-[1px] text-[9px] font-semibold text-red-200">
+              AD
             </span>
           )}
         </div>
       </div>
 
-      {/* Center: glossy play + title */}
-      <div className="mt-4 flex flex-col items-center text-center">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/5 text-xs text-slate-50 shadow-[0_0_25px_rgba(248,250,252,0.35)]">
+      {/* Center: small hero area */}
+      <div className="mt-3 flex flex-col items-center text-center">
+        <div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-white/5 text-[11px] text-slate-50 shadow-[0_0_18px_rgba(248,250,252,0.25)]">
           ▶
         </div>
         <h3
-          className="mt-3 line-clamp-2 text-sm font-semibold text-slate-50 sm:text-[15px]"
+          className="mt-2 line-clamp-2 text-[13px] font-semibold text-slate-50"
           title={title}
         >
           {title}
         </h3>
-        <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-slate-400">
+        <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-slate-400">
           {genre || 'Caribbean'} • {bpm || 0} BPM
         </p>
-        <p className="mt-1 text-xs font-semibold text-red-400">
+        <p className="mt-1 text-[13px] font-semibold text-red-400">
           ${price?.toFixed ? price.toFixed(2) : Number(price || 0).toFixed(2)}
         </p>
       </div>
 
-      {/* Optional inline player on desktop */}
-      {!compact && audioUrl && (
-        <div
-          className="mt-4 hidden md:block"
-          onClick={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
-          onTouchStart={(e) => e.stopPropagation()}
-        >
-          <BeatPlayer src={audioUrl} beatId={id} />
-        </div>
-      )}
-
-      {/* Bottom row: cart + social actions */}
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+      {/* Bottom row: cart + like + repost + profile icon */}
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <button
           onClick={handleAdd}
           onMouseDown={(e) => e.stopPropagation()}
-          className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-[11px] font-semibold text-slate-950 shadow-[0_0_30px_rgba(248,250,252,0.45)] hover:bg-slate-100"
+          className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-950 shadow-[0_0_24px_rgba(248,250,252,0.45)] hover:bg-slate-100"
         >
           <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-[11px]">
             🛒
           </span>
-          <span>${price?.toFixed ? price.toFixed(2) : Number(price || 0).toFixed(2)}</span>
+          <span>
+            $
+            {price?.toFixed ? price.toFixed(2) : Number(price || 0).toFixed(2)}
+          </span>
         </button>
 
         <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-300 justify-end">
-//FOLLOW_REPOST_START\n          <button
+          <button
             onClick={handleLike}
             onMouseDown={(e) => e.stopPropagation()}
             className={`flex items-center gap-1 rounded-full px-2.5 py-1 border text-[10px] ${
@@ -251,33 +211,6 @@ export function BeatCard({
             <span>♥</span>
             <span>{likes}</span>
           </button>
-
-          <button
-            onClick={handleFav}
-            onMouseDown={(e) => e.stopPropagation()}
-            className={`flex items-center gap-1 rounded-full px-2.5 py-1 border text-[10px] ${
-              favorited
-                ? 'border-amber-400/80 bg-amber-500/20 text-amber-200'
-                : 'border-slate-700/80 bg-slate-900/60 hover:border-amber-400/70 hover:text-amber-200'
-            }`}
-          >
-            <span>★</span>
-            <span>{favs}</span>
-          </button>
-
-          {onShare && (
-          <button
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                onShare({ id, title })
-              }}
-              onMouseDown={(e) => e.stopPropagation()}
-              className="flex items-center gap-1 rounded-full border border-slate-700/80 bg-slate-900/60 px-2.5 py-1 text-[10px] hover:border-red-400/70 hover:text-red-200"
-            >
-              <span>↗</span>
-            </button>
-          )}
 
           <button
             onClick={handleRepost}
@@ -315,3 +248,4 @@ export function BeatCard({
     </Wrapper>
   )
 }
+
