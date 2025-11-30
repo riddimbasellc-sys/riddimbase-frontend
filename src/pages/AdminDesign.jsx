@@ -1,5 +1,5 @@
 import { useAdminRole } from '../hooks/useAdminRole'
-import { DesignPanel as InnerDesignPanel } from '../../frontend/src/admin/DesignPanel'
+import { DesignPanel as InnerDesignPanel } from '../admin/DesignPanel'
 
 export default function AdminDesign() {
   const { isAdmin, loading } = useAdminRole()
@@ -22,4 +22,3 @@ export default function AdminDesign() {
 
   return <InnerDesignPanel />
 }
-
