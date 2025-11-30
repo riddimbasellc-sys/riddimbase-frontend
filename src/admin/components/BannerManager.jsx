@@ -2,9 +2,7 @@ import React from 'react'
 
 export function BannerManager({ banners, onChange }) {
   const handleUpdate = (index, patch) => {
-    const next = banners.map((b, i) =>
-      i === index ? { ...b, ...patch } : b,
-    )
+    const next = banners.map((b, i) => (i === index ? { ...b, ...patch } : b))
     onChange(next)
   }
 
@@ -12,13 +10,13 @@ export function BannerManager({ banners, onChange }) {
     const next = [
       ...banners,
       {
-        id: `banner_${Date.now()}`,
-        title: 'New homepage banner',
-        subtitle: 'Describe what you want to promote.',
+        id: `banner-${Date.now()}`,
+        title: 'New hero headline',
+        subtitle: 'Describe what this section promotes.',
         backgroundUrl: '',
-        ctaText: 'Explore',
+        ctaText: 'Explore beats',
         ctaHref: '/beats',
-        active: banners.length === 0,
+        active: !banners.length,
       },
     ]
     onChange(next)
@@ -26,7 +24,7 @@ export function BannerManager({ banners, onChange }) {
 
   const handleRemove = (index) => {
     const next = banners.filter((_, i) => i !== index)
-    if (next.length > 0 && !next.some((b) => b.active)) {
+    if (next.length && !next.some((b) => b.active)) {
       next[0].active = true
     }
     onChange(next)
@@ -41,124 +39,127 @@ export function BannerManager({ banners, onChange }) {
     <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 shadow-rb-gloss-panel">
       <div className="flex items-center justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-slate-100">Homepage hero banners</h3>
+          <h3 className="text-sm font-semibold text-slate-100">
+            Hero banners
+          </h3>
           <p className="mt-1 text-[11px] text-slate-400">
-            Control the rotating hero banners on the RiddimBase homepage.
+            Manage the hero slides shown at the top of your homepage.
           </p>
         </div>
         <button
           type="button"
           onClick={handleAdd}
-          className="rounded-full bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-900 shadow hover:bg-slate-100"
+          className="rounded-full bg-red-500 px-3 py-1.5 text-[11px] font-semibold text-slate-50 hover:bg-red-400"
         >
-          + Add banner
+          Add banner
         </button>
       </div>
-      <div className="mt-4 space-y-3">
-        {banners.length === 0 && (
-          <p className="text-[11px] text-slate-500">
-            No banners configured. Add at least one to feature content on the homepage.
-          </p>
-        )}
+
+      <div className="mt-4 space-y-3 text-[11px]">
         {banners.map((banner, index) => (
           <div
             key={banner.id || index}
-            className="rounded-xl border border-slate-800/80 bg-slate-950/80 p-3 text-xs"
+            className="rounded-xl border border-slate-800/80 bg-slate-950/80 p-3"
           >
             <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <label className="inline-flex items-center gap-1 text-[10px] text-slate-300">
-                  <input
-                    type="radio"
-                    name="active-banner"
-                    checked={!!banner.active}
-                    onChange={() => setActive(index)}
-                    className="h-3 w-3 border-slate-600 bg-slate-900 text-red-500"
-                  />
-                  <span>Active</span>
-                </label>
-                <span className="text-[10px] text-slate-500">
-                  ID: {banner.id || 'unnamed'}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleRemove(index)}
-                className="rounded-full border border-red-500/70 bg-red-500/10 px-2 py-1 text-[10px] text-red-300 hover:bg-red-500/20"
-              >
-                Remove
-              </button>
-            </div>
-            <div className="mt-2 grid gap-2 sm:grid-cols-2">
-              <div>
-                <label className="text-[10px] font-medium text-slate-200">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  value={banner.title || ''}
-                  onChange={(e) => handleUpdate(index, { title: e.target.value })}
-                  className="mt-1 w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-2 py-1 text-[11px] text-slate-100 placeholder:text-slate-500 focus:border-red-400 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-medium text-slate-200">
-                  Subtitle
-                </label>
-                <input
-                  type="text"
-                  value={banner.subtitle || ''}
-                  onChange={(e) => handleUpdate(index, { subtitle: e.target.value })}
-                  className="mt-1 w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-2 py-1 text-[11px] text-slate-100 placeholder:text-slate-500 focus:border-red-400 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-medium text-slate-200">
-                  Background image URL
-                </label>
-                <input
-                  type="text"
-                  value={banner.backgroundUrl || ''}
-                  onChange={(e) =>
-                    handleUpdate(index, { backgroundUrl: e.target.value })
-                  }
-                  className="mt-1 w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-2 py-1 text-[11px] text-slate-100 placeholder:text-slate-500 focus:border-red-400 focus:outline-none"
-                  placeholder="https://…"
-                />
-              </div>
-              <div className="grid gap-2 sm:grid-cols-[minmax(0,1.1fr),minmax(0,1fr)]">
+              <div className="min-w-0 flex-1 space-y-2">
                 <div>
-                  <label className="text-[10px] font-medium text-slate-200">
-                    CTA text
+                  <label className="text-[10px] font-medium text-slate-400">
+                    Title
                   </label>
                   <input
-                    type="text"
-                    value={banner.ctaText || ''}
-                    onChange={(e) => handleUpdate(index, { ctaText: e.target.value })}
-                    className="mt-1 w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-2 py-1 text-[11px] text-slate-100 placeholder:text-slate-500 focus:border-red-400 focus:outline-none"
-                    placeholder="Explore beats"
+                    className="mt-1 w-full rounded-md border border-slate-700/80 bg-slate-900/80 px-2 py-1 text-[11px] text-slate-100 focus:border-red-400 focus:outline-none"
+                    value={banner.title || ''}
+                    onChange={(e) =>
+                      handleUpdate(index, { title: e.target.value })
+                    }
+                    placeholder="Hero headline"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-medium text-slate-200">
-                    CTA link
+                  <label className="text-[10px] font-medium text-slate-400">
+                    Subtitle
                   </label>
                   <input
-                    type="text"
-                    value={banner.ctaHref || ''}
-                    onChange={(e) => handleUpdate(index, { ctaHref: e.target.value })}
-                    className="mt-1 w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-2 py-1 text-[11px] text-slate-100 placeholder:text-slate-500 focus:border-red-400 focus:outline-none"
-                    placeholder="/beats"
+                    className="mt-1 w-full rounded-md border border-slate-700/80 bg-slate-900/80 px-2 py-1 text-[11px] text-slate-100 focus:border-red-400 focus:outline-none"
+                    value={banner.subtitle || ''}
+                    onChange={(e) =>
+                      handleUpdate(index, { subtitle: e.target.value })
+                    }
+                    placeholder="Supporting copy"
                   />
                 </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <div>
+                    <label className="text-[10px] font-medium text-slate-400">
+                      Background image / video URL
+                    </label>
+                    <input
+                      className="mt-1 w-full rounded-md border border-slate-700/80 bg-slate-900/80 px-2 py-1 text-[11px] text-slate-100 focus:border-red-400 focus:outline-none"
+                      value={banner.backgroundUrl || ''}
+                      onChange={(e) =>
+                        handleUpdate(index, { backgroundUrl: e.target.value })
+                      }
+                      placeholder="https://..."
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-medium text-slate-400">
+                      CTA label & link
+                    </label>
+                    <div className="mt-1 flex gap-1">
+                      <input
+                        className="w-24 flex-shrink-0 rounded-md border border-slate-700/80 bg-slate-900/80 px-2 py-1 text-[11px] text-slate-100 focus:border-red-400 focus:outline-none"
+                        value={banner.ctaText || ''}
+                        onChange={(e) =>
+                          handleUpdate(index, { ctaText: e.target.value })
+                        }
+                        placeholder="Explore"
+                      />
+                      <input
+                        className="flex-1 rounded-md border border-slate-700/80 bg-slate-900/80 px-2 py-1 text-[11px] text-slate-100 focus:border-red-400 focus:outline-none"
+                        value={banner.ctaHref || ''}
+                        onChange={(e) =>
+                          handleUpdate(index, { ctaHref: e.target.value })
+                        }
+                        placeholder="/beats"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActive(index)}
+                  className={`rounded-full px-3 py-1 text-[10px] font-semibold ${
+                    banner.active
+                      ? 'bg-emerald-500 text-slate-950'
+                      : 'border border-slate-700/80 text-slate-300 hover:border-emerald-400/80'
+                  }`}
+                >
+                  {banner.active ? 'Active' : 'Set active'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRemove(index)}
+                  className="rounded-full border border-red-500/70 px-3 py-1 text-[10px] font-semibold text-red-300 hover:bg-red-500/10"
+                >
+                  Remove
+                </button>
               </div>
             </div>
           </div>
         ))}
+
+        {banners.length === 0 && (
+          <p className="text-[11px] text-slate-500">
+            No hero banners configured yet. Add one to control the top section
+            of your homepage.
+          </p>
+        )}
       </div>
     </div>
   )
 }
-
-export default BannerManager
 

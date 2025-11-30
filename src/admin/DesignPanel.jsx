@@ -91,8 +91,8 @@ export function DesignPanel() {
           </div>
           <div className="mt-6 border-t border-slate-800/80 pt-4 text-[11px] text-slate-400">
             <p>
-              Changes apply globally once saved. Use Advanced CSS carefully—it is
-              injected directly into the site.
+              Changes apply globally once saved. Use Advanced CSS carefully—
+              it is injected directly into the site.
             </p>
           </div>
         </aside>
@@ -101,13 +101,15 @@ export function DesignPanel() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Admin · Design
+                Admin UI • Design
               </p>
               <h2 className="mt-1 text-lg font-semibold text-slate-50">
                 Advanced Admin Design System
               </h2>
               {loading && (
-                <p className="mt-1 text-[11px] text-slate-500">Loading settings…</p>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Loading settings...
+                </p>
               )}
               {!loading && error && (
                 <p className="mt-1 text-[11px] text-red-400">
@@ -117,7 +119,7 @@ export function DesignPanel() {
             </div>
             <div className="flex items-center gap-2">
               {saving && (
-                <span className="text-[11px] text-slate-400">Saving…</span>
+                <span className="text-[11px] text-slate-400">Saving...</span>
               )}
               <button
                 type="button"
@@ -142,7 +144,10 @@ export function DesignPanel() {
                 <AppearancePanel draft={draft} onChange={handleThemeChange} />
               )}
               {activeTab === 'announcement' && (
-                <AnnouncementPanel draft={draft} onChange={handleAnnouncementChange} />
+                <AnnouncementPanel
+                  draft={draft}
+                  onChange={handleAnnouncementChange}
+                />
               )}
               {activeTab === 'navigation' && (
                 <NavEditor
@@ -258,51 +263,30 @@ function AnnouncementPanel({ draft, onChange }) {
     <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 shadow-rb-gloss-panel">
       <h3 className="text-sm font-semibold text-slate-100">Announcement bar</h3>
       <p className="mt-1 text-[11px] text-slate-400">
-        Configure the global announcement bar at the top of the site.
+        Control the slim banner above the navbar.
       </p>
-      <div className="mt-4 space-y-3 text-xs">
-        <label className="flex items-center gap-2 text-slate-200">
+      <div className="mt-3 space-y-3 text-[11px]">
+        <label className="inline-flex items-center gap-2 text-slate-200">
           <input
             type="checkbox"
             className="h-3 w-3 rounded border-slate-600 bg-slate-900"
             checked={announcement.enabled !== false}
-            onChange={(e) => onChange({ enabled: e.target.checked })}
+            onChange={(e) =>
+              onChange({ enabled: e.target.checked })
+            }
           />
-          <span>Show announcement bar</span>
+          <span>Show announcement</span>
         </label>
         <div>
-          <label className="text-[11px] font-medium text-slate-200">Text</label>
+          <label className="text-[10px] font-medium text-slate-400">
+            Text
+          </label>
           <input
-            type="text"
+            className="mt-1 w-full rounded-md border border-slate-700/80 bg-slate-900/80 px-2 py-1 text-[11px] text-slate-100 focus:border-red-400 focus:outline-none"
             value={announcement.text || ''}
             onChange={(e) => onChange({ text: e.target.value })}
-            className="mt-1 w-full rounded-xl border border-slate-700/80 bg-slate-950/80 px-3 py-2 text-xs text-slate-100 placeholder:text-slate-500 focus:border-red-400 focus:outline-none"
-            placeholder="e.g. New: Boosted beats and soundkits now live!"
+            placeholder="Welcome to RiddimBase – the home of Caribbean beats."
           />
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div>
-            <label className="text-[11px] font-medium text-slate-200">
-              Background color
-            </label>
-            <input
-              type="color"
-              value={announcement.backgroundColor || '#111827'}
-              onChange={(e) => onChange({ backgroundColor: e.target.value })}
-              className="mt-1 h-8 w-full cursor-pointer rounded-md border border-slate-700/80 bg-slate-950/80"
-            />
-          </div>
-          <div>
-            <label className="text-[11px] font-medium text-slate-200">
-              Text color
-            </label>
-            <input
-              type="color"
-              value={announcement.textColor || '#e5e7eb'}
-              onChange={(e) => onChange({ textColor: e.target.value })}
-              className="mt-1 h-8 w-full cursor-pointer rounded-md border border-slate-700/80 bg-slate-950/80"
-            />
-          </div>
         </div>
       </div>
     </div>
@@ -314,22 +298,16 @@ function AdvancedCssPanel({ value, onChange }) {
     <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 shadow-rb-gloss-panel">
       <h3 className="text-sm font-semibold text-slate-100">Advanced CSS</h3>
       <p className="mt-1 text-[11px] text-slate-400">
-        Custom CSS is injected globally into the site. Use with care.
+        Custom CSS injected globally. Use carefully and avoid breaking layout
+        on mobile.
       </p>
       <textarea
-        rows={12}
+        className="mt-3 h-52 w-full rounded-xl border border-slate-800/80 bg-slate-950/80 px-3 py-2 text-[11px] font-mono text-slate-100 focus:border-red-400 focus:outline-none"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-4 w-full rounded-xl border border-slate-700/80 bg-slate-950/80 px-3 py-2 text-xs font-mono text-slate-100 placeholder:text-slate-500 focus:border-red-400 focus:outline-none"
-        placeholder={`/* Example:
-.rb-primary-button {
-  border-radius: 9999px;
-}
-*/`}
+        placeholder="/* e.g. tweak button radius globally */&#10;.btn-primary { border-radius: 9999px; }"
       />
     </div>
   )
 }
-
-export default DesignPanel
 
