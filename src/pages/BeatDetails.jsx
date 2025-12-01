@@ -176,7 +176,7 @@ export function BeatDetails() {
             <div className="space-y-4">
               <div>
                 <h2 className="text-sm font-semibold text-slate-100">Description</h2>
-                <p className="mt-2 text-sm text-slate-300 leading-relaxed">High‑quality instrumental. Add your vocals and license appropriately.</p>
+                <p className="mt-2 text-sm text-slate-300 leading-relaxed">{beat?.description && beat.description.trim().length ? beat.description : "High-quality instrumental. Add your vocals and license appropriately."}</p>
                 <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-300">
                   {[beat?.genre || 'Riddim', `BPM ${beat?.bpm || 0}`].map(t => <span key={t} className="rounded-full bg-slate-900/80 px-3 py-1">{t}</span>)}
                 </div>
