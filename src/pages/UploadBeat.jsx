@@ -139,6 +139,9 @@ export function UploadBeat() {
     if (created?.id) {
       setShareBeat({ id: created.id, title })
     } else {
+      setError(
+        'Beat saved locally, but not in the main database. Please make sure you are logged in and that Supabase (beats table + env vars) is configured. After fixing that, new uploads will stay after refresh.',
+      )
       navigate('/producer/dashboard')
     }
   }
