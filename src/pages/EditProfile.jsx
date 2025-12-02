@@ -25,13 +25,13 @@ export function EditProfile() {
   const [savedStamp, setSavedStamp] = useState(0)
   // New extended profile fields
   const [email, setEmail] = useState(user?.email || '')
-  const [country, setCountry] = useState('')
-  const [phone, setPhone] = useState('')
-  const [bio, setBio] = useState('')
-  const [website, setWebsite] = useState('')
-  const [instagram, setInstagram] = useState('')
-  const [twitterX, setTwitterX] = useState('')
-  const [youtube, setYoutube] = useState('')
+  const [country, setCountry] = useState(profile?.country || '')
+  const [phone, setPhone] = useState(profile?.phone || '')
+  const [bio, setBio] = useState(profile?.bio || '')
+  const [website, setWebsite] = useState(profile?.website || '')
+  const [instagram, setInstagram] = useState(profile?.instagram || '')
+  const [twitterX, setTwitterX] = useState(profile?.twitterX || '')
+  const [youtube, setYoutube] = useState(profile?.youtube || '')
   const [savingYoutube, setSavingYoutube] = useState(false)
   const [authMessage, setAuthMessage] = useState('')
   const [authError, setAuthError] = useState('')
@@ -117,25 +117,39 @@ export function EditProfile() {
     setSelectedRoles(prev => prev.includes(role) ? prev.filter(r=>r!==role) : [...prev, role])
   }
 
-  // Load extended profile from localStorage once profile & user available
+  // Load extended profile: prefer Supabase profile, fall back to legacy localStorage
   useEffect(() => {
-    if (user) {
-      const stored = localStorage.getItem(`extendedProfile:${user.id}`)
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored)
-          setCountry(parsed.country || '')
-          setPhone(parsed.phone || '')
-          setBio(parsed.bio || '')
-          setWebsite(parsed.website || '')
-          setInstagram(parsed.instagram || '')
-          setTwitterX(parsed.twitterX || '')
-            setYoutube(parsed.youtube || '')
-          setGenres(parsed.genres || [])
-        } catch { /* ignore parse errors */ }
+    if (!user) return
+
+    if (profile) {
+      setCountry(profile.country || '')
+      setPhone(profile.phone || '')
+      setBio(profile.bio || '')
+      setWebsite(profile.website || '')
+      setInstagram(profile.instagram || '')
+      setTwitterX(profile.twitterX || '')
+      setYoutube(profile.youtube || '')
+      setGenres(profile.genres || [])
+      return
+    }
+
+    const stored = localStorage.getItem(`extendedProfile:${user.id}`)
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored)
+        setCountry(parsed.country || '')
+        setPhone(parsed.phone || '')
+        setBio(parsed.bio || '')
+        setWebsite(parsed.website || '')
+        setInstagram(parsed.instagram || '')
+        setTwitterX(parsed.twitterX || '')
+        setYoutube(parsed.youtube || '')
+        setGenres(parsed.genres || [])
+      } catch {
+        // ignore parse errors
       }
     }
-  }, [user])
+  }, [user, profile])
 
   const toggleGenre = (g) => {
     setGenres(prev => prev.includes(g) ? prev.filter(x=>x!==g) : [...prev, g])
@@ -149,12 +163,24 @@ export function EditProfile() {
     if (roles.includes('artist') && roles.includes('producer')) {
       roleString = 'hybrid+' + roles.filter(r=>r!=='artist' && r!=='producer').join('+')
     }
-    await updateProfile({ role: roleString, display_name: displayName.trim() })
+    await updateProfile({
+      role: roleString,
+      display_name: displayName.trim(),
+      country,
+      phone,
+      bio,
+      website,
+      instagram,
+      twitterX,
+      youtube,
+      genres,
+    })
     if (user) {
+      // Keep localStorage as a fallback cache for older sessions
       const payload = { country, phone, bio, website, instagram, twitterX, youtube, genres }
       localStorage.setItem(`extendedProfile:${user.id}`, JSON.stringify(payload))
-      setSavedStamp(Date.now())
     }
+    setSavedStamp(Date.now())
   }
 
   const handleUpdateEmail = async () => {
