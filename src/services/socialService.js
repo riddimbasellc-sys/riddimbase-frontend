@@ -1,6 +1,22 @@
 import { supabase } from '../lib/supabaseClient'
 import useSupabaseUser from '../hooks/useSupabaseUser'
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+
+async function fireProducerMetric({ producerId, metric, delta }) {
+  if (!API_BASE || !producerId || !metric || !delta) return
+  try {
+    fetch(`${API_BASE}/api/metrics/producer`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ producerId, metric, delta }),
+      keepalive: true,
+    }).catch(() => {})
+  } catch {
+    // ignore network issues
+  }
+}
+
 // Helper to get current user id (non-hook usage inside events)
 export const currentUserId = () => {
   const session = supabase.auth.getSession ? null : null
@@ -9,14 +25,25 @@ export const currentUserId = () => {
 }
 
 // Likes
-export async function toggleLike({ userId, beatId }) {
+export async function toggleLike({ userId, beatId, producerId }) {
   if (!userId || !beatId) return { success: false }
-  const existing = await supabase.from('likes').select('id').eq('user_id', userId).eq('beat_id', beatId).maybeSingle()
+  const existing = await supabase
+    .from('likes')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('beat_id', beatId)
+    .maybeSingle()
   if (existing.data && existing.data.id) {
     await supabase.from('likes').delete().eq('id', existing.data.id)
+    if (producerId) {
+      fireProducerMetric({ producerId, metric: 'likes', delta: -1 })
+    }
     return { liked: false }
   } else {
     await supabase.from('likes').insert({ user_id: userId, beat_id: beatId })
+    if (producerId) {
+      fireProducerMetric({ producerId, metric: 'likes', delta: 1 })
+    }
     return { liked: true }
   }
 }
@@ -54,13 +81,23 @@ export async function favoriteCount(beatId) {
 
 // Follows (producer user id)
 export async function toggleFollow({ followerId, producerId }) {
-  if (!followerId || !producerId || followerId === producerId) return { success: false }
-  const existing = await supabase.from('follows').select('id').eq('follower_id', followerId).eq('producer_id', producerId).maybeSingle()
+  if (!followerId || !producerId || followerId === producerId)
+    return { success: false }
+  const existing = await supabase
+    .from('follows')
+    .select('id')
+    .eq('follower_id', followerId)
+    .eq('producer_id', producerId)
+    .maybeSingle()
   if (existing.data && existing.data.id) {
     await supabase.from('follows').delete().eq('id', existing.data.id)
+    fireProducerMetric({ producerId, metric: 'followers', delta: -1 })
     return { following: false }
   } else {
-    await supabase.from('follows').insert({ follower_id: followerId, producer_id: producerId })
+    await supabase
+      .from('follows')
+      .insert({ follower_id: followerId, producer_id: producerId })
+    fireProducerMetric({ producerId, metric: 'followers', delta: 1 })
     return { following: true }
   }
 }
