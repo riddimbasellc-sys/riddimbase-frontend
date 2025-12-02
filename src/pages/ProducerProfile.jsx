@@ -9,7 +9,7 @@ import { getSubscription } from '../services/subscriptionService'
 import ProfileShareModal from '../components/ProfileShareModal'
 import { addNotification } from '../services/notificationsRepository'
 import YouTubePreview from '../components/YouTubePreview'
-import { getProducerProfile, ensureSampleProfile } from '../services/producerProfileService'
+import { getProducerProfile } from '../services/producerProfileService'
 import ReportModal from '../components/ReportModal'
 import { isBeatBoosted } from '../services/boostsService'
 
@@ -52,7 +52,13 @@ export function ProducerProfile() {
   }, [user])
   // Ensure a sample profile for prototype if none exists
   const [profile, setProfile] = useState(null)
-  useEffect(()=> { (async ()=> { if (producerId) { await ensureSampleProfile(producerId); setProfile(await getProducerProfile(producerId)) } })() }, [producerId])
+  useEffect(() => {
+    ;(async () => {
+      if (producerId) {
+        setProfile(await getProducerProfile(producerId))
+      }
+    })()
+  }, [producerId])
   const youtubeUrl = profile?.youtubeUrl || null
   const isOwnProfile = user && catalog.some(b => b.userId === user.id)
   const showProBadge = isOwnProfile && sub
@@ -88,21 +94,55 @@ export function ProducerProfile() {
     if (!user || user.id === producerId) return
     navigate(`/producer/inbox?to=${encodeURIComponent(producerId)}`)
   }
+
+  const displayName = profile?.displayName || producerId
+  const bioText =
+    profile?.bio?.trim()?.length
+      ? profile.bio
+      : 'This producer has not added a bio yet.'
+
+  const normalizeUrl = (url) => {
+    if (!url) return null
+    const trimmed = url.trim()
+    if (!trimmed) return null
+    if (/^https?:\/\//i.test(trimmed)) return trimmed
+    return `https://${trimmed}`
+  }
+
   return (
     <section className="bg-slate-950/95">
-      <div className="mx-auto max-w-6xl px-4 py-10">
+      <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-10">
         <div className="flex items-center gap-3">
           <BackButton />
-          <h1 className="font-display text-2xl font-semibold text-slate-50">Producer Profile</h1>
+          <h1 className="font-display text-xl font-semibold text-slate-50 sm:text-2xl">Producer Profile</h1>
         </div>
         <div className="mt-6 rounded-3xl border border-slate-800/80 bg-slate-900/80 p-6 grid gap-8 md:grid-cols-[1.2fr,1fr]">
           <div className="space-y-6">
             <div className="flex items-start gap-5">
-              <div className="h-28 w-28 rounded-2xl bg-gradient-to-br from-emerald-500 via-emerald-400 to-orange-500" />
+              <div className="h-28 w-28 overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 via-emerald-400 to-orange-500">
+                {profile?.avatarUrl && (
+                  <img
+                    src={profile.avatarUrl}
+                    alt={displayName}
+                    className="h-full w-full object-cover"
+                  />
+                )}
+              </div>
               <div className="flex-1">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300 flex items-center gap-2">Producer {showProBadge && <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-300">Pro</span>}</p>
-                <h2 className="text-xl font-semibold text-slate-50 truncate">{producerId}</h2>
-                <p className="mt-1 text-sm text-slate-300">Authentic Caribbean riddims & type beats.</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300 flex items-center gap-2">
+                  Producer{' '}
+                  {showProBadge && (
+                    <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-300">
+                      Pro
+                    </span>
+                  )}
+                </p>
+                <h2 className="text-xl font-semibold text-slate-50 truncate">
+                  {displayName}
+                </h2>
+                <p className="mt-1 text-sm text-slate-300">
+                  {bioText}
+                </p>
                  <div className="mt-2 flex items-center gap-3">
                    <p className="text-[11px] text-slate-400">Followers: {followers}</p>
                    <button onClick={() => setShareOpen(true)} className="flex items-center gap-1 rounded-full border border-slate-700/60 bg-slate-800/70 px-3 py-1 text-[10px] font-medium text-slate-300 hover:border-emerald-400/60 hover:text-emerald-300 transition">
@@ -121,15 +161,114 @@ export function ProducerProfile() {
                    <button onClick={handleMessage} className="rounded-full bg-emerald-500 px-4 py-2 text-[11px] font-semibold text-slate-950 hover:bg-emerald-400">
                      Message
                    </button>
+                   {(profile?.website ||
+                     profile?.instagram ||
+                     profile?.twitterX ||
+                     youtubeUrl) && (
+                     <div className="ml-auto flex items-center gap-2">
+                       {profile?.website && (
+                         <a
+                           href={normalizeUrl(profile.website)}
+                           target="_blank"
+                           rel="noreferrer"
+                           className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-700/80 bg-slate-900/80 text-[11px] text-slate-200 hover:border-emerald-400/70"
+                         >
+                           {/* Globe icon */}
+                           <svg
+                             xmlns="http://www.w3.org/2000/svg"
+                             viewBox="0 0 24 24"
+                             className="h-3.5 w-3.5"
+                             fill="none"
+                             stroke="currentColor"
+                             strokeWidth="1.6"
+                           >
+                             <circle cx="12" cy="12" r="9" />
+                             <path d="M3 12h18" />
+                             <path d="M12 3a15.3 15.3 0 0 1 4 9 15.3 15.3 0 0 1-4 9 15.3 15.3 0 0 1-4-9 15.3 15.3 0 0 1 4-9z" />
+                           </svg>
+                         </a>
+                       )}
+                       {profile?.instagram && (
+                         <a
+                           href={normalizeUrl(
+                             profile.instagram.startsWith('@')
+                               ? `https://instagram.com/${profile.instagram.slice(1)}`
+                               : profile.instagram,
+                           )}
+                           target="_blank"
+                           rel="noreferrer"
+                           className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-700/80 bg-slate-900/80 text-[11px] text-slate-200 hover:border-emerald-400/70"
+                         >
+                           {/* Instagram logo */}
+                           <svg
+                             xmlns="http://www.w3.org/2000/svg"
+                             viewBox="0 0 24 24"
+                             className="h-3.5 w-3.5"
+                             fill="none"
+                             stroke="currentColor"
+                             strokeWidth="1.6"
+                           >
+                             <rect x="4" y="4" width="16" height="16" rx="4" />
+                             <circle cx="12" cy="12" r="3.5" />
+                             <circle cx="17" cy="7" r="0.8" fill="currentColor" />
+                           </svg>
+                         </a>
+                       )}
+                       {profile?.twitterX && (
+                         <a
+                           href={normalizeUrl(
+                             profile.twitterX.startsWith('@')
+                               ? `https://x.com/${profile.twitterX.slice(1)}`
+                               : profile.twitterX,
+                           )}
+                           target="_blank"
+                           rel="noreferrer"
+                           className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-700/80 bg-slate-900/80 text-[11px] text-slate-200 hover:border-emerald-400/70"
+                         >
+                           {/* X logo */}
+                           <svg
+                             xmlns="http://www.w3.org/2000/svg"
+                             viewBox="0 0 24 24"
+                             className="h-3.5 w-3.5"
+                             fill="none"
+                             stroke="currentColor"
+                             strokeWidth="1.8"
+                           >
+                             <path d="M4 4l16 16m0-16L4 20" />
+                           </svg>
+                         </a>
+                       )}
+                       {youtubeUrl && (
+                         <a
+                           href={normalizeUrl(youtubeUrl)}
+                           target="_blank"
+                           rel="noreferrer"
+                           className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-700/80 bg-slate-900/80 text-[11px] text-slate-200 hover:border-emerald-400/70"
+                         >
+                           {/* YouTube play logo */}
+                           <svg
+                             xmlns="http://www.w3.org/2000/svg"
+                             viewBox="0 0 24 24"
+                             className="h-3.5 w-3.5"
+                             fill="currentColor"
+                           >
+                             <path d="M21.6 7.2s-.2-1.5-.8-2.1c-.8-.8-1.7-.8-2.1-.9C15.2 4 12 4 12 4h0s-3.2 0-6.7.2c-.4.1-1.3.1-2.1.9C2.6 5.7 2.4 7.2 2.4 7.2S2.2 8.9 2.2 10.6v1.7c0 1.7.2 3.4.2 3.4s.2 1.5.8 2.1c.8.8 1.9.8 2.4.9 1.8.2 7.4.2 7.4.2s3.2 0 6.7-.2c.4-.1 1.3-.1 2.1-.9.6-.6.8-2.1.8-2.1s.2-1.7.2-3.4v-1.7c0-1.7-.2-3.4-.2-3.4zM10 14.8V8.8l5 3-5 3z" />
+                           </svg>
+                         </a>
+                       )}
+                     </div>
+                   )}
                  </div>
               </div>
             </div>
             <div>
               <h3 className="text-sm font-semibold text-slate-100">Bio</h3>
-              <p className="mt-2 text-sm text-slate-300 leading-relaxed">This is a placeholder bio. Producer can customize their description, influences, achievements and collaboration interests.</p>
+              <p className="mt-2 text-sm text-slate-300 leading-relaxed">
+                {bioText}
+              </p>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-slate-100">Licensing Info</h3>
+              <h3 className="text-sm font-semibold text-slate-100">Licensing</h3>
               <ul className="mt-2 space-y-1 text-[12px] text-slate-300">
                 <li>• Basic / Premium / Unlimited tiers supported</li>
                 <li>• Exclusive purchases handled manually (contact to negotiate)</li>
