@@ -18,6 +18,26 @@ export function Home() {
   const { beats, loading } = useBeats()
   const [playlists, setPlaylists] = useState(listPlaylists())
   const [commentDrafts, setCommentDrafts] = useState({})
+  const testimonials = [
+    {
+      role: 'Dancehall Producer',
+      name: 'Jahmel Beats �?� Kingston, Jamaica',
+      quote:
+        '“RiddimBase finally feels like a real home for Caribbean riddims. My beats are getting plays from artists in London and New York I never knew before.”',
+    },
+    {
+      role: 'Afro-Caribbean Artist',
+      name: 'Naila Vibes �?� Port of Spain, Trinidad',
+      quote:
+        '“Licensing a beat here is as easy as adding it to cart. Contracts, stems and delivery are instant, so I can focus on writing and recording.”',
+    },
+    {
+      role: 'Beat Maker & Mix Engineer',
+      name: 'Kruz Fyah �?� Montego Bay, Jamaica',
+      quote:
+        '“Between the jobs board and boosted beats, most of my online clients now come straight through RiddimBase.”',
+    },
+  ]
   const trending = useMemo(() => {
     if (!beats.length) return []
     const ids = beats.map(b => b.id)
@@ -141,11 +161,11 @@ export function Home() {
               <FeaturedCarousel beats={beats} />
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h2 className="font-display text-lg font-semibold text-slate-50">Beats you should check out</h2>
-                  <a href="/beats" className="text-xs font-medium text-emerald-300 hover:text-emerald-200">View all</a>
+                  <h2 className="font-display text-base font-semibold text-slate-50 sm:text-lg">Beats you should check out</h2>
+                  <a href="/beats" className="text-[11px] font-medium text-emerald-300 hover:text-emerald-200 sm:text-xs">View all</a>
                 </div>
                 {loading && <p className="text-sm text-slate-400">Loading…</p>}
-              <div className="grid gap-4 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3">
                   {!loading && trending.map(b => (
                     <BeatCard key={b.id} {...b} coverUrl={b.coverUrl || null} audioUrl={b.audioUrl} />
                   ))}
@@ -155,6 +175,39 @@ export function Home() {
             <div className="space-y-8">
               <GenreFilters onSelect={handleGenre} />
               <TrendingProducers />
+              <div className="rounded-3xl border border-white/10 bg-black/70 bg-rb-gloss-stripes bg-blend-soft-light p-4 shadow-rb-gloss-panel sm:p-6">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-100 sm:text-base">
+                      What Caribbean creators are saying
+                    </h3>
+                    <p className="mt-1 text-[11px] text-slate-400 sm:text-xs">
+                      Real producers, beat makers and artists using RiddimBase to move their
+                      music forward.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  {testimonials.map((t) => (
+                    <figure
+                      key={t.name}
+                      className="flex h-full flex-col rounded-2xl border border-slate-800/80 bg-slate-950/80 p-4 text-[11px] text-slate-200"
+                    >
+                      <p className="flex-1 text-[11px] text-slate-200">
+                        {t.quote}
+                      </p>
+                      <figcaption className="mt-3">
+                        <p className="text-[11px] font-semibold text-rb-trop-cyan">
+                          {t.name}
+                        </p>
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">
+                          {t.role}
+                        </p>
+                      </figcaption>
+                    </figure>
+                  ))}
+                </div>
+              </div>
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-slate-100">Platform Benefits</h3>
                 <ul className="space-y-1 text-[12px] text-slate-300">
