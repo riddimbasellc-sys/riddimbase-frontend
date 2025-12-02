@@ -74,7 +74,7 @@ export function BeatDetails() {
     const optimistic = liked ? likes - 1 : likes + 1
     setLiked(!liked)
     setLikes(Math.max(0, optimistic))
-    const res = await toggleLike({ userId: user.id, beatId: id })
+    const res = await toggleLike({ userId: user.id, beatId: id, producerId })
     if (res.liked !== !liked) {
       setLiked(res.liked)
       setLikes(await likeCount(id))
@@ -172,7 +172,11 @@ export function BeatDetails() {
                 <button onClick={()=>setReportOpen(true)} className="rounded-full px-3 py-1 text-[10px] font-semibold border border-slate-700/70 text-slate-400 hover:border-rose-400/60 hover:text-rose-300">Report</button>
               </div>
               <div className="mt-4">
-                <BeatPlayer src={beat?.audioUrl || null} beatId={id} />
+                <BeatPlayer
+                  src={beat?.audioUrl || null}
+                  beatId={id}
+                  producerId={producerId}
+                />
               </div>
             </div>
             <div className="space-y-4">
