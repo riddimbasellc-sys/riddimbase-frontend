@@ -245,25 +245,8 @@ export function ProducerDashboard() {
   }
 
   const boostBeat = (id) => {
-    if (user) {
-      try {
-        createLocalBoost({ beatId: id, producerId: user.id, tier: 2 })
-      } catch {
-        // ignore
-      }
-    }
-    const expires = new Date(
-      Date.now() + 7 * 24 * 60 * 60 * 1000,
-    ).toISOString()
-    setBoostedMap((prev) => {
-      const next = { ...prev, [id]: { expires } }
-      try {
-        localStorage.setItem('rb_boosts', JSON.stringify(next))
-      } catch {
-        // ignore
-      }
-      return next
-    })
+    // Navigate to dedicated Boost Beat page for this beat
+    navigate(`/boost/${id}`)
   }
 
   const removeBeat = async (id) => {
