@@ -1,17 +1,25 @@
 import { useEffect, useState } from 'react'
 import { useAdminRole } from '../hooks/useAdminRole'
 import BackButton from '../components/BackButton'
-import { listBeats, hideBeat, deleteBeat, flagProducer } from '../services/beatsService'
+import { listBeats } from '../services/beatsService'
 import { fetchBeats } from '../services/beatsRepository'
+import {
+  adminHideBeat,
+  adminDeleteBeat,
+  adminFlagBeat,
+} from '../services/adminBeatsRepository'
 
 export function AdminBeats() {
   const { isAdmin, loading } = useAdminRole()
   const [items, setItems] = useState([])
   const [dataLoading, setDataLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     let active = true
-    async function load() {
+
+    async function loadBeats() {
+      setError('')
       try {
         const rows = await fetchBeats()
         if (!active) return
@@ -32,13 +40,16 @@ export function AdminBeats() {
         } else {
           setItems(listBeats({ includeHidden: true }))
         }
-      } catch {
+      } catch (e) {
+        setError(e.message || 'Failed to load beats. Showing local test data.')
         setItems(listBeats({ includeHidden: true }))
       } finally {
         if (active) setDataLoading(false)
       }
     }
-    load()
+
+    loadBeats()
+
     return () => {
       active = false
     }
@@ -60,21 +71,65 @@ export function AdminBeats() {
     )
   }
 
-  const refreshLocal = () => {
-    setItems(listBeats({ includeHidden: true }))
+  const reloadFromServer = async () => {
+    setDataLoading(true)
+    setError('')
+    try {
+      const rows = await fetchBeats()
+      if (rows && rows.length) {
+        setItems(
+          rows.map((b) => ({
+            id: b.id,
+            title: b.title,
+            producer: b.producer || 'Unknown',
+            userId: b.user_id || null,
+            genre: b.genre || 'Dancehall',
+            bpm: b.bpm || 100,
+            price: b.price || 29,
+            hidden: b.hidden || false,
+            flagged: b.flagged || false,
+          })),
+        )
+      } else {
+        setItems(listBeats({ includeHidden: true }))
+      }
+    } catch (e) {
+      setError(e.message || 'Failed to refresh beats.')
+    } finally {
+      setDataLoading(false)
+    }
   }
 
-  const doHide = (id) => {
-    hideBeat(id)
-    refreshLocal()
+  const doHide = async (id) => {
+    try {
+      await adminHideBeat(id)
+      await reloadFromServer()
+    } catch (e) {
+      // eslint-disable-next-line no-alert
+      alert(e.message || 'Failed to hide beat')
+    }
   }
-  const doDelete = (id) => {
-    deleteBeat(id)
-    refreshLocal()
+
+  const doDelete = async (id) => {
+    // eslint-disable-next-line no-alert
+    if (!window.confirm('Delete this beat permanently?')) return
+    try {
+      await adminDeleteBeat(id)
+      await reloadFromServer()
+    } catch (e) {
+      // eslint-disable-next-line no-alert
+      alert(e.message || 'Failed to delete beat')
+    }
   }
-  const doFlag = (id) => {
-    flagProducer(id)
-    refreshLocal()
+
+  const doFlag = async (id) => {
+    try {
+      await adminFlagBeat(id)
+      await reloadFromServer()
+    } catch (e) {
+      // eslint-disable-next-line no-alert
+      alert(e.message || 'Failed to flag beat')
+    }
   }
 
   return (
@@ -90,6 +145,11 @@ export function AdminBeats() {
           Admin tools for moderation. Supabase beats load first; local test beats show if none
           are present.
         </p>
+        {error && (
+          <p className="mt-2 text-[11px] text-rose-400">
+            {error}
+          </p>
+        )}
         <div className="mt-6 space-y-3">
           {items.map((b) => (
             <div
@@ -146,4 +206,3 @@ export function AdminBeats() {
     </section>
   )
 }
-
