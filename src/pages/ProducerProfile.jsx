@@ -3,7 +3,7 @@ import { useBeats } from '../hooks/useBeats'
 import BackButton from '../components/BackButton'
 import { BeatCard } from '../components/BeatCard'
 import { followerCount, isFollowing, toggleFollow } from '../services/socialService'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import useSupabaseUser from '../hooks/useSupabaseUser'
 import { getSubscription } from '../services/subscriptionService'
 import ProfileShareModal from '../components/ProfileShareModal'
@@ -291,18 +291,17 @@ export function ProducerProfile() {
           </div>
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-slate-100">Beat Catalog ({catalog.length})</h3>
-            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-              {catalog.map(b => (
-                <BeatCard
+            <div className="grid gap-4 sm:grid-cols-3 md:grid-cols-4">
+              {catalog.map((b) => (
+                <BeatSquareCard
                   key={b.id}
-                  {...b}
-                  coverUrl={b.coverUrl || null}
-                  audioUrl={b.audioUrl}
-                  sponsored={isBeatBoosted(b.id)}
-                  compact={true}
+                  beat={b}
+                  boosted={isBeatBoosted(b.id)}
                 />
               ))}
-              {catalog.length===0 && <p className="text-xs text-slate-500">No beats uploaded yet.</p>}
+              {catalog.length === 0 && (
+                <p className="text-xs text-slate-500">No beats uploaded yet.</p>
+              )}
             </div>
           </div>
         </div>
@@ -310,5 +309,75 @@ export function ProducerProfile() {
         <ReportModal open={reportOpen} onClose={()=>setReportOpen(false)} targetId={producerId} type="producer" />
       </div>
     </section>
+  )
+}
+
+function BeatSquareCard({ beat, boosted }) {
+  const [playing, setPlaying] = useState(false)
+  const audioRef = useRef(null)
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    if (playing) {
+      audio.play().catch(() => setPlaying(false))
+    } else {
+      audio.pause()
+    }
+  }, [playing])
+
+  const handlePlay = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!beat.audioUrl || !audioRef.current) return
+    setPlaying((p) => !p)
+  }
+
+  return (
+    <Link
+      to={`/beat/${beat.id}`}
+      className="group relative aspect-square w-full overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/80 shadow-[0_14px_40px_rgba(0,0,0,0.75)] transition hover:border-red-500/70 hover:bg-slate-900"
+    >
+      {beat.coverUrl ? (
+        <img
+          src={beat.coverUrl}
+          alt={beat.title}
+          className="h-full w-full object-cover transition duration-200 group-hover:scale-[1.03]"
+        />
+      ) : (
+        <div className="h-full w-full bg-gradient-to-br from-red-500 via-fuchsia-500 to-amber-400" />
+      )}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+      {boosted && (
+        <span className="absolute left-2 top-2 rounded-full border border-red-400/80 bg-red-500/20 px-2 py-[1px] text-[9px] font-semibold text-red-100 shadow">
+          Boosted
+        </span>
+      )}
+
+      <button
+        type="button"
+        onClick={handlePlay}
+        className="absolute inset-0 m-auto flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-[13px] font-semibold text-slate-900 shadow-lg transition group-hover:scale-105"
+      >
+        {playing ? '�?,�' : '�-'}
+      </button>
+
+      <div className="absolute inset-x-2 bottom-2">
+        <p className="truncate text-[11px] font-semibold text-slate-50">
+          {beat.title}
+        </p>
+        <p className="truncate text-[10px] text-slate-300">
+          {beat.genre || 'Caribbean'} • {beat.bpm || 0} BPM
+        </p>
+      </div>
+
+      <audio
+        ref={audioRef}
+        src={beat.audioUrl || ''}
+        preload="metadata"
+        className="hidden"
+      />
+    </Link>
   )
 }
