@@ -16,7 +16,7 @@ export function EditProfile() {
   const initialDisplay = profile?.displayName || ''
   const existingRoles = (profile?.accountType || 'producer').split('+')
   const [displayName, setDisplayName] = useState(initialDisplay)
-  const ROLE_OPTIONS = ['mix-master engineer','producer','beat maker','artist']
+  const ROLE_OPTIONS = ['mix-master engineer', 'producer', 'beat maker', 'artist']
   const [selectedRoles, setSelectedRoles] = useState(existingRoles)
   const [avatarFile, setAvatarFile] = useState(null)
   const fileRef = useRef(null)
@@ -122,6 +122,16 @@ export function EditProfile() {
     if (!user) return
 
     if (profile) {
+      // Keep display name in sync with the stored profile so it always
+      // shows the current username when you open this page.
+      setDisplayName(
+        profile.displayName ||
+          profile.display_name ||
+          user.email?.split('@')[0] ||
+          '',
+      )
+      setSelectedRoles((profile.accountType || 'producer').split('+'))
+
       setCountry(profile.country || '')
       setPhone(profile.phone || '')
       setBio(profile.bio || '')
