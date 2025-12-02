@@ -69,7 +69,7 @@ export default function useUserProfile() {
       website: profile.website || null,
       instagram: profile.instagram || null,
       twitterX: profile.twitter_x || profile.twitterX || null,
-      youtube: profile.youtube || null,
+      youtube: profile.youtube || profile.youtube_url || null,
       genres: profile.genres || [],
     }
   }, [profile, user])
