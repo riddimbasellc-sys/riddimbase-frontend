@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom'
+import { useParams, useLocation } from 'react-router-dom'
 import { useState, useEffect, useMemo } from 'react'
 import { LICENSE_TERMS, DEFAULT_TERMS } from '../constants/licenseTerms'
 import BackButton from '../components/BackButton'
@@ -16,11 +16,13 @@ import { getPlayCount } from '../services/analyticsService'
 
 export function BeatDetails() {
   const params = useParams()
+  const location = useLocation()
+  const locationBeat = location.state && location.state.beat ? location.state.beat : null
   const raw = params.id || params.idSlug
   const id = raw ? raw.split('-')[0] : null
   const [selected, setSelected] = useState(null)
   const { user } = useSupabaseUser()
-  const localBeat = getBeat(id)
+  const localBeat = locationBeat || getBeat(id)
   const [remoteBeat, setRemoteBeat] = useState(null)
   const beat = localBeat || remoteBeat
   const producerId = beat?.userId || beat?.user_id || null
