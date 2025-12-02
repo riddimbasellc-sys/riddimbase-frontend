@@ -22,6 +22,8 @@ export function BeatCard({
   price,
   coverUrl,
   audioUrl,
+  description,
+  licensePrices,
   freeDownload = false,
   initialLikes = 0,
   initialFavs = 0, // compatibility
@@ -143,7 +145,27 @@ export function BeatCard({
   }
 
   const Wrapper = noLink ? 'div' : Link
-  const wrapperProps = noLink ? {} : { to: `/beat/${id}` }
+  const wrapperProps = noLink
+    ? {}
+    : {
+        to: `/beat/${id}`,
+        state: {
+          beat: {
+            id,
+            title,
+            producer,
+            userId,
+            genre,
+            bpm,
+            price,
+            coverUrl,
+            audioUrl,
+            description,
+            licensePrices,
+            freeDownload,
+          },
+        },
+      }
 
   const sizeClasses = compact ? 'p-3' : 'p-3'
 
@@ -273,4 +295,3 @@ export function BeatCard({
     </Wrapper>
   )
 }
-
