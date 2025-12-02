@@ -70,7 +70,10 @@ export function Producers() {
         <div className="mt-6 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {list.map(([pid,count]) => {
             const prof = profiles[pid]
-            const displayName = prof?.displayName || pid
+            // Fallback to beat producer name (usually display name or email) if profile missing
+            const beatSample = beats.find(b => b.userId === pid)
+            const fallbackName = beatSample?.producer || pid
+            const displayName = prof?.displayName || fallbackName
             return (
             <Link key={pid} to={`/producer/${pid}`} className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-4 hover:border-emerald-400/70 transition">
               <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-emerald-500 via-emerald-400 to-orange-500 mb-3" />
