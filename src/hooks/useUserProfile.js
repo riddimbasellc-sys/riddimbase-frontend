@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import useSupabaseUser from './useSupabaseUser'
 import { fetchProfile, upsertProfile } from '../services/supabaseProfileRepository'
 
@@ -51,22 +51,28 @@ export default function useUserProfile() {
     return null
   }
 
-  // Provide normalized view
-  const normalized = profile && {
-    userId: user?.id,
-    displayName: profile.display_name || profile.displayName || user?.email?.split('@')[0],
-    accountType: profile.role,
-    role: profile.role,
-    avatarUrl: profile.avatar_url || profile.avatarUrl || null,
-    country: profile.country || null,
-    phone: profile.phone || null,
-    bio: profile.bio || null,
-    website: profile.website || null,
-    instagram: profile.instagram || null,
-    twitterX: profile.twitter_x || profile.twitterX || null,
-    youtube: profile.youtube || null,
-    genres: profile.genres || []
-  }
+  // Provide normalized view (memoized so reference is stable between renders)
+  const normalized = useMemo(() => {
+    if (!profile) return null
+    return {
+      userId: user?.id,
+      displayName:
+        profile.display_name ||
+        profile.displayName ||
+        user?.email?.split('@')[0],
+      accountType: profile.role,
+      role: profile.role,
+      avatarUrl: profile.avatar_url || profile.avatarUrl || null,
+      country: profile.country || null,
+      phone: profile.phone || null,
+      bio: profile.bio || null,
+      website: profile.website || null,
+      instagram: profile.instagram || null,
+      twitterX: profile.twitter_x || profile.twitterX || null,
+      youtube: profile.youtube || null,
+      genres: profile.genres || [],
+    }
+  }, [profile, user])
 
   return { profile: normalized, updateProfile, user, loading, saving }
 }
