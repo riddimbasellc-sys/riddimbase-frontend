@@ -118,7 +118,7 @@ export function getBeat(id) {
 }
 
 export function addBeat(data) {
-  const id = String(Date.now())
+  const id = data.id || String(Date.now())
   const userId = data.userId || (data.producer ? pseudoId(data.producer) : null)
   const newBeat = {
     id,

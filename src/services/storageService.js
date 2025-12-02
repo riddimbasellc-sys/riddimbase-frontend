@@ -46,3 +46,39 @@ export async function uploadArtwork(file) { return uploadToFolder('artwork', fil
 export async function uploadAudio(file) { return uploadToFolder('audio', file) }
 export async function uploadBundle(file) { return uploadToFolder('bundles', file) }
 export async function uploadAvatar(file) { return uploadToFolder('avatars', file) }
+
+// New helper: upload beat audio + metadata via backend /beats/upload-beat
+export async function uploadBeatWithMetadata({ file, userId, title, genre, bpm, description, price }) {
+  if (!file) throw new Error('No audio file provided')
+  const base = API_BASE || ''
+  const endpoint = `${base}/beats/upload-beat`
+  const form = new FormData()
+  form.append('file', file)
+  if (userId) form.append('user_id', userId)
+  if (title) form.append('title', title)
+  if (genre) form.append('genre', genre)
+  if (bpm !== undefined && bpm !== null && bpm !== '') form.append('bpm', String(bpm))
+  if (description) form.append('description', description)
+  if (price !== undefined && price !== null && price !== '') form.append('price', String(price))
+
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    body: form
+  })
+
+  let payload = null
+  try {
+    payload = await res.json()
+  } catch {
+    // ignore
+  }
+
+  if (!res.ok) {
+    const msg = payload?.error || 'Failed to upload beat'
+    throw new Error(msg)
+  }
+
+  const beat = payload?.beat || null
+  const audioUrl = beat?.audio_url || null
+  return { beat, audioUrl }
+}
