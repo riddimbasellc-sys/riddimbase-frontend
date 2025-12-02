@@ -1,6 +1,19 @@
 // Supabase repository for provider profiles & catalog.
 // Expected schema (adjust as needed):
-// Table: provider_profiles -> id (uuid, PK), bio text, location text, tags text, contact_email text, contact_phone text, instagram text, whatsapp text, telegram text, services text/json, updated_at timestamp
+// Table: provider_profiles ->
+//   id (uuid, PK),
+//   display_name text,
+//   avatar_url text,
+//   bio text,
+//   location text,
+//   tags text,
+//   contact_email text,
+//   contact_phone text,
+//   instagram text,
+//   whatsapp text,
+//   telegram text,
+//   services text/json,
+//   updated_at timestamp
 // Table: provider_catalog -> id uuid PK, provider_id uuid FK, title text, audio_url text, cover_url text, ord int
 // If tables do not exist, functions will fail silently and return null/[] so UI can fallback.
 import { supabase } from '../lib/supabaseClient'
@@ -39,6 +52,15 @@ export async function updateProviderServices(userId, services) {
   const { data, error } = await supabase.from(PROFILES).upsert(payload).select().single()
   if (error) { handleError('updateProviderServices', error); return null }
   return data
+}
+
+export async function listProviderProfiles() {
+  const { data, error } = await supabase.from(PROFILES).select('*')
+  if (error) {
+    handleError('listProviderProfiles', error)
+    return []
+  }
+  return data || []
 }
 
 export async function fetchCatalog(userId) {

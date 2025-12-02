@@ -58,9 +58,10 @@ const userProviders = new Map()
 function ensureUserProvider(user) {
   if (!user || !user.id) return null
   if (!userProviders.has(user.id)) {
+    const baseName = user.email?.split('@')[0] || 'Unknown'
     userProviders.set(user.id, {
       id: user.id,
-      name: user.email?.split('@')[0] || 'Unknown',
+      name: baseName,
       avatar: null,
       location: '',
       tags: [],
