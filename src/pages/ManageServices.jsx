@@ -1,5 +1,6 @@
 import BackButton from '../components/BackButton'
 import useSupabaseUser from '../hooks/useSupabaseUser'
+import useUserProfile from '../hooks/useUserProfile'
 import { useState, useEffect } from 'react'
 import { upsertUserProvider, updateUserProviderContacts, updateUserProviderServices, addProviderBeat, getProvider, removeProviderCatalogItem, userProviderCatalogRemaining } from '../services/serviceProvidersService'
 import { fetchProviderProfile, upsertProviderProfile, fetchCatalog, addCatalogItem as addCatalogItemSupabase, removeCatalogItem as removeCatalogItemSupabase, reorderCatalog, updateProviderServices } from '../services/supabaseProvidersRepository'
@@ -9,6 +10,7 @@ import { BeatPlayer } from '../components/BeatPlayer'
 
 export function ManageServices() {
   const { user, loading } = useSupabaseUser()
+  const { profile } = useUserProfile()
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const provider = user ? getProvider(user.id) || upsertUserProvider(user, {}) : null
@@ -146,13 +148,30 @@ export function ManageServices() {
       const urlErr = validateUrls()
       if (urlErr) throw new Error(urlErr)
       const tagsArr = tagsInput.split(',').map(t=>t.trim()).filter(Boolean)
-      // In-memory immediate update
-      upsertUserProvider(user, { bio, location, tags: tagsArr })
+      // In-memory immediate update (name/avatar mirrored from profile for cards)
+      upsertUserProvider(user, {
+        name: profile?.displayName || user.email?.split('@')[0] || 'Unknown',
+        avatar: profile?.avatarUrl || null,
+        bio,
+        location,
+        tags: tagsArr
+      })
       const computed = computeServices()
       updateUserProviderServices(user, computed)
       updateUserProviderContacts(user, { instagram, whatsapp, telegram, phone, email })
-      // Persist to Supabase
-      await upsertProviderProfile(user.id, { bio, location, tags: tagsArr.join(','), contact_email: email, contact_phone: phone, instagram, whatsapp, telegram })
+      // Persist to Supabase provider_profiles, including display name + avatar
+      await upsertProviderProfile(user.id, {
+        display_name: profile?.displayName || user.email?.split('@')[0] || null,
+        avatar_url: profile?.avatarUrl || null,
+        bio,
+        location,
+        tags: tagsArr.join(','),
+        contact_email: email,
+        contact_phone: phone,
+        instagram,
+        whatsapp,
+        telegram
+      })
     } catch (e) {
       setError(e.message || 'Failed to save')
     } finally {

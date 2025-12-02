@@ -1,10 +1,50 @@
 import BackButton from '../components/BackButton'
 import { listProviders } from '../services/serviceProvidersService'
+import { listProviderProfiles } from '../services/supabaseProvidersRepository'
 import { Link } from 'react-router-dom'
 import SocialIconRow from '../components/SocialIconRow'
+import { useEffect, useState } from 'react'
 
 export function Services() {
-  const providers = listProviders()
+  const [providers, setProviders] = useState([])
+
+  useEffect(() => {
+    let active = true
+    async function load() {
+      // Static/demo providers from in-memory store
+      const staticProviders = listProviders()
+      // Dynamic providers from Supabase provider_profiles
+      const rows = await listProviderProfiles()
+      const supaProviders = rows.map((row) => ({
+        id: row.id,
+        name: row.display_name || row.id,
+        avatar: row.avatar_url || null,
+        location: row.location || '',
+        tags:
+          (row.tags || '')
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean) || [],
+        bio: row.bio || '',
+        contact: {
+          email: row.contact_email || '',
+          phone: row.contact_phone || '',
+          instagram: row.instagram || '',
+          whatsapp: row.whatsapp || '',
+          telegram: row.telegram || '',
+        },
+        services: Array.isArray(row.services) ? row.services : [],
+        catalog: [],
+      }))
+      if (active) {
+        setProviders([...supaProviders, ...staticProviders])
+      }
+    }
+    load()
+    return () => {
+      active = false
+    }
+  }, [])
   return (
     <section className="bg-slate-950/95">
       <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-10">
