@@ -9,6 +9,7 @@ create table if not exists public.boosted_beats (
   starts_at timestamptz not null default now(),
   expires_at timestamptz not null,
   priority_score integer not null,
+  paypal_order_id text,
   created_at timestamptz not null default now()
 );
 
@@ -21,4 +22,3 @@ create index if not exists idx_boosted_beats_beat
 
 create index if not exists idx_boosted_beats_producer
   on public.boosted_beats (producer_id);
-
