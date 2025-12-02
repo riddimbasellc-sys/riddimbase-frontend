@@ -5,7 +5,7 @@ import { addBeat, listBeats } from '../services/beatsService'
 import { createBeat } from '../services/beatsRepository'
 import ShareBeatModal from '../components/ShareBeatModal'
 import { useNavigate } from 'react-router-dom'
-import { uploadArtwork, uploadAudio, uploadBundle } from '../services/storageService'
+import { uploadArtwork, uploadBundle, uploadAudio, uploadBeatWithMetadata } from '../services/storageService'
 import useUserPlan from '../hooks/useUserPlan'
 import { BeatCard } from '../components/BeatCard'
 
@@ -86,14 +86,44 @@ export function UploadBeat() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    if (!audioFile) {
+      setError('Please upload a preview audio file for your beat.')
+      return
+    }
     setUploadingBeat(true)
+
+    // 1) Upload audio + metadata via backend /beats/upload-beat (S3 + Supabase)
+    let createdBeat = null
+    let supabaseAudioUrl = null
+    try {
+      const { beat, audioUrl } = await uploadBeatWithMetadata({
+        file: audioFile,
+        userId: user?.id || null,
+        title,
+        genre,
+        bpm: Number(bpm),
+        description,
+        price: Number(price)
+      })
+      createdBeat = beat
+      supabaseAudioUrl = audioUrl
+      setAudioUrlRemote(audioUrl || null)
+    } catch (err) {
+      console.error('[UploadBeat] backend upload failed', err)
+      setUploadingBeat(false)
+      setError(err.message || 'Failed to upload beat audio.')
+      return
+    }
+
     // Local preview URLs for immediate UX
-    const localAudioUrl = audioUrlRemote || (audioFile ? URL.createObjectURL(audioFile) : null)
+    const localAudioUrl =
+      supabaseAudioUrl ||
+      audioPreviewUrl ||
+      (audioFile ? URL.createObjectURL(audioFile) : null)
     const localUntaggedUrl = untaggedUrl || (untaggedFile ? URL.createObjectURL(untaggedFile) : null)
     const localCoverUrl = artworkUrl || (artworkFile ? URL.createObjectURL(artworkFile) : null)
     const localBundleUrl = bundleUrl || null
     // Supabase should only store stable remote URLs (from S3), never blob: URLs
-    const supabaseAudioUrl = audioUrlRemote || null
     const supabaseUntaggedUrl = untaggedUrl || null
     const supabaseCoverUrl = artworkUrl || null
     const supabaseBundleUrl = bundleUrl || null
@@ -104,6 +134,7 @@ export function UploadBeat() {
       Exclusive: exclusivePrice,
     }
     addBeat({
+      id: createdBeat?.id,
       title,
       description,
       genre,
@@ -119,29 +150,36 @@ export function UploadBeat() {
       licensePrices,
       freeDownload,
     })
-    const created = await createBeat({
-      title,
-      description,
-      genre,
-      bpm: Number(bpm),
-      price: Number(price),
-      producer: user?.email || 'You',
-      user_id: user?.id || null,
-      audio_url: supabaseAudioUrl,
-      untagged_url: supabaseUntaggedUrl,
-      cover_url: supabaseCoverUrl,
-      bundle_url: supabaseBundleUrl,
-      bundle_name: bundleFile?.name || null,
-      license_prices: licensePrices,
-      free_download: freeDownload,
-    })
+
+    // 3) Optionally patch Supabase row with extra URLs (untagged / artwork / bundle)
+    try {
+      if (createdBeat?.id && (supabaseUntaggedUrl || supabaseCoverUrl || supabaseBundleUrl)) {
+        await createBeat({
+          id: createdBeat.id,
+          title: createdBeat.title,
+          description: createdBeat.description,
+          genre: createdBeat.genre,
+          bpm: createdBeat.bpm,
+          price: createdBeat.price,
+          producer: createdBeat.producer,
+          user_id: createdBeat.user_id,
+          audio_url: createdBeat.audio_url,
+          untagged_url: supabaseUntaggedUrl,
+          cover_url: supabaseCoverUrl,
+          bundle_url: supabaseBundleUrl,
+          bundle_name: bundleFile?.name || createdBeat.bundle_name || null,
+          license_prices: createdBeat.license_prices || licensePrices,
+          free_download: createdBeat.free_download ?? freeDownload,
+        })
+      }
+    } catch (err) {
+      console.warn('[UploadBeat] optional Supabase patch failed', err)
+    }
+
     setUploadingBeat(false)
-    if (created?.id) {
-      setShareBeat({ id: created.id, title })
+    if (createdBeat?.id) {
+      setShareBeat({ id: createdBeat.id, title })
     } else {
-      setError(
-        'Beat saved locally, but not in the main database. Please make sure you are logged in and that Supabase (beats table + env vars) is configured. After fixing that, new uploads will stay after refresh.',
-      )
       navigate('/producer/dashboard')
     }
   }
