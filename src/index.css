@@ -29,3 +29,25 @@ html, body, #root {
   will-change: transform;
   animation: rb-marquee 18s linear infinite;
 }
+
+@keyframes rb-wave-pulse {
+  0%, 100% {
+    transform: scaleY(0.3);
+    opacity: 0.45;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+.rb-wave-active > div {
+  animation: rb-wave-pulse 1.1s ease-in-out infinite;
+  transform-origin: bottom;
+}
+
+.rb-wave-idle > div {
+  transform-origin: bottom;
+  transform: scaleY(0.35);
+  opacity: 0.4;
+}
