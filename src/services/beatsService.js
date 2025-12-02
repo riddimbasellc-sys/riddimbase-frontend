@@ -27,6 +27,7 @@ function loadUserBeatsFromStorage() {
 function persistUserBeats(beats) {
   if (typeof window === 'undefined') return
   try {
+    // Only persist real user beats, never any placeholders.
     const userBeats = beats.filter((b) => !b.isPlaceholder)
     window.localStorage.setItem(LOCAL_BEATS_KEY, JSON.stringify(userBeats))
   } catch {
@@ -34,60 +35,15 @@ function persistUserBeats(beats) {
   }
 }
 
-// Static placeholder catalog used when Supabase has no data yet.
-const placeholderBeats = [
-  {
-    id: '1',
-    title: 'Kingston Nights',
-    producer: 'YaadWave',
-    userId: pseudoId('YaadWave'),
-    genre: 'Dancehall',
-    bpm: 96,
-    price: 39,
-    hidden: false,
-    flagged: false,
-    isPlaceholder: true,
-  },
-  {
-    id: '2',
-    title: 'Port of Spain Fete',
-    producer: 'TriniVibes',
-    userId: pseudoId('TriniVibes'),
-    genre: 'Soca',
-    bpm: 120,
-    price: 29,
-    hidden: false,
-    flagged: false,
-    isPlaceholder: true,
-  },
-  {
-    id: '3',
-    title: 'Montego Bay Sunset',
-    producer: 'DubShore',
-    userId: pseudoId('DubShore'),
-    genre: 'Reggae',
-    bpm: 88,
-    price: 35,
-    hidden: false,
-    flagged: false,
-    isPlaceholder: true,
-  },
-  {
-    id: '4',
-    title: 'AfroCarib Breeze',
-    producer: 'IslandRootz',
-    userId: pseudoId('IslandRootz'),
-    genre: 'Afrobeats',
-    bpm: 105,
-    price: 49,
-    hidden: false,
-    flagged: false,
-    isPlaceholder: true,
-  },
-]
+// Bootstrap in‑memory beats with any user-created beats from localStorage.
+// We intentionally do not ship hard‑coded demo beats; all content should come
+// from Supabase or real user uploads so production data always matches reality.
+let beats = [...loadUserBeatsFromStorage()]
 
-// Bootstrap in‑memory beats with any user-created beats from localStorage plus placeholders
-let beats = [...loadUserBeatsFromStorage(), ...placeholderBeats]
+// ---------------------------------------------------------------------------
+// Sales prototype (still local/in-memory; Supabase-backed sales are layered in
+// via salesRepository when available).
+// ---------------------------------------------------------------------------
 
 // Initialize sales with timestamps derived from minutesAgo for legacy entries
 let sales = [
@@ -108,6 +64,10 @@ let sales = [
     createdAt: new Date(Date.now() - 1440 * 60 * 1000).toISOString(),
   },
 ]
+
+// ---------------------------------------------------------------------------
+// Beat helpers (used across dashboard, homepage, etc.)
+// ---------------------------------------------------------------------------
 
 export function listBeats({ includeHidden = false } = {}) {
   return includeHidden ? beats : beats.filter((b) => !b.hidden)
@@ -133,13 +93,19 @@ export function addBeat(data) {
   return newBeat
 }
 
-export function listSales() { return sales }
+// ---------------------------------------------------------------------------
+// Sales helpers
+// ---------------------------------------------------------------------------
+
+export function listSales() {
+  return sales
+}
 
 export async function listSalesAsync() {
   try {
     const remote = await fetchSales()
     if (remote.length) {
-      return remote.map(r => ({
+      return remote.map((r) => ({
         beatId: r.beat_id,
         license: r.license,
         buyer: r.buyer,
@@ -163,17 +129,27 @@ export async function recordSale({ beatId, license, buyer, amount, beatTitle }) 
   sales.unshift(sale)
   try {
     await createSale({ beatId, license, buyer, amount })
-  } catch {}
+  } catch {
+    // ignore remote failure, keep local sale
+  }
   if (import.meta.env.VITE_NOTIFICATIONS_ENABLED === 'true') {
-    try { await sendSaleEmail({ beatTitle: beatTitle || beatId, license, buyerEmail: buyer, amount }) } catch {}
+    try {
+      await sendSaleEmail({
+        beatTitle: beatTitle || beatId,
+        license,
+        buyerEmail: buyer,
+        amount,
+      })
+    } catch {
+      // ignore email errors
+    }
   }
   return sale
 }
 
 export function monthlySalesCount() {
   const now = new Date()
-  const ym = now.getFullYear() + '-' + (now.getMonth())
-  return sales.filter(s => {
+  return sales.filter((s) => {
     if (!s.createdAt) return false
     const d = new Date(s.createdAt)
     return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
@@ -194,16 +170,22 @@ export function monthlyRevenue() {
 
 // Compute gross earnings for a producer by userId or displayName
 export function computeProducerEarnings({ userId, displayName }) {
-  // Map beatId to beat
   return sales.reduce((sum, s) => {
     const beat = beats.find((b) => b.id === s.beatId)
     if (!beat) return sum
-    if ((userId && beat.userId === userId) || (displayName && beat.producer === displayName)) {
+    if (
+      (userId && beat.userId === userId) ||
+      (displayName && beat.producer === displayName)
+    ) {
       return sum + s.amount
     }
     return sum
   }, 0)
 }
+
+// ---------------------------------------------------------------------------
+// Moderation helpers
+// ---------------------------------------------------------------------------
 
 export function hideBeat(id) {
   const b = beats.find((b) => b.id === id)
@@ -224,3 +206,4 @@ export function flagProducer(id) {
   if (b) b.flagged = true
   return b
 }
+
