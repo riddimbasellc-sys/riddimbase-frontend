@@ -227,7 +227,29 @@ export function BeatCard({
       </div>
 
       {/* Hidden audio element controlled by the play button */}
-      <audio ref={audioRef} src={audioUrl || ''} preload="metadata" className="hidden" />
+      <audio
+        ref={audioRef}
+        src={audioUrl || ''}
+        preload="metadata"
+        className="hidden"
+      />
+
+      {/* Mini waveform visualizer tied to play state */}
+      <div className="mt-3 h-10 w-full overflow-hidden rounded-xl bg-slate-900/80 px-2 py-1">
+        <div
+          className={`flex h-full items-end gap-[2px] ${
+            playing ? 'rb-wave-active' : 'rb-wave-idle'
+          }`}
+        >
+          {Array.from({ length: 32 }).map((_, i) => (
+            <div
+              key={i}
+              className="w-[2px] rounded-full bg-slate-500/80"
+              style={{ animationDelay: `${i * 0.03}s` }}
+            />
+          ))}
+        </div>
+      </div>
 
       {/* Bottom row: cart + like + repost + profile icon */}
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
