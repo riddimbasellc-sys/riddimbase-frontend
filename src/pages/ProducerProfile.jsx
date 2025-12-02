@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, Link } from 'react-router-dom'
 import { useBeats } from '../hooks/useBeats'
 import BackButton from '../components/BackButton'
 import { BeatCard } from '../components/BeatCard'
