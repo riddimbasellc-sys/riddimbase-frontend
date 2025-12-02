@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { recordPlay } from '../services/analyticsService'
 
-export function BeatPlayer({ src, className = '', beatId }) {
+export function BeatPlayer({ src, className = '', beatId, producerId }) {
   const audioRef = useRef(null)
   const [playing, setPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -34,7 +34,7 @@ export function BeatPlayer({ src, className = '', beatId }) {
     setPlaying(p => {
       const next = !p
       if (!p && next) {
-        if (beatId) recordPlay(beatId)
+        if (beatId) recordPlay(beatId, producerId)
       }
       return next
     })
