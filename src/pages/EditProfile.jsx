@@ -221,7 +221,7 @@ export function EditProfile() {
     try {
       const { error } = await supabase.auth.updateUser({ password: newPassword })
       if (error) throw error
-      setAuthMessage('Password updated successfully.')
+      setAuthMessage('Password updated. If security confirmations are enabled, you will receive an email to verify this change.')
       setNewPassword('')
       setConfirmPassword('')
     } catch (e2) {
@@ -276,7 +276,12 @@ export function EditProfile() {
               </div>
               <div className="flex-1 w-full space-y-4">
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-300">Display Name</label>
+                  <label className="flex items-center justify-between text-[11px] font-semibold text-slate-300">
+                    <span>Display Name</span>
+                    <span className="rounded-full border border-slate-700/70 bg-slate-900/70 px-2 py-[1px] text-[9px] font-medium text-slate-400">
+                      Edit
+                    </span>
+                  </label>
                   <input value={displayName} onChange={e=>setDisplayName(e.target.value)} required className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none" />
                 </div>
                 <div>
@@ -300,7 +305,12 @@ export function EditProfile() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="md:col-span-2 space-y-2">
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-300">Email</label>
+                  <label className="flex items-center justify-between text-[11px] font-semibold text-slate-300">
+                    <span>Email</span>
+                    <span className="rounded-full border border-slate-700/70 bg-slate-900/70 px-2 py-[1px] text-[9px] font-medium text-slate-400">
+                      Edit
+                    </span>
+                  </label>
                   <div className="mt-1 flex gap-2">
                     <input
                       value={email}
@@ -351,18 +361,33 @@ export function EditProfile() {
                 {authMessage && <p className="text-[10px] text-emerald-300">{authMessage}</p>}
               </div>
               <div>
-                <label className="text-[11px] font-semibold text-slate-300">Country</label>
+                <label className="flex items-center justify-between text-[11px] font-semibold text-slate-300">
+                  <span>Country</span>
+                  <span className="rounded-full border border-slate-700/70 bg-slate-900/70 px-2 py-[1px] text-[9px] font-medium text-slate-400">
+                    Edit
+                  </span>
+                </label>
                 <select value={country} onChange={e=>setCountry(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100">
                   <option value="">Select country</option>
                   {countries.map(c=> <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-[11px] font-semibold text-slate-300">Phone</label>
+                <label className="flex items-center justify-between text-[11px] font-semibold text-slate-300">
+                  <span>Phone</span>
+                  <span className="rounded-full border border-slate-700/70 bg-slate-900/70 px-2 py-[1px] text-[9px] font-medium text-slate-400">
+                    Edit
+                  </span>
+                </label>
                 <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+1 555 123 4567" className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100" />
               </div>
               <div className="md:col-span-2">
-                <label className="text-[11px] font-semibold text-slate-300">Bio</label>
+                <label className="flex items-center justify-between text-[11px] font-semibold text-slate-300">
+                  <span>Bio</span>
+                  <span className="rounded-full border border-slate-700/70 bg-slate-900/70 px-2 py-[1px] text-[9px] font-medium text-slate-400">
+                    Edit
+                  </span>
+                </label>
                 <textarea value={bio} onChange={e=>setBio(e.target.value)} rows={4} placeholder="Introduce yourself, style, achievements..." className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100" />
               </div>
             </div>
@@ -372,11 +397,21 @@ export function EditProfile() {
             <h2 className="text-xs font-semibold tracking-wide text-slate-200">Links & Social</h2>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="text-[11px] font-semibold text-slate-300">Website</label>
+                <label className="flex items-center justify-between text-[11px] font-semibold text-slate-300">
+                  <span>Website</span>
+                  <span className="rounded-full border border-slate-700/70 bg-slate-900/70 px-2 py-[1px] text-[9px] font-medium text-slate-400">
+                    Edit
+                  </span>
+                </label>
                 <input value={website} onChange={e=>setWebsite(e.target.value)} placeholder="https://" className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100" />
               </div>
               <div>
-                <label className="text-[11px] font-semibold text-slate-300">Instagram</label>
+                <label className="flex items-center justify-between text-[11px] font-semibold text-slate-300">
+                  <span>Instagram</span>
+                  <span className="rounded-full border border-slate-700/70 bg-slate-900/70 px-2 py-[1px] text-[9px] font-medium text-slate-400">
+                    Edit
+                  </span>
+                </label>
                 <input value={instagram} onChange={e=>setInstagram(e.target.value)} placeholder="@handle" className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100" />
               </div>
               <div>
