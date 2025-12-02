@@ -9,6 +9,7 @@ import { BeatDetails } from './pages/BeatDetails'
 import { ProducerDashboard } from './pages/ProducerDashboard'
 import { ProducerPro } from './pages/ProducerPro'
 import { ProducerProfile } from './pages/ProducerProfile'
+import { BoostBeat } from './pages/BoostBeat'
 import { Producers } from './pages/Producers'
 import { Favorites } from './pages/Favorites'
 import { UploadBeat } from './pages/UploadBeat'
@@ -86,6 +87,7 @@ function App() {
         <Route path="/soundkits" element={<Soundkits />} />
         <Route path="/beat/:id" element={<BeatDetails />} />
         <Route path="/beat/:idSlug" element={<BeatDetails />} />
+        <Route path="/boost/:beatId" element={<BoostBeat />} />
         <Route path="/producer/dashboard" element={<ProducerDashboard />} />
         <Route path="/producer/pro" element={<ProducerPro />} />
         <Route path="/producer/:producerId" element={<ProducerProfile />} />
