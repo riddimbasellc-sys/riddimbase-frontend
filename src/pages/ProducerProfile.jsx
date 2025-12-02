@@ -358,9 +358,9 @@ function BeatSquareCard({ beat, boosted }) {
       <button
         type="button"
         onClick={handlePlay}
-        className="absolute inset-0 m-auto flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-[13px] font-semibold text-slate-900 shadow-lg transition group-hover:scale-105"
+        className="absolute inset-0 m-auto flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-[15px] font-semibold text-slate-900 shadow-lg transition group-hover:scale-105"
       >
-        {playing ? '�?,�' : '�-'}
+        {playing ? '❚❚' : '▶'}
       </button>
 
       <div className="absolute inset-x-2 bottom-2">
