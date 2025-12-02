@@ -60,7 +60,7 @@ export function ProducerProfile() {
     })()
   }, [producerId])
   const youtubeUrl = profile?.youtubeUrl || null
-  const isOwnProfile = user && catalog.some(b => b.userId === user.id)
+  const isOwnProfile = user && producerId === user.id
   const showProBadge = isOwnProfile && sub
   const handleFollow = async () => {
     if (!user || user.id === producerId) return
@@ -95,7 +95,17 @@ export function ProducerProfile() {
     navigate(`/producer/inbox?to=${encodeURIComponent(producerId)}`)
   }
 
-  const displayName = profile?.displayName || producerId
+  const sampleBeat = catalog[0] || null
+  const authFallbackName =
+    isOwnProfile &&
+    (user.user_metadata?.display_name ||
+      user.email?.split('@')[0] ||
+      null)
+  const displayName =
+    profile?.displayName ||
+    authFallbackName ||
+    sampleBeat?.producer ||
+    producerId
   const bioText =
     profile?.bio?.trim()?.length
       ? profile.bio
@@ -296,7 +306,7 @@ export function ProducerProfile() {
             </div>
           </div>
         </div>
-        <ProfileShareModal open={shareOpen} onClose={() => setShareOpen(false)} profileType="producer" profileId={producerId} displayName={producerId} />
+        <ProfileShareModal open={shareOpen} onClose={() => setShareOpen(false)} profileType="producer" profileId={producerId} displayName={displayName} />
         <ReportModal open={reportOpen} onClose={()=>setReportOpen(false)} targetId={producerId} type="producer" />
       </div>
     </section>
