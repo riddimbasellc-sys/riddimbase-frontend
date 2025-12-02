@@ -1,21 +1,48 @@
 import { useAdminRole } from '../hooks/useAdminRole'
 import AdminLayout from '../components/AdminLayout'
-import { metrics } from '../services/adminMetricsService'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { listActiveBoosts } from '../services/boostsService'
+import {
+  fetchAdminMetrics,
+  fetchAdminBoostsSummary,
+} from '../services/adminDashboardRepository'
 
 export function AdminDashboard() {
   const { isAdmin, loading } = useAdminRole()
   const [m, setM] = useState(null)
   const [boosts, setBoosts] = useState([])
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    if (isAdmin) metrics().then(setM)
+    if (!isAdmin) return
+    ;(async () => {
+      try {
+        setError('')
+        const payload = await fetchAdminMetrics()
+        setM(payload)
+      } catch (e) {
+        setError(e.message || 'Failed to load metrics')
+        setM({
+          totalBeats: 0,
+          totalUsers: 0,
+          totalSales: 0,
+          monthlyRevenue: 0,
+          monthlySales: 0,
+        })
+      }
+    })()
   }, [isAdmin])
 
   useEffect(() => {
-    if (isAdmin) setBoosts(listActiveBoosts())
+    if (!isAdmin) return
+    ;(async () => {
+      try {
+        const list = await fetchAdminBoostsSummary()
+        setBoosts(list)
+      } catch {
+        setBoosts([])
+      }
+    })()
   }, [isAdmin])
 
   if (loading) {
@@ -55,6 +82,12 @@ export function AdminDashboard() {
         <Metric label="Monthly Sales" value={m.monthlySales} />
         <Metric label="Active Boosts" value={boosts.length} />
       </div>
+
+      {error && (
+        <p className="mt-3 text-[11px] text-rose-400">
+          {error}
+        </p>
+      )}
 
       <div className="mt-10 grid gap-6 lg:grid-cols-[1.4fr,1fr]">
         <Panel title="Trending Beats">
@@ -254,4 +287,3 @@ function QuickAction({ title, description, to }) {
     </div>
   )
 }
-
