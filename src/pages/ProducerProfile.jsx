@@ -24,6 +24,7 @@ export function ProducerProfile() {
   const [shareOpen, setShareOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [following, setFollowing] = useState(false)
+  const [authPrompt, setAuthPrompt] = useState('')
 
   useEffect(()=> {
     (async ()=> {
@@ -63,7 +64,11 @@ export function ProducerProfile() {
   const isOwnProfile = user && producerId === user.id
   const showProBadge = isOwnProfile && sub
   const handleFollow = async () => {
-    if (!user || user.id === producerId) return
+    if (!user) {
+      setAuthPrompt('Log in or create an account to follow producers.')
+      return
+    }
+    if (user.id === producerId) return
     try {
       const optimisticFollowers = following ? followers - 1 : followers + 1
       setFollowing(!following)
@@ -91,7 +96,11 @@ export function ProducerProfile() {
   }
 
   const handleMessage = () => {
-    if (!user || user.id === producerId) return
+    if (!user) {
+      setAuthPrompt('Log in or create an account to start a chat with this producer.')
+      return
+    }
+    if (user.id === producerId) return
     navigate(`/producer/inbox?to=${encodeURIComponent(producerId)}`)
   }
 
@@ -269,6 +278,11 @@ export function ProducerProfile() {
                      </div>
                    )}
                  </div>
+                 {authPrompt && (
+                   <p className="mt-2 text-[10px] text-rose-300">
+                     {authPrompt}
+                   </p>
+                 )}
               </div>
             </div>
             <div>
