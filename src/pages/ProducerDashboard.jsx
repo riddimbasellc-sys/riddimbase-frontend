@@ -51,6 +51,11 @@ export function ProducerDashboard() {
   const [customTo, setCustomTo] = useState('')
   const [metricSeries, setMetricSeries] = useState([])
   const [metricLoading, setMetricLoading] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState({
+    open: false,
+    beatId: null,
+    title: '',
+  })
   const { profile } = useUserProfile()
   const accountType = profile?.accountType || ''
   const roleTokens = accountType.split('+').map(t => t.trim().toLowerCase()).filter(Boolean)
@@ -250,7 +255,24 @@ export function ProducerDashboard() {
   }
 
   const removeBeat = async (id) => {
-    await deleteBeat(id)
+    const target = managedBeats.find((b) => b.id === id)
+    setDeleteConfirm({
+      open: true,
+      beatId: id,
+      title: target?.title || 'this beat',
+    })
+  }
+
+  const confirmDeleteBeat = async () => {
+    if (!deleteConfirm.beatId) {
+      setDeleteConfirm({ open: false, beatId: null, title: '' })
+      return
+    }
+    try {
+      await deleteBeat(deleteConfirm.beatId)
+    } finally {
+      setDeleteConfirm({ open: false, beatId: null, title: '' })
+    }
   }
 
   const displayName =
@@ -726,6 +748,42 @@ export function ProducerDashboard() {
             profileId={user.id}
             displayName={displayName}
           />
+
+          {deleteConfirm.open && (
+            <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 px-4">
+              <div className="w-full max-w-sm rounded-2xl border border-slate-800/80 bg-slate-950/95 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.85)]">
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-red-400">
+                  Delete beat
+                </p>
+                <h3 className="mt-2 text-sm font-semibold text-slate-50">
+                  Are you sure you want to delete{' '}
+                  <span className="text-red-400">{deleteConfirm.title}</span>?
+                </h3>
+                <p className="mt-2 text-[11px] text-slate-400">
+                  This will remove the beat from your catalog and from the marketplace.
+                  This action can&apos;t be undone.
+                </p>
+                <div className="mt-4 flex flex-wrap justify-end gap-2 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setDeleteConfirm({ open: false, beatId: null, title: '' })
+                    }
+                    className="rounded-full border border-slate-700/80 px-4 py-1.5 font-medium text-slate-200 hover:bg-slate-800/80"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={confirmDeleteBeat}
+                    className="rounded-full bg-red-500 px-4 py-1.5 font-semibold text-slate-50 shadow-[0_0_25px_rgba(248,113,113,0.7)] hover:bg-red-400"
+                  >
+                    Yes, delete beat
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </section>
     </ProducerLayout>
