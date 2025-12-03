@@ -8,8 +8,9 @@ export function Footer() {
   const [socials, setSocials] = useState([])
 
   useEffect(() => {
-    setLinks(getFooterLinks())
     ;(async () => {
+      const l = await getFooterLinks()
+      setLinks(l)
       const s = await getSocialLinks()
       const filtered = (s || []).filter(
         (item) => item.url && item.url.trim().length > 0,
