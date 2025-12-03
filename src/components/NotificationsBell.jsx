@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import useSupabaseUser from '../hooks/useSupabaseUser'
-import { seedIfEmpty, getUnreadCount as getUnreadLocal } from '../services/notificationsService'
+import { getUnreadCount as getUnreadLocal } from '../services/notificationsService'
 import { listNotifications, markAllRead, realtimeSubscribe } from '../services/notificationsRepository'
 
 function timeAgo(ts) {
@@ -55,7 +55,6 @@ export default function NotificationsBell() {
   const ref = useRef(null)
 
   useEffect(() => {
-    seedIfEmpty()
     refresh()
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
     document.addEventListener('mousedown', handler)
