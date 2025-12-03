@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useBeats } from '../hooks/useBeats'
 import { topBeatsByPlays } from '../services/analyticsService'
 import { listPlans } from '../services/plansRepository'
+import { BeatCard } from '../components/BeatCard'
 
 export default function LandingPage() {
   const { beats } = useBeats()
