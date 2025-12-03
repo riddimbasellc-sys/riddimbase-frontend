@@ -169,7 +169,7 @@ export function BeatCard({
         },
       }
 
-  const sizeClasses = compact ? 'p-3' : 'p-3'
+  const sizeClasses = compact ? 'p-2' : 'p-3'
 
   return (
     <Wrapper
@@ -211,7 +211,7 @@ export function BeatCard({
           <img
             src={coverUrl}
             alt={title || 'Beat artwork'}
-            className="h-32 w-full object-cover"
+            className={`${compact ? 'h-28' : 'h-32'} w-full object-cover`}
           />
         ) : (
           <div className="h-32 w-full bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950" />
