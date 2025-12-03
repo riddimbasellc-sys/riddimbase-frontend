@@ -99,13 +99,13 @@ export function JobDetails() {
             <div className="rounded-2xl border border-slate-800/70 bg-slate-900/60 p-5 space-y-3">
               <h2 className="text-sm font-semibold text-slate-200">Ready to pitch?</h2>
               <p className="text-[11px] text-slate-400">Send a polished proposal. Client sees it instantly in email, dashboard and notifications.</p>
-              <button onClick={()=>setProposalOpen(true)} className="w-full rounded-full bg-gradient-to-r from-emerald-500 to-orange-400 px-5 py-2 text-xs font-semibold text-slate-950 hover:brightness-110">Send Proposal</button>
+              <button onClick={()=>setProposalOpen(true)} className="w-full rounded-full bg-red-500 px-5 py-2 text-xs font-semibold text-slate-50 hover:bg-red-400">Send Proposal</button>
               {feedback && <div className="rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 text-[10px] text-emerald-300">{feedback}</div>}
               {error && <div className="rounded border border-red-500/40 bg-red-500/10 px-2 py-1 text-[10px] text-red-300">{error}</div>}
             </div>
           )}
           {isAssigned && (
-            <div className="rounded-2xl border border-orange-500/30 bg-orange-500/10 p-4 text-center text-[11px] font-medium text-orange-300 space-y-2">
+            <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-center text-[11px] font-medium text-red-300 space-y-2">
               <p>This job is assigned. Proposals closed.</p>
               {isOwner && <Link to={`/jobs/${job.id}/delivery`} className="inline-flex items-center justify-center rounded-full border border-emerald-400/70 bg-emerald-500/10 px-4 py-1.5 text-[11px] font-semibold text-emerald-200 hover:bg-emerald-500/20">Upload files & handle payment</Link>}
             </div>

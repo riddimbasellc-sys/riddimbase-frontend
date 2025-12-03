@@ -199,7 +199,7 @@ export function JobDelivery() {
                 </p>
               )}
             </div>
-            <div className="mt-3 rounded-xl border border-orange-500/30 bg-orange-500/10 p-3 text-[11px] text-orange-200">
+            <div className="mt-3 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-[11px] text-red-200">
               Reminder: funds are released when the client marks the delivery as satisfactory.
             </div>
             {user && isOwner && (

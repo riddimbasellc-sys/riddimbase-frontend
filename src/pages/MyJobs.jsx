@@ -83,18 +83,18 @@ export function MyJobs() {
 
   return (
     <section className="bg-slate-950/95 min-h-screen">
-      <div className="mx-auto max-w-6xl px-4 py-8 space-y-6">
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+      <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-8 space-y-6">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-[10px] uppercase tracking-[0.25em] text-emerald-300">Dashboard</p>
-            <h1 className="text-2xl font-semibold text-slate-50">My Jobs</h1>
-            <p className="text-sm text-slate-400">Funds stay on hold until you release them.</p>
+            <h1 className="text-xl font-semibold text-slate-50 sm:text-2xl">My Jobs</h1>
+            <p className="text-xs text-slate-400 sm:text-sm">Funds stay on hold until you release them.</p>
           </div>
-          <button onClick={()=>navigate('/jobs/post')} className="rounded-full bg-gradient-to-r from-emerald-500 to-orange-400 px-5 py-2 text-sm font-semibold text-slate-950">Post new job</button>
+          <button onClick={()=>navigate('/jobs/post')} className="rounded-full bg-red-500 px-5 py-2 text-sm font-semibold text-slate-50 hover:bg-red-400">Post new job</button>
         </div>
         {error && <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-[11px] text-red-300">{error}</div>}
-        {refreshing && <div className="text-sm text-slate-400">Refreshing…</div>}
-        <div className="grid gap-4 md:grid-cols-2">
+        {refreshing && <div className="text-xs text-slate-400 sm:text-sm">Refreshing…</div>}
+        <div className="grid gap-4 sm:grid-cols-2">
           {jobs.map(job => {
             const escrow = getJobEscrow(job.id)
             const paid = escrow.paid
@@ -199,7 +199,7 @@ export function MyJobs() {
             )
           })}
         </div>
-        {jobs.length === 0 && <div className="rounded-2xl border border-slate-800/70 bg-slate-900/70 p-6 text-sm text-slate-400">No jobs yet. Post a job to see release controls here.</div>}
+        {jobs.length === 0 && <div className="rounded-2xl border border-slate-800/70 bg-slate-900/70 p-6 text-xs text-slate-400 sm:text-sm">No jobs yet. Post a job to see release controls here.</div>}
       </div>
     </section>
   )

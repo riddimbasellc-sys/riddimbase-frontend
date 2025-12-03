@@ -132,7 +132,7 @@ export function JobPostForm() {
         {error && <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</div>}
         {success && <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300">Job posted! Redirecting…</div>}
         <div className="pt-2">
-          <button disabled={loading} className="rounded-full bg-gradient-to-r from-emerald-500 to-orange-400 px-6 py-2 text-sm font-semibold text-slate-950 shadow-rb-soft disabled:opacity-50">{loading? 'Posting...' : 'Post Job'}</button>
+          <button disabled={loading} className="rounded-full bg-red-500 px-6 py-2 text-sm font-semibold text-slate-50 shadow-rb-soft hover:bg-red-400 disabled:opacity-50">{loading? 'Posting...' : 'Post Job'}</button>
         </div>
       </form>
     </div>

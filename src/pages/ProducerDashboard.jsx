@@ -371,7 +371,7 @@ export function ProducerDashboard() {
                           <span className="truncate max-w-[7rem]">
                             {j.title}
                           </span>
-                          <span className="text-orange-300">${j.budget}</span>
+                          <span className="text-red-300">${j.budget}</span>
                         </li>
                       ))}
                       {assignedJobs.length === 0 && (
