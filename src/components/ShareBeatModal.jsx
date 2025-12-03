@@ -20,7 +20,7 @@ export default function ShareBeatModal({ beat, onClose }) {
       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor"><path d="M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-6l-4.5 3.6c-.34.27-.85.03-.85-.41V17H4a2 2 0 0 1-2-2V6c0-1.1.9-2 2-2Zm0 2v9h6v2.15L13.25 15H20V6H4Z"/></svg>) },
     { name: 'X', href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(url)}`, color: 'text-slate-100', svg: (
       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor"><path d="M17.75 3h3.65l-7.97 9.13 9.4 8.87h-7.36l-5.78-5.47L3.7 21H.05l8.52-9.77L.05 3h7.5l5.22 4.96L17.75 3Zm-2.59 16.44h2.03L7.02 4.48H4.84l10.32 14.96Z"/></svg>) },
-    { name: 'Reddit', href: `https://www.reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(shareText)}` , color: 'text-orange-500', svg: (
+    { name: 'Reddit', href: `https://www.reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(shareText)}` , color: 'text-red-500', svg: (
       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor"><path d="M12 2C6.48 2 2 6.02 2 10.98c0 2.41 1.13 4.66 3.09 6.32 0 .03-.01.05-.01.08 0 2.25 3.13 4.08 6.99 4.08 3.86 0 7-1.83 7-4.08 0-.02 0-.05-.01-.07 1.96-1.66 3.09-3.92 3.09-6.33C22 6.02 17.52 2 12 2Zm4.12 11.25a1.13 1.13 0 1 1 0-2.26 1.13 1.13 0 0 1 0 2.26ZM9.88 13.5a1.13 1.13 0 1 1 0-2.26 1.13 1.13 0 0 1 0 2.26Zm7.17 2.23c-.86.85-2.5 1.44-4.31 1.44s-3.46-.59-4.31-1.44a.56.56 0 0 1 .79-.79c.64.63 2.01 1.05 3.52 1.05 1.51 0 2.89-.42 3.52-1.05a.56.56 0 1 1 .79.79Z"/></svg>) },
   ]
 
