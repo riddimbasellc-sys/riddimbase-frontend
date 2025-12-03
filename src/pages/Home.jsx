@@ -17,7 +17,7 @@ import { slugify } from '../utils/slugify'
 export function Home() {
   const { user } = useSupabaseUser()
   const { beats, loading } = useBeats()
-  const [playlists, setPlaylists] = useState(listPlaylists())
+  const [playlists, setPlaylists] = useState([])
   const [commentDrafts, setCommentDrafts] = useState({})
   const testimonials = [
     {
@@ -50,7 +50,10 @@ export function Home() {
   const bannerContent = getBannerContent()
   const userId = user?.id || 'guest'
   const userLabel = user?.user_metadata?.display_name || user?.email || 'Listener'
-  const trendingIds = useMemo(() => new Set(getTrendingPlaylists(3).map(p => p.id)), [playlists])
+  const trendingIds = useMemo(
+    () => new Set((playlists || []).slice(0, 3).map((p) => p.id)),
+    [playlists],
+  )
   const { boosts: boostedBeats } = useBoostedBeats()
   const boostedMap = useMemo(() => {
     const byId = new Map()
@@ -61,15 +64,36 @@ export function Home() {
     // Placeholder: filter could be implemented via state; currently no-op
     console.log('Genre filter click', g)
   }
-  useEffect(() => { setPlaylists(listPlaylists()) }, [])
-  const refresh = () => setPlaylists(listPlaylists())
-  const handleLike = (id) => { togglePlaylistLike(id, userId); refresh() }
-  const handleFav = (id) => { togglePlaylistFavorite(id, userId); refresh() }
-  const handlePlay = (id) => { recordPlaylistPlay(id); refresh() }
+  useEffect(() => {
+    ;(async () => {
+      const data = await listPlaylists()
+      const trending = await getTrendingPlaylists(3)
+      // ensure trending first
+      const trendingIdsLocal = new Set(trending.map((p) => p.id))
+      const merged = [...trending, ...data.filter((p) => !trendingIdsLocal.has(p.id))]
+      setPlaylists(merged)
+    })()
+  }, [])
+  const refresh = async () => {
+    const data = await listPlaylists()
+    setPlaylists(data)
+  }
+  const handleLike = async (id) => {
+    await togglePlaylistLike(id, userId)
+    refresh()
+  }
+  const handleFav = async (id) => {
+    await togglePlaylistFavorite(id, userId)
+    refresh()
+  }
+  const handlePlay = async (id) => {
+    await recordPlaylistPlay(id)
+    refresh()
+  }
   const handleComment = (id) => {
     const text = (commentDrafts[id] || '').trim()
     if (!text) return
-    addCommentToPlaylist(id, { user: userLabel, text })
+    await addCommentToPlaylist(id, { user: userLabel, text, userId })
     refresh()
     setCommentDrafts(prev => ({ ...prev, [id]: '' }))
   }

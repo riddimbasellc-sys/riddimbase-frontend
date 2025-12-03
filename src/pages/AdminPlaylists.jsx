@@ -13,7 +13,7 @@ import {
 export function AdminPlaylists() {
   const { isAdmin, loading } = useAdminRole()
   const { beats } = useBeats()
-  const [items, setItems] = useState(listPlaylists())
+  const [items, setItems] = useState([])
   const [draft, setDraft] = useState({
     title: '',
     description: '',
@@ -23,14 +23,19 @@ export function AdminPlaylists() {
   })
   const [editingId, setEditingId] = useState(null)
 
-  useEffect(() => { setItems(listPlaylists()) }, [])
+  useEffect(() => {
+    ;(async () => {
+      const rows = await listPlaylists()
+      setItems(rows)
+    })()
+  }, [])
 
   const resetDraft = () => {
     setDraft({ title: '', description: '', coverUrl: '', moods: '', beatIds: [] })
     setEditingId(null)
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     const payload = {
       title: draft.title.trim() || 'Untitled Playlist',
@@ -40,11 +45,11 @@ export function AdminPlaylists() {
       beatIds: draft.beatIds,
     }
     if (editingId) {
-      updatePlaylist(editingId, payload)
+      await updatePlaylist(editingId, payload)
     } else {
-      createPlaylist(payload)
+      await createPlaylist(payload)
     }
-    setItems(listPlaylists())
+    setItems(await listPlaylists())
     resetDraft()
   }
 
@@ -162,7 +167,7 @@ export function AdminPlaylists() {
               </div>
               <div className="mt-3 flex items-center justify-end gap-2 text-[11px]">
                 <button onClick={()=>startEdit(p)} className="rounded-full border border-slate-700/70 px-3 py-1 text-slate-200 hover:border-emerald-400/70">Edit</button>
-                <button onClick={()=>{ deletePlaylist(p.id); setItems(listPlaylists()); }} className="rounded-full border border-red-500/60 px-3 py-1 text-red-300 hover:bg-red-500/10">Delete</button>
+                <button onClick={async ()=>{ await deletePlaylist(p.id); setItems(await listPlaylists()); }} className="rounded-full border border-red-500/60 px-3 py-1 text-red-300 hover:bg-red-500/10">Delete</button>
               </div>
             </div>
           ))}
