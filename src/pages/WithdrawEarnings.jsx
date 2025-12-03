@@ -3,7 +3,12 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BackButton from '../components/BackButton'
 import { computeProducerEarnings } from '../services/beatsService'
-import { listUserPayouts, createPayout, cancelPayout } from '../services/payoutsRepository'
+import {
+  listUserPayouts,
+  createPayout,
+  cancelPayout,
+} from '../services/payoutsRepository'
+import { getSubscription } from '../services/subscriptionService'
 
 export function WithdrawEarnings() {
   const { user, loading } = useSupabaseUser()
@@ -21,6 +26,7 @@ export function WithdrawEarnings() {
   const [routingNumber, setRoutingNumber] = useState('')
   const [bankBranch, setBankBranch] = useState('')
   const [accountType, setAccountType] = useState('checking')
+  const [subscription, setSubscription] = useState(null)
 
   const PLATFORM_COMMISSION_RATE = 0.15
   const PAYPAL_PCT = 0.029
@@ -39,6 +45,14 @@ export function WithdrawEarnings() {
     }
   }, [user?.id])
 
+  useEffect(() => {
+    if (!user?.id) return
+    ;(async () => {
+      const sub = await getSubscription(user.id)
+      setSubscription(sub)
+    })()
+  }, [user?.id])
+
   if (loading) {
     return (
       <section className="min-h-screen flex items-center justify-center bg-slate-950/95">
@@ -55,7 +69,11 @@ export function WithdrawEarnings() {
 
   const val = parseFloat(amount) || 0
   const withdrawalFee = 0
-  const commissionFee = val > 0 ? val * PLATFORM_COMMISSION_RATE : 0
+  const planId = subscription?.planId || 'free'
+  const zeroCommission =
+    planId === 'producer-pro' || planId === 'pro-yearly'
+  const effectiveCommissionRate = zeroCommission ? 0 : PLATFORM_COMMISSION_RATE
+  const commissionFee = val > 0 ? val * effectiveCommissionRate : 0
   const computePayPalFee = (amt) => amt * PAYPAL_PCT + PAYPAL_FIXED
   const processorFee = methodType === 'paypal' && val > 0 ? computePayPalFee(val) : 0
   const netAfterFees = val > 0 ? Math.max(0, val - withdrawalFee - commissionFee - processorFee) : 0
@@ -112,10 +130,15 @@ export function WithdrawEarnings() {
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-slate-400">Withdrawal Fee (0%)</dt>
-                  <dd className="text-slate-100">${withdrawalFee.toFixed(2)}</dd>
+                  <dd className="text-slate-100">
+                    ${withdrawalFee.toFixed(2)}
+                  </dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-slate-400">Platform Commission (15%)</dt>
+                  <dt className="text-slate-400">
+                    Platform Commission (
+                    {zeroCommission ? '0%' : '15%'})
+                  </dt>
                   <dd className="text-slate-100">${commissionFee.toFixed(2)}</dd>
                 </div>
                 <div className="flex justify-between">
@@ -373,4 +396,3 @@ function Metric({ label, value }) {
     </div>
   )
 }
-
