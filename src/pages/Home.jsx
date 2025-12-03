@@ -7,7 +7,7 @@ import GenreFilters from '../components/GenreFilters'
 import TrendingProducers from '../components/TrendingProducers'
 import SpotlightBanner from '../components/SpotlightBanner'
 import { getActiveBanner } from '../services/bannerService'
-import { getBannerContent } from '../services/bannerContentService'
+import { getBannerContent, DEFAULT_BANNER_CONTENT } from '../services/bannerContentService'
 import useSupabaseUser from '../hooks/useSupabaseUser'
 import { listPlaylists, togglePlaylistLike, togglePlaylistFavorite, addCommentToPlaylist, recordPlaylistPlay, getTrendingPlaylists } from '../services/playlistsService'
 import { useBoostedBeats } from '../hooks/useBoostedBeats'
@@ -46,8 +46,8 @@ export function Home() {
     const byId = new Map(beats.map(b => [b.id, b]))
     return ranked.map(r => byId.get(r.id)).filter(Boolean)
   }, [beats])
-  const activeBanner = getActiveBanner()
-  const bannerContent = getBannerContent()
+  const [activeBanner, setActiveBannerState] = useState(null)
+  const [bannerContent, setBannerContentState] = useState(null)
   const userId = user?.id || 'guest'
   const userLabel = user?.user_metadata?.display_name || user?.email || 'Listener'
   const trendingIds = useMemo(
@@ -74,6 +74,16 @@ export function Home() {
       setPlaylists(merged)
     })()
   }, [])
+  useEffect(() => {
+    ;(async () => {
+      const [banner, content] = await Promise.all([
+        getActiveBanner(),
+        getBannerContent(),
+      ])
+      setActiveBannerState(banner)
+      setBannerContentState(content)
+    })()
+  }, [])
   const refresh = async () => {
     const data = await listPlaylists()
     setPlaylists(data)
@@ -97,6 +107,7 @@ export function Home() {
     refresh()
     setCommentDrafts(prev => ({ ...prev, [id]: '' }))
   }
+  const heroContent = bannerContent || DEFAULT_BANNER_CONTENT
   return (
     <>
       <Hero />
@@ -119,8 +130,8 @@ export function Home() {
               <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-900/40 to-slate-950/90 flex items-center">
                 <div className="p-6 md:p-10">
                   <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-rb-sun-gold drop-shadow-rb-glow">Featured</p>
-                  <h2 className={`mt-2 leading-tight text-slate-50 ${bannerContent.headlineFont} ${bannerContent.headlineSize} ${bannerContent.headlineBold? 'font-bold':'font-medium'} ${bannerContent.headlineItalic? 'italic':''}`}>{bannerContent.headline}</h2>
-                  <p className={`mt-2 max-w-md text-slate-200 ${bannerContent.bodyFont} ${bannerContent.bodySize} ${bannerContent.bodyBold? 'font-semibold':''} ${bannerContent.bodyItalic? 'italic':''}`}>{bannerContent.body}</p>
+                  <h2 className={`mt-2 leading-tight text-slate-50 ${heroContent.headlineFont} ${heroContent.headlineSize} ${heroContent.headlineBold? 'font-bold':'font-medium'} ${heroContent.headlineItalic? 'italic':''}`}>{heroContent.headline}</h2>
+                  <p className={`mt-2 max-w-md text-slate-200 ${heroContent.bodyFont} ${heroContent.bodySize} ${heroContent.bodyBold? 'font-semibold':''} ${heroContent.bodyItalic? 'italic':''}`}>{heroContent.body}</p>
                   <a href="/beats" className="mt-4 inline-block rounded-full bg-rb-trop-sunrise px-5 py-2 text-xs font-semibold text-slate-950 shadow-rb-gloss-btn hover:brightness-110">Explore Beats</a>
                 </div>
               </div>
