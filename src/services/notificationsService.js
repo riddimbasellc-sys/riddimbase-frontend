@@ -1,4 +1,4 @@
-// Simple localStorage-backed notifications service (prototype)
+// Simple localStorage-backed notifications service (fallback for guests)
 const KEY = 'rb_notifications'
 
 function load() {
@@ -24,16 +24,4 @@ export function addNotification(type, data) {
 export function markAllRead() {
   const list = load().map(n => ({ ...n, read: true }))
   save(list)
-}
-export function seedIfEmpty() {
-  const list = load()
-  if (list.length) return
-  const samples = [
-    { type:'sale', data:{ beatTitle:'Island Vibes', amount:19.99, currency:'USD' } },
-    { type:'like', data:{ beatTitle:'Dub Echoes', user:'jane@music.com' } },
-    { type:'follow', data:{ user:'producer_khalil' } },
-    { type:'message', data:{ from:'StudioGuy', snippet:'Let\'s collab on...' } },
-    { type:'comment', data:{ beatTitle:'Roots Jam', user:'reggaelover', text:'Fire riddim!' } }
-  ]
-  samples.forEach(s => addNotification(s.type, s.data))
 }
