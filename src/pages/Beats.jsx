@@ -215,6 +215,7 @@ export function Beats() {
                       }
                       onShare={openShare}
                       sponsored={true}
+                      compact
                     />
                   ))}
                 </div>
@@ -235,6 +236,7 @@ export function Beats() {
                     }
                     onShare={openShare}
                     sponsored={boostedMap.has(b.id)}
+                    compact
                   />
                 ))}
             </div>
