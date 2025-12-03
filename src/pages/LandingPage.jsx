@@ -9,6 +9,26 @@ export default function LandingPage() {
   const navigate = useNavigate()
   const [heroSearch, setHeroSearch] = useState('')
   const [plans, setPlans] = useState([])
+  const testimonials = [
+    {
+      role: 'Dancehall Producer',
+      name: 'Jahmel Beats \u2022 Kingston, Jamaica',
+      quote:
+        '“RiddimBase finally feels like a real home for Caribbean riddims. My beats are getting plays from artists in London and New York I never knew before.”',
+    },
+    {
+      role: 'Afro-Caribbean Artist',
+      name: 'Naila Vibes \u2022 Port of Spain, Trinidad',
+      quote:
+        '“Licensing a beat here is as easy as adding it to cart. Contracts, stems and delivery are instant, so I can focus on writing and recording.”',
+    },
+    {
+      role: 'Beat Maker & Mix Engineer',
+      name: 'Kruz Fyah \u2022 Montego Bay, Jamaica',
+      quote:
+        '“Between the jobs board and boosted beats, most of my online clients now come straight through RiddimBase.”',
+    },
+  ]
 
   const trendingBeats = useMemo(() => {
     if (!beats.length) return []
@@ -307,6 +327,43 @@ export default function LandingPage() {
               title="Get your beats seen"
               body="Boost beats into featured sections, get in front of new artists and grow your sales on autopilot."
             />
+          </div>
+        </section>
+
+        {/* TESTIMONIALS */}
+        <section className="pb-10 md:pb-12">
+          <div className="rounded-3xl border border-white/10 bg-black/70 bg-rb-gloss-stripes bg-blend-soft-light p-4 shadow-rb-gloss-panel md:p-6">
+            <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-100 sm:text-base">
+                  What Caribbean creators are saying
+                </h2>
+                <p className="mt-1 text-[11px] text-slate-400 sm:text-xs">
+                  Real producers, beat makers and artists using RiddimBase to move their
+                  music forward.
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {testimonials.map((t) => (
+                <figure
+                  key={t.name}
+                  className="flex h-full flex-col rounded-2xl border border-slate-800/80 bg-slate-950/80 p-4 text-[11px] text-slate-200"
+                >
+                  <p className="flex-1 text-[11px] text-slate-200">
+                    {t.quote}
+                  </p>
+                  <figcaption className="mt-3">
+                    <p className="text-[11px] font-semibold text-rb-trop-cyan">
+                      {t.name}
+                    </p>
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">
+                      {t.role}
+                    </p>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
           </div>
         </section>
 
