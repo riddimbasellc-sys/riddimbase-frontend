@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import AdminLayout from '../components/AdminLayout'
-import { getSocialLinks, updateSocialLink, resetSocialLinks } from '../services/socialLinksService'
+import { getSocialLinks, saveSocialLinks, resetSocialLinks } from '../services/socialLinksService'
 
 const NETWORK_LABELS = {
   instagram: 'Instagram',
@@ -17,23 +17,28 @@ export function AdminSocials() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    setRows(getSocialLinks())
+    ;(async () => {
+      const data = await getSocialLinks()
+      setRows(data)
+    })()
   }, [])
 
   const handleChange = (id, value) => {
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, url: value } : r)))
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setSaving(true)
-    rows.forEach((r) => {
-      updateSocialLink(r.id, { url: r.url })
-    })
-    setSaving(false)
+    try {
+      const next = await saveSocialLinks(rows)
+      setRows(next)
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const handleReset = () => {
-    const next = resetSocialLinks()
+  const handleReset = async () => {
+    const next = await resetSocialLinks()
     setRows(next)
   }
 
@@ -71,7 +76,7 @@ export function AdminSocials() {
                         placeholder={`https://${row.network}.com/riddimbase`}
                         value={row.url}
                         onChange={(e) => handleChange(row.id, e.target.value)}
-                        className="w-full rounded-lg border border-slate-700/70 bg-slate-950/70 px-2 py-1.5 text-[11px] text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                        className="w-full rounded-lg border border-slate-700/70 bg-slate-950/70 px-2 py-1.5 text-[11px] text-slate-100 focus:border-red-400/70 focus:outline-none"
                       />
                     </td>
                   </tr>
@@ -84,14 +89,14 @@ export function AdminSocials() {
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="rounded-full bg-emerald-500 px-5 py-1.5 text-[11px] font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
+              className="rounded-full bg-red-500 px-5 py-1.5 text-[11px] font-semibold text-slate-50 hover:bg-red-400 disabled:opacity-50"
             >
               {saving ? 'Saving…' : 'Save Social Links'}
             </button>
             <button
               type="button"
               onClick={handleReset}
-              className="rounded-full border border-slate-700/80 px-4 py-1.5 text-[11px] font-semibold text-slate-300 hover:border-emerald-400/60 hover:text-emerald-300"
+              className="rounded-full border border-slate-700/80 px-4 py-1.5 text-[11px] font-semibold text-slate-300 hover:border-red-400/60 hover:text-red-300"
             >
               Reset to defaults
             </button>
@@ -158,4 +163,3 @@ function SocialIcon({ network, className }) {
       )
   }
 }
-
