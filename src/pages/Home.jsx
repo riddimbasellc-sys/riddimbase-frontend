@@ -100,7 +100,7 @@ export function Home() {
     await recordPlaylistPlay(id)
     refresh()
   }
-  const handleComment = (id) => {
+  const handleComment = async (id) => {
     const text = (commentDrafts[id] || '').trim()
     if (!text) return
     await addCommentToPlaylist(id, { user: userLabel, text, userId })
