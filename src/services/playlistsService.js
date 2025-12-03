@@ -1,156 +1,259 @@
-// Lightweight playlist store for prototype use (in-memory + localStorage sync)
-let playlists = [
-  {
-    id: 'pl-1',
-    title: 'Dancehall Heatwave',
-    description: 'Club-ready bashment riddims & hooks to light up any set.',
-    coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=900&q=80',
-    moods: ['Hype', 'Dancehall', 'Party'],
-    beatIds: ['1', '2'],
-    likes: 22,
-    favorites: 14,
-    plays: 180,
-    comments: [
-      { id: 'c1', user: '@selector', text: 'Perfect for my mixtape!', createdAt: Date.now() - 3600000 },
-    ],
-    likedBy: [],
-    favoritedBy: [],
-    createdAt: Date.now() - 86400000 * 3,
-  },
-  {
-    id: 'pl-2',
-    title: 'Chill Soca Sunset',
-    description: 'Laid-back grooves and island soul for storytelling records.',
-    coverUrl: 'https://images.unsplash.com/photo-1487180144351-b8472da7d491?auto=format&fit=crop&w=900&q=80',
-    moods: ['Chill', 'Soca', 'Mood'],
-    beatIds: ['3', '4'],
-    likes: 9,
-    favorites: 6,
-    plays: 95,
-    comments: [],
-    likedBy: [],
-    favoritedBy: [],
-    createdAt: Date.now() - 86400000 * 5,
-  },
-]
+import { supabase } from '../lib/supabaseClient'
 
-const hasStorage = () => typeof localStorage !== 'undefined'
+// Supabase-backed playlists service
 
-const persist = () => {
-  if (!hasStorage()) return
-  try { localStorage.setItem('rb_playlists', JSON.stringify(playlists)) } catch {}
+function mapPlaylistRow(row, metricsMap, commentsMap) {
+  const m = metricsMap.get(row.id) || {}
+  const comments = commentsMap.get(row.id) || []
+  return {
+    id: row.id,
+    createdBy: row.created_by || null,
+    title: row.title,
+    description: row.description || '',
+    coverUrl: row.cover_url || '',
+    moods: row.moods || [],
+    beatIds: row.beat_ids || [],
+    likes: m.likes || 0,
+    favorites: m.favorites || 0,
+    plays: m.plays || 0,
+    comments,
+    createdAt: row.created_at ? new Date(row.created_at).getTime() : 0,
+  }
 }
 
-const load = () => {
-  if (!hasStorage()) return
-  try {
-    const stored = localStorage.getItem('rb_playlists')
-    if (stored) playlists = JSON.parse(stored)
-  } catch {}
+export async function listPlaylists() {
+  const { data, error } = await supabase
+    .from('playlists')
+    .select(
+      `id,created_by,title,description,cover_url,moods,created_at,
+       playlist_beats:playlist_beats(beat_id,position)`,
+    )
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.warn('[playlistsService] listPlaylists error', error.message)
+    return []
+  }
+
+  const ids = (data || []).map((p) => p.id)
+
+  const [metricsRes, commentsRes] = await Promise.all([
+    supabase.from('playlist_metrics').select('*').in('playlist_id', ids),
+    supabase
+      .from('playlist_comments')
+      .select('*')
+      .in('playlist_id', ids)
+      .order('created_at', { ascending: false }),
+  ])
+
+  const metricsMap = new Map()
+  ;(metricsRes.data || []).forEach((row) => {
+    metricsMap.set(row.playlist_id, row)
+  })
+
+  const commentsMap = new Map()
+  ;(commentsRes.data || []).forEach((row) => {
+    const list = commentsMap.get(row.playlist_id) || []
+    list.push({
+      id: row.id,
+      user: row.display_name || 'Listener',
+      text: row.body,
+      createdAt: new Date(row.created_at).getTime(),
+    })
+    commentsMap.set(row.playlist_id, list)
+  })
+
+  return (data || []).map((row) =>
+    mapPlaylistRow(
+      {
+        ...row,
+        beat_ids: (row.playlist_beats || [])
+          .sort((a, b) => a.position - b.position)
+          .map((pb) => pb.beat_id),
+      },
+      metricsMap,
+      commentsMap,
+    ),
+  )
 }
 
-load()
-
-export function listPlaylists() {
-  return playlists.slice().sort((a, b) => b.createdAt - a.createdAt)
+export async function getPlaylist(id) {
+  const list = await listPlaylists()
+  return list.find((p) => p.id === id) || null
 }
 
-export function getPlaylist(id) {
-  return playlists.find(p => p.id === id) || null
-}
-
-export function createPlaylist(data) {
-  const id = 'pl-' + Date.now()
-  const item = {
-    id,
+export async function createPlaylist(data, userId) {
+  const payload = {
+    created_by: userId || null,
     title: data.title || 'Untitled Playlist',
     description: data.description || '',
-    coverUrl: data.coverUrl || '',
+    cover_url: data.coverUrl || '',
     moods: data.moods || [],
-    beatIds: data.beatIds || [],
-    likes: 0,
-    favorites: 0,
-    plays: 0,
-    comments: [],
-    likedBy: [],
-    favoritedBy: [],
-    createdAt: Date.now(),
   }
-  playlists.unshift(item)
-  persist()
-  return item
+  const { data: row, error } = await supabase
+    .from('playlists')
+    .insert(payload)
+    .select()
+    .single()
+  if (error) {
+    console.warn('[playlistsService] createPlaylist error', error.message)
+    return null
+  }
+  const playlistId = row.id
+  const beatIds = data.beatIds || []
+  if (beatIds.length) {
+    const rows = beatIds.map((bid, idx) => ({
+      playlist_id: playlistId,
+      beat_id: bid,
+      position: idx,
+    }))
+    await supabase.from('playlist_beats').insert(rows)
+  }
+  return getPlaylist(playlistId)
 }
 
-export function updatePlaylist(id, patch) {
-  const idx = playlists.findIndex(p => p.id === id)
-  if (idx === -1) return null
-  playlists[idx] = { ...playlists[idx], ...patch }
-  persist()
-  return playlists[idx]
+export async function updatePlaylist(id, patch) {
+  const payload = {
+    title: patch.title,
+    description: patch.description,
+    cover_url: patch.coverUrl,
+    moods: patch.moods,
+    updated_at: new Date().toISOString(),
+  }
+  const { error } = await supabase
+    .from('playlists')
+    .update(payload)
+    .eq('id', id)
+  if (error) {
+    console.warn('[playlistsService] updatePlaylist error', error.message)
+  }
+  const beatIds = patch.beatIds || []
+  if (beatIds.length) {
+    await supabase.from('playlist_beats').delete().eq('playlist_id', id)
+    const rows = beatIds.map((bid, idx) => ({
+      playlist_id: id,
+      beat_id: bid,
+      position: idx,
+    }))
+    await supabase.from('playlist_beats').insert(rows)
+  }
+  return getPlaylist(id)
 }
 
-export function deletePlaylist(id) {
-  const before = playlists.length
-  playlists = playlists.filter(p => p.id !== id)
-  persist()
-  return playlists.length < before
+export async function deletePlaylist(id) {
+  const { error } = await supabase.from('playlists').delete().eq('id', id)
+  if (error) {
+    console.warn('[playlistsService] deletePlaylist error', error.message)
+    return false
+  }
+  return true
 }
 
-export function togglePlaylistLike(id, userId='guest') {
-  const p = getPlaylist(id)
-  if (!p) return null
-  const has = p.likedBy?.includes(userId)
-  p.likedBy = p.likedBy || []
-  p.likes = p.likes || 0
-  if (has) {
-    p.likedBy = p.likedBy.filter(x => x !== userId)
-    p.likes = Math.max(0, p.likes - 1)
+async function incrementMetric(playlistId, field, delta) {
+  const { data, error } = await supabase
+    .from('playlist_metrics')
+    .select('*')
+    .eq('playlist_id', playlistId)
+    .maybeSingle()
+  if (error && error.code !== 'PGRST116') {
+    console.warn('[playlistsService] metrics select error', error.message)
+    return
+  }
+  if (!data) {
+    const insert = {
+      playlist_id: playlistId,
+      [field]: delta,
+      updated_at: new Date().toISOString(),
+    }
+    await supabase.from('playlist_metrics').insert(insert)
   } else {
-    p.likedBy.push(userId)
-    p.likes += 1
+    const next = (data[field] || 0) + delta
+    await supabase
+      .from('playlist_metrics')
+      .update({
+        [field]: next < 0 ? 0 : next,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('playlist_id', playlistId)
   }
-  persist()
-  return { ...p }
 }
 
-export function togglePlaylistFavorite(id, userId='guest') {
-  const p = getPlaylist(id)
-  if (!p) return null
-  const has = p.favoritedBy?.includes(userId)
-  p.favoritedBy = p.favoritedBy || []
-  p.favorites = p.favorites || 0
-  if (has) {
-    p.favoritedBy = p.favoritedBy.filter(x => x !== userId)
-    p.favorites = Math.max(0, p.favorites - 1)
+export async function togglePlaylistLike(id, userId) {
+  if (!userId || !id) return null
+  const { data: existing } = await supabase
+    .from('playlist_likes')
+    .select('id')
+    .eq('playlist_id', id)
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (existing?.id) {
+    await supabase.from('playlist_likes').delete().eq('id', existing.id)
+    await incrementMetric(id, 'likes', -1)
   } else {
-    p.favoritedBy.push(userId)
-    p.favorites += 1
+    await supabase
+      .from('playlist_likes')
+      .insert({ playlist_id: id, user_id: userId })
+    await incrementMetric(id, 'likes', 1)
   }
-  persist()
-  return { ...p }
+  return getPlaylist(id)
 }
 
-export function addCommentToPlaylist(id, { user='Listener', text }) {
-  const p = getPlaylist(id)
-  if (!p || !text) return null
-  const comment = { id: 'c-' + Date.now(), user, text, createdAt: Date.now() }
-  p.comments = p.comments || []
-  p.comments.unshift(comment)
-  persist()
-  return comment
+export async function togglePlaylistFavorite(id, userId) {
+  if (!userId || !id) return null
+  const { data: existing } = await supabase
+    .from('playlist_favorites')
+    .select('id')
+    .eq('playlist_id', id)
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (existing?.id) {
+    await supabase.from('playlist_favorites').delete().eq('id', existing.id)
+    await incrementMetric(id, 'favorites', -1)
+  } else {
+    await supabase
+      .from('playlist_favorites')
+      .insert({ playlist_id: id, user_id: userId })
+    await incrementMetric(id, 'favorites', 1)
+  }
+  return getPlaylist(id)
 }
 
-export function recordPlaylistPlay(id) {
-  const p = getPlaylist(id)
-  if (!p) return null
-  p.plays = (p.plays || 0) + 1
-  persist()
-  return p.plays
+export async function addCommentToPlaylist(id, { user = 'Listener', text, userId }) {
+  if (!id || !text) return null
+  const { data, error } = await supabase
+    .from('playlist_comments')
+    .insert({
+      playlist_id: id,
+      user_id: userId || null,
+      display_name: user,
+      body: text,
+    })
+    .select()
+    .single()
+  if (error) {
+    console.warn('[playlistsService] addCommentToPlaylist error', error.message)
+    return null
+  }
+  await incrementMetric(id, 'comments', 1)
+  return {
+    id: data.id,
+    user: data.display_name || user,
+    text: data.body,
+    createdAt: new Date(data.created_at).getTime(),
+  }
 }
 
-export function getTrendingPlaylists(limit=6) {
-  const scored = playlists.map(p => ({ ...p, score: computeScore(p) }))
-  return scored.sort((a,b)=> b.score - a.score).slice(0, limit)
+export async function recordPlaylistPlay(id) {
+  if (!id) return 0
+  await incrementMetric(id, 'plays', 1)
+  const p = await getPlaylist(id)
+  return p?.plays || 0
+}
+
+export async function getTrendingPlaylists(limit = 6) {
+  const list = await listPlaylists()
+  const scored = list.map((p) => ({ ...p, score: computeScore(p) }))
+  return scored.sort((a, b) => b.score - a.score).slice(0, limit)
 }
 
 export function computeScore(p) {
