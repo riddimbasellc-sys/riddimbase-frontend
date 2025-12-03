@@ -128,7 +128,7 @@ export function AdminTheme() {
                 </div>
               </div>
               <div className="mt-4 flex items-center justify-between">
-                <button className="rounded-full bg-gradient-to-r from-emerald-400 via-cyan-400 to-yellow-300 px-4 py-1.5 text-[10px] font-semibold text-slate-950 shadow-[0_10px_40px_rgba(16,185,129,0.45)]">
+                <button className="rounded-full bg-red-500 px-4 py-1.5 text-[10px] font-semibold text-slate-50 shadow-[0_10px_40px_rgba(248,113,113,0.55)] hover:bg-red-400">
                   Primary CTA
                 </button>
                 <button className="rounded-full border border-slate-600 px-3 py-1 text-[10px] text-slate-200 hover:bg-slate-800/80">
