@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
 import AdminLayout from '../components/AdminLayout'
-import { getFooterLinks, addFooterLink, updateFooterLink, deleteFooterLink, reorderFooterLinks } from '../services/siteLinksService'
+import {
+  getFooterLinks,
+  addFooterLink,
+  updateFooterLink,
+  deleteFooterLink,
+  reorderFooterLinks,
+} from '../services/siteLinksService'
 
 export function AdminFooterLinks() {
   const [links, setLinks] = useState([])
@@ -9,38 +15,42 @@ export function AdminFooterLinks() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    setLinks(getFooterLinks())
+    ;(async () => {
+      const data = await getFooterLinks()
+      setLinks(data)
+    })()
   }, [])
 
-  function refresh() {
-    setLinks(getFooterLinks())
+  async function refresh() {
+    const data = await getFooterLinks()
+    setLinks(data)
   }
 
-  function handleAdd(e) {
+  async function handleAdd(e) {
     e.preventDefault()
     if (!newLabel.trim() || !newPath.trim()) return
     setSaving(true)
-    addFooterLink({ label: newLabel.trim(), to: newPath.trim() })
+    await addFooterLink({ label: newLabel.trim(), to: newPath.trim() })
     setNewLabel('')
     setNewPath('')
-    refresh()
+    await refresh()
     setSaving(false)
   }
 
-  function handleUpdate(id, field, value) {
-    updateFooterLink(id, { [field]: value })
-    refresh()
+  async function handleUpdate(id, field, value) {
+    await updateFooterLink(id, { [field]: value })
+    await refresh()
   }
 
-  function handleDelete(id) {
+  async function handleDelete(id) {
     if (!confirm('Delete this link?')) return
-    deleteFooterLink(id)
-    refresh()
+    await deleteFooterLink(id)
+    await refresh()
   }
 
-  function handleMove(id, direction) {
-    reorderFooterLinks(id, direction)
-    refresh()
+  async function handleMove(id, direction) {
+    await reorderFooterLinks(id, direction)
+    await refresh()
   }
 
   return (

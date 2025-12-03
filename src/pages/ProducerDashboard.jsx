@@ -23,7 +23,6 @@ import { useSales } from '../hooks/useSales'
 import { useBeats } from '../hooks/useBeats'
 import { followerCount, fetchFollowerProfiles } from '../services/socialService'
 import { getSubscription } from '../services/subscriptionService'
-import { createLocalBoost } from '../services/boostsService'
 import { queryJobRequests } from '../services/serviceJobRequestsService'
 import { fetchProducerMetrics } from '../services/producerMetricsService'
 
@@ -110,13 +109,38 @@ export function ProducerDashboard() {
   }, [beats, user])
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('rb_boosts')
-      if (stored) setBoostedMap(JSON.parse(stored))
-    } catch {
-      // ignore
+    if (!user) return
+    let active = true
+    ;(async () => {
+      try {
+        const base = (import.meta.env.VITE_API_BASE_URL || '').replace(
+          /\/$/,
+          '',
+        )
+        const endpoint = base ? `${base}/api/admin/boosts` : '/api/admin/boosts'
+        const res = await fetch(endpoint, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        })
+        if (!res.ok) return
+        const payload = await res.json().catch(() => ({}))
+        const list = Array.isArray(payload.items) ? payload.items : []
+        if (!active) return
+        const map = {}
+        list
+          .filter((b) => b.producer_id === user.id)
+          .forEach((b) => {
+            map[b.beat_id] = b
+          })
+        setBoostedMap(map)
+      } catch {
+        // ignore
+      }
+    })()
+    return () => {
+      active = false
     }
-  }, [])
+  }, [user])
 
   useEffect(() => {
     if (user) {
