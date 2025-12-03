@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { useCart } from '../context/CartContext'
 import useSupabaseUser from '../hooks/useSupabaseUser'
+import { slugify } from '../utils/slugify'
 import {
   toggleLike,
   likeCount,
@@ -116,7 +117,7 @@ export function BeatCard({
     const optimistic = liked ? likes - 1 : likes + 1
     setLiked(!liked)
     setLikes(Math.max(0, optimistic))
-    const res = await toggleLike({ userId: user.id, beatId: id })
+    const res = await toggleLike({ userId: user.id, beatId: id, producerId: userId })
     if (res.liked !== !liked) {
       setLiked(res.liked)
       setLikes(await likeCount(id))
@@ -145,10 +146,11 @@ export function BeatCard({
   }
 
   const Wrapper = noLink ? 'div' : Link
+  const slug = slugify(title || '')
   const wrapperProps = noLink
     ? {}
     : {
-        to: `/beat/${id}`,
+        to: slug ? `/beat/${id}-${slug}` : `/beat/${id}`,
         state: {
           beat: {
             id,
@@ -201,6 +203,19 @@ export function BeatCard({
             </span>
           )}
         </div>
+      </div>
+
+      {/* Artwork preview */}
+      <div className="mt-3 w-full overflow-hidden rounded-2xl border border-slate-800/70 bg-slate-900/70">
+        {coverUrl ? (
+          <img
+            src={coverUrl}
+            alt={title || 'Beat artwork'}
+            className="h-32 w-full object-cover"
+          />
+        ) : (
+          <div className="h-32 w-full bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950" />
+        )}
       </div>
 
       {/* Center: small hero area */}
