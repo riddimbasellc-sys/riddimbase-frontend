@@ -12,6 +12,7 @@ import useSupabaseUser from '../hooks/useSupabaseUser'
 import { listPlaylists, togglePlaylistLike, togglePlaylistFavorite, addCommentToPlaylist, recordPlaylistPlay, getTrendingPlaylists } from '../services/playlistsService'
 import { useBoostedBeats } from '../hooks/useBoostedBeats'
 import { topBeatsByPlays } from '../services/analyticsService'
+import { slugify } from '../utils/slugify'
 
 export function Home() {
   const { user } = useSupabaseUser()
@@ -166,9 +167,15 @@ export function Home() {
                 </div>
                 {loading && <p className="text-sm text-slate-400">Loading…</p>}
               <div className="grid gap-3 grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {!loading && trending.map(b => (
-                    <BeatCard key={b.id} {...b} coverUrl={b.coverUrl || null} audioUrl={b.audioUrl} />
-                  ))}
+                  {!loading &&
+                    trending.map((b) => (
+                      <BeatCard
+                        key={b.id}
+                        {...b}
+                        coverUrl={b.coverUrl || null}
+                        audioUrl={b.audioUrl}
+                      />
+                    ))}
                 </div>
               </div>
             </div>

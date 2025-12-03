@@ -47,6 +47,10 @@ export function UploadBeat() {
   const [bundleToken, setBundleToken] = useState(null)
   const navigate = useNavigate()
   const { plan, user, loading } = useUserPlan()
+  const producerName =
+    user?.user_metadata?.display_name ||
+    user?.email?.split('@')[0] ||
+    'Producer'
 
   function startSimulatedUpload(file, setProgress, setUrl, doUpload, setToken) {
     if (!file) return
@@ -140,7 +144,7 @@ export function UploadBeat() {
       genre,
       bpm: Number(bpm),
       price: Number(price),
-      producer: user?.email || 'You',
+      producer: producerName,
       userId: user?.id || null,
       audioUrl: localAudioUrl,
       untaggedUrl: localUntaggedUrl,
@@ -161,7 +165,7 @@ export function UploadBeat() {
           genre: createdBeat.genre,
           bpm: createdBeat.bpm,
           price: createdBeat.price,
-          producer: createdBeat.producer,
+          producer: producerName,
           user_id: createdBeat.user_id,
           audio_url: createdBeat.audio_url,
           untagged_url: supabaseUntaggedUrl,
