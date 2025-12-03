@@ -21,7 +21,11 @@ export async function fetchBeat(id) {
 }
 
 export async function createBeat(payload) {
-  const { data, error } = await supabase.from(TABLE).insert(payload).select().single()
+  const { data, error } = await supabase
+    .from(TABLE)
+    .upsert(payload, { onConflict: 'id' })
+    .select()
+    .single()
   if (error) {
     console.warn('[beatsRepository] create error', error.message)
     return null
