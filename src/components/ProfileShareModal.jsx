@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { slugify } from '../utils/slugify'
 
 export function ProfileShareModal({ open, onClose, profileType='producer', profileId, displayName }) {
   const [copied, setCopied] = useState(false)
@@ -6,9 +7,14 @@ export function ProfileShareModal({ open, onClose, profileType='producer', profi
   useEffect(()=> { if (!open) setCopied(false) }, [open])
   if (!open) return null
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://riddimbase.local'
-  let url = `${origin}/producer/${profileId}`
-  if (profileType === 'service') url = `${origin}/services/${profileId}`
-  if (profileType === 'beat') url = `${origin}/beat/${profileId}`
+  const slug = slugify(displayName || '')
+  let url = `${origin}/producer/${profileId}${slug ? `-${slug}` : ''}`
+  if (profileType === 'service') {
+    url = `${origin}/services/${profileId}${slug ? `-${slug}` : ''}`
+  }
+  if (profileType === 'beat') {
+    url = `${origin}/beat/${profileId}${slug ? `-${slug}` : ''}`
+  }
   const title = displayName || profileId
   const shareText = encodeURIComponent(`Check out ${title} on RiddimBase: ${url}`)
   const encodedUrl = encodeURIComponent(url)
