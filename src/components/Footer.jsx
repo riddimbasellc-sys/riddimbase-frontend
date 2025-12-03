@@ -9,8 +9,13 @@ export function Footer() {
 
   useEffect(() => {
     setLinks(getFooterLinks())
-    const s = getSocialLinks().filter((item) => item.url && item.url.trim().length > 0)
-    setSocials(s)
+    ;(async () => {
+      const s = await getSocialLinks()
+      const filtered = (s || []).filter(
+        (item) => item.url && item.url.trim().length > 0,
+      )
+      setSocials(filtered)
+    })()
   }, [])
 
   return (
