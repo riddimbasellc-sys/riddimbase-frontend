@@ -23,6 +23,7 @@ const navItems = [
   { label: 'Footer Links', to: '/admin/footer-links', icon: LinkIcon },
   { label: 'Socials', to: '/admin/socials', icon: SocialIcon },
   { label: 'Analytics', to: '/admin/analytics', icon: SparkIcon },
+  { label: 'Design System', to: '/admin/design', icon: ImageIcon },
   { label: 'Brand & Theme', to: '/admin/theme', icon: ImageIcon },
   { label: 'Email Templates', to: '/admin/email-templates', icon: MailIcon }
 ]
