@@ -54,7 +54,7 @@ export function BeatPlayer({ src, className = '', beatId, producerId }) {
           {playing ? 'Pause' : 'Play'}
         </button>
         <div className="flex-1 h-2 rounded-full bg-slate-800 overflow-hidden">
-          <div style={{ width: pct + '%' }} className="h-full bg-gradient-to-r from-emerald-400 to-orange-400 transition-[width]" />
+          <div style={{ width: pct + '%' }} className="h-full bg-red-500 transition-[width]" />
         </div>
         <span className="text-[10px] text-slate-400">{fmt(progress)} / {fmt(duration)}</span>
       </div>
