@@ -1,5 +1,4 @@
 import BackButton from '../components/BackButton'
-import { listProviders } from '../services/serviceProvidersService'
 import { listProviderProfiles } from '../services/supabaseProvidersRepository'
 import { Link } from 'react-router-dom'
 import SocialIconRow from '../components/SocialIconRow'
@@ -11,9 +10,6 @@ export function Services() {
   useEffect(() => {
     let active = true
     async function load() {
-      // Static/demo providers from in-memory store
-      const staticProviders = listProviders()
-      // Dynamic providers from Supabase provider_profiles
       const rows = await listProviderProfiles()
       const supaProviders = rows.map((row) => ({
         id: row.id,
@@ -37,7 +33,7 @@ export function Services() {
         catalog: [],
       }))
       if (active) {
-        setProviders([...supaProviders, ...staticProviders])
+        setProviders(supaProviders)
       }
     }
     load()
