@@ -17,10 +17,9 @@ export function computeBeatQuote({ beat, license, currency = 'USD', coupon }) {
   const discountRate = coupon && couponMap[coupon.toUpperCase()] ? couponMap[coupon.toUpperCase()] : 0
   const discountAmountUSD = subtotalUSD * discountRate
   const totalUSD = subtotalUSD - discountAmountUSD
-  // Simple static FX rates relative to USD (for demo purposes only)
-  const rates = { USD: 1, EUR: 0.93, GBP: 0.79, CAD: 1.37, JMD: 157, TTD: 6.78 }
-  const r = rates[currency] || 1
-  const fx = (v) => v * r
+  // We treat all amounts as already expressed in the selected currency.
+  // PayPal handles any real FX conversion at checkout.
+  const fx = (v) => v
   const serviceFeeRate = 0.12
   const serviceFeeUSD = totalUSD * serviceFeeRate
   const grandUSD = totalUSD + serviceFeeUSD
@@ -41,8 +40,6 @@ export function computeBeatQuote({ beat, license, currency = 'USD', coupon }) {
 // items: [{ beat, license }]; options { currency='USD', coupon }
 export function computeCartQuote({ items = [], currency = 'USD', coupon }) {
   const valid = items.filter(it => it.beat && it.license)
-  const rates = { USD: 1, EUR: 0.93, GBP: 0.79, CAD: 1.37, JMD: 157, TTD: 6.78 }
-  const r = rates[currency] || 1
   const couponMap = { SAVE10: 0.10, SAVE20: 0.20, EXCLUSIVE50: 0.50 }
   const discountRate = coupon && couponMap[coupon.toUpperCase()] ? couponMap[coupon.toUpperCase()] : 0
 
@@ -61,8 +58,8 @@ export function computeCartQuote({ items = [], currency = 'USD', coupon }) {
   const serviceFeeUSD = totalUSD * serviceFeeRate
   const grandUSD = totalUSD + serviceFeeUSD
 
-  // FX conversion helper
-  const fx = v => v * r
+  // No FX conversion: values are already in the display currency.
+  const fx = v => v
 
   return {
     currency,
