@@ -5,7 +5,20 @@ import BackButton from '../components/BackButton'
 import { BeatPlayer } from '../components/BeatPlayer'
 import { BeatCard } from '../components/BeatCard'
 import useSupabaseUser from '../hooks/useSupabaseUser'
-import { toggleLike, toggleFavorite, likeCount, favoriteCount, isLiked, isFavorited, toggleFollow, isFollowing, followerCount } from '../services/socialService'
+import {
+  toggleLike,
+  toggleFavorite,
+  likeCount,
+  favoriteCount,
+  isLiked,
+  isFavorited,
+  toggleFollow,
+  isFollowing,
+  followerCount,
+  listBeatComments,
+  addBeatComment,
+  subscribeBeatComments,
+} from '../services/socialService'
 import { getBeat } from '../services/beatsService'
 import { fetchBeat as fetchBeatRemote } from '../services/beatsRepository'
 import { useCart } from '../context/CartContext'
@@ -36,6 +49,9 @@ export function BeatDetails() {
   const [reportOpen, setReportOpen] = useState(false)
   const { beats: allBeats } = useBeats()
   const { addBeat } = useCart() || {}
+  const [comments, setComments] = useState([])
+  const [commentText, setCommentText] = useState('')
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false)
   useEffect(()=> { (async () => {
     setLikes(await likeCount(id))
     setFavs(await favoriteCount(id))
@@ -105,6 +121,45 @@ export function BeatDetails() {
   const handleAddToCart = () => {
     if (!beat || !selected || !addBeat) return
     addBeat(beat.id, selected)
+  }
+
+  // Comments: load + realtime subscription
+  useEffect(() => {
+    let unsub = null
+    ;(async () => {
+      if (!id) return
+      const initial = await listBeatComments(id)
+      setComments(initial)
+      unsub = subscribeBeatComments({
+        beatId: id,
+        onComment: (c) => {
+          setComments((prev) => {
+            const exists = prev.some((p) => p.id === c.id)
+            if (exists) return prev
+            return [c, ...prev]
+          })
+        },
+      })
+    })()
+    return () => {
+      if (unsub) unsub()
+    }
+  }, [id])
+
+  const handleSubmitComment = async (e) => {
+    e?.preventDefault?.()
+    if (!user || !id || !commentText.trim()) return
+    const text = commentText.trim()
+    setCommentText('')
+    const res = await addBeatComment({ beatId: id, userId: user.id, content: text })
+    if (res.success && res.comment) {
+      setComments((prev) => [res.comment, ...prev])
+    } else {
+      // restore text on failure
+      setCommentText(text)
+      // eslint-disable-next-line no-alert
+      alert('Could not post comment. Please try again.')
+    }
   }
 
   const suggestedNext = useMemo(() => {
@@ -283,6 +338,85 @@ export function BeatDetails() {
         <CheckoutModal open={true} onClose={()=>setCheckoutOpen(false)} beat={beat || { title: 'Beat', producer: 'Producer', genre: 'Genre', bpm: 0 }} license={selected} />
       )}
       <ReportModal open={reportOpen} onClose={()=>setReportOpen(false)} targetId={id} type="beat" />
+      {/* Global comments section (mobile-friendly fallback) */}
+      <div className="mx-auto mt-6 max-w-6xl px-3 pb-8 sm:px-4">
+        <div className="rounded-3xl border border-slate-800/80 bg-slate-900/80 p-5">
+          <h2 className="text-sm font-semibold text-slate-100">Comments</h2>
+          <p className="mt-2 text-[11px] text-slate-400">
+            Share feedback or ask a question about this beat.
+          </p>
+          <form
+            onSubmit={handleSubmitComment}
+            className="mt-3 flex items-center gap-2 rounded-full border border-slate-700/70 bg-slate-950/70 px-3 py-1.5"
+          >
+            <button
+              type="button"
+              onClick={() => setEmojiPickerOpen((o) => !o)}
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-800 text-base leading-none text-slate-200 hover:bg-slate-700"
+            >
+              😊
+            </button>
+            <input
+              type="text"
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              placeholder={user ? 'Add a comment…' : 'Log in to comment on this beat'}
+              disabled={!user}
+              className="flex-1 bg-transparent text-[12px] text-slate-100 placeholder:text-slate-500 outline-none"
+            />
+            <button
+              type="submit"
+              disabled={!user || !commentText.trim()}
+              className="rounded-full bg-rb-trop-sunrise px-3 py-1 text-[11px] font-semibold text-slate-950 shadow-rb-gloss-btn disabled:opacity-40"
+            >
+              Post
+            </button>
+          </form>
+          {emojiPickerOpen && (
+            <div className="mt-2 grid grid-cols-8 gap-1 rounded-2xl border border-slate-700/70 bg-slate-950/95 p-2 text-lg">
+              {['🔥','💯','🎧','🎶','👌','🙏','😎','😍','🥶','🤯','🧡','💥','⭐','👏','🤑','🕺'].map((emo) => (
+                <button
+                  key={emo}
+                  type="button"
+                  onClick={() => {
+                    setCommentText((t) => `${t}${emo}`)
+                  }}
+                  className="flex items-center justify-center rounded-full px-1 py-1 hover:bg-slate-800"
+                >
+                  {emo}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="mt-4 space-y-3 max-h-64 overflow-y-auto">
+            {comments.map((c) => (
+              <div
+                key={c.id}
+                className="rounded-2xl border border-slate-800/80 bg-slate-950/80 p-3 text-[11px] text-slate-200"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-semibold text-slate-100">
+                    {c.displayName || 'User'}
+                  </p>
+                  <p className="text-[10px] text-slate-500">
+                    {c.createdAt
+                      ? new Date(c.createdAt).toLocaleDateString()
+                      : ''}
+                  </p>
+                </div>
+                <p className="mt-1 text-[11px] text-slate-300 whitespace-pre-wrap">
+                  {c.content}
+                </p>
+              </div>
+            ))}
+            {comments.length === 0 && (
+              <p className="text-[11px] text-slate-500">
+                No comments yet. Be the first to share your thoughts.
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
     </section>
   )
 }
