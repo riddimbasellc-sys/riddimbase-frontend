@@ -140,10 +140,6 @@ export function SubscriptionCheckout() {
                   }
                   onError={(err) => console.error('[PayPal][Sub] error', err)}
                 />
-                <p className="text-[10px] text-slate-500">
-                  Memberships use PayPal Subscriptions. Coupons are applied on your
-                  RiddimBase account, while billing amounts are managed in PayPal.
-                </p>
               </div>
             )}
             {planId === 'free' && (
