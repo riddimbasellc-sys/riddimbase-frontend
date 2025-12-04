@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAdminRole } from '../hooks/useAdminRole'
 import BackButton from '../components/BackButton'
 import { listBeats } from '../services/beatsService'
@@ -11,6 +12,7 @@ import {
 
 export function AdminBeats() {
   const { isAdmin, loading } = useAdminRole()
+  const navigate = useNavigate()
   const [items, setItems] = useState([])
   const [dataLoading, setDataLoading] = useState(true)
   const [error, setError] = useState('')
@@ -35,6 +37,7 @@ export function AdminBeats() {
               price: b.price || 29,
               hidden: b.hidden || false,
               flagged: b.flagged || false,
+              createdAt: b.created_at || null,
             })),
           )
         } else {
@@ -58,7 +61,7 @@ export function AdminBeats() {
   if (loading || dataLoading) {
     return (
       <section className="min-h-screen flex items-center justify-center bg-slate-950/95">
-        <p className="text-sm text-slate-400">Loading…</p>
+        <p className="text-sm text-slate-400">Loadingƒ?İ</p>
       </section>
     )
   }
@@ -88,6 +91,7 @@ export function AdminBeats() {
             price: b.price || 29,
             hidden: b.hidden || false,
             flagged: b.flagged || false,
+            createdAt: b.created_at || null,
           })),
         )
       } else {
@@ -132,6 +136,11 @@ export function AdminBeats() {
     }
   }
 
+  const viewBeat = (id) => {
+    if (!id) return
+    navigate(`/beat/${id}`)
+  }
+
   return (
     <section className="bg-slate-950/95">
       <div className="mx-auto max-w-6xl px-4 py-10">
@@ -142,8 +151,7 @@ export function AdminBeats() {
           </h1>
         </div>
         <p className="mt-1 text-sm text-slate-300">
-          Admin tools for moderation. Supabase beats load first; local test beats show if none
-          are present.
+          Admin tools for moderation. Supabase beats load first; click a title or "View Beat" to open the live beat page.
         </p>
         {error && (
           <p className="mt-2 text-[11px] text-rose-400">
@@ -157,7 +165,11 @@ export function AdminBeats() {
               className="flex flex-col gap-2 rounded-xl border border-slate-800/80 bg-slate-900/80 p-4 md:flex-row md:items-center md:justify-between"
             >
               <div>
-                <p className="text-sm font-semibold text-slate-100">
+                <button
+                  type="button"
+                  onClick={() => viewBeat(b.id)}
+                  className="text-left text-sm font-semibold text-slate-100 hover:text-rb-sun-gold transition-colors"
+                >
                   {b.title}{' '}
                   {b.hidden && (
                     <span className="ml-1 rounded-full bg-slate-800 px-2 py-0.5 text-[10px]">
@@ -169,12 +181,25 @@ export function AdminBeats() {
                       Flagged
                     </span>
                   )}
-                </p>
+                </button>
                 <p className="text-[11px] text-slate-400">
-                  {b.producer} • {b.genre} • {b.bpm} BPM
+                  {b.producer} ƒ?› {b.genre} ƒ?› {b.bpm} BPM
                 </p>
+                {b.createdAt && (
+                  <p className="text-[10px] text-slate-500">
+                    Uploaded {new Date(b.createdAt).toLocaleDateString()}
+                    {b.userId && <> ƒ?› User ID: {b.userId}</>}
+                  </p>
+                )}
               </div>
-              <div className="flex gap-2 text-[11px]">
+              <div className="flex flex-wrap gap-2 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => viewBeat(b.id)}
+                  className="rounded-full border border-slate-700/70 bg-slate-800/80 px-3 py-1 text-slate-200 hover:border-rb-sun-gold/70 hover:text-rb-sun-gold"
+                >
+                  View Beat
+                </button>
                 {!b.hidden && (
                   <button
                     onClick={() => doHide(b.id)}
@@ -206,3 +231,5 @@ export function AdminBeats() {
     </section>
   )
 }
+
+export default AdminBeats

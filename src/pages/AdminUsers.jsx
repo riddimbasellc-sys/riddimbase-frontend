@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAdminRole } from '../hooks/useAdminRole'
 import BackButton from '../components/BackButton'
 import {
@@ -10,6 +11,7 @@ import {
 
 export function AdminUsers() {
   const { isAdmin, loading } = useAdminRole()
+  const navigate = useNavigate()
   const [users, setUsers] = useState([])
   const [dataLoading, setDataLoading] = useState(true)
 
@@ -35,7 +37,7 @@ export function AdminUsers() {
   if (loading || dataLoading) {
     return (
       <section className="min-h-screen flex items-center justify-center bg-slate-950/95">
-        <p className="text-sm text-slate-400">Loading…</p>
+        <p className="text-sm text-slate-400">Loadingƒ?İ</p>
       </section>
     )
   }
@@ -72,6 +74,11 @@ export function AdminUsers() {
     }
   }
 
+  const handleViewProfile = (id) => {
+    if (!id) return
+    navigate(`/producer/${id}`)
+  }
+
   return (
     <section className="bg-slate-950/95">
       <div className="mx-auto max-w-6xl px-4 py-10">
@@ -82,7 +89,7 @@ export function AdminUsers() {
           </h1>
         </div>
         <p className="mt-1 text-sm text-slate-300">
-          Live Supabase users with moderation controls.
+          Live Supabase users with moderation controls and quick profile access.
         </p>
         <div className="mt-6 space-y-3">
           {users.map((u) => (
@@ -110,12 +117,23 @@ export function AdminUsers() {
                     Joined:{' '}
                     {new Date(u.createdAt).toLocaleDateString()}
                     {u.lastSignInAt && (
-                      <> • Last sign-in:{' '}{new Date(u.lastSignInAt).toLocaleDateString()}</>
+                      <>
+                        {' '}
+                        ƒ?› Last sign-in:{' '}
+                        {new Date(u.lastSignInAt).toLocaleDateString()}
+                      </>
                     )}
                   </p>
                 )}
               </div>
-              <div className="flex gap-2 text-[11px]">
+              <div className="flex flex-wrap gap-2 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => handleViewProfile(u.id)}
+                  className="rounded-full border border-slate-700/70 bg-slate-800/80 px-3 py-1 text-slate-200 hover:border-rb-sun-gold/70 hover:text-rb-sun-gold"
+                >
+                  View Profile
+                </button>
                 {!u.banned && (
                   <button
                     onClick={() => handleBan(u.id)}
@@ -160,3 +178,5 @@ export function AdminUsers() {
     </section>
   )
 }
+
+export default AdminUsers
