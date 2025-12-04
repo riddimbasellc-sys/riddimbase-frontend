@@ -225,35 +225,22 @@ export default function LandingPage() {
 
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {trendingBeats.map((beat) => (
-              <Link
+              <BeatCard
                 key={beat.id}
-                to={`/beat/${beat.id}`}
-                className="group flex gap-3 rounded-xl border border-white/5 bg-white/5 p-3 transition hover:border-red-500/40 hover:bg-white/10"
-              >
-                <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-red-500 via-purple-500 to-emerald-400" />
-                <div className="flex flex-1 flex-col justify-between">
-                  <div>
-                    <p className="text-xs font-semibold text-white">
-                      {beat.title || 'Untitled Beat'}
-                    </p>
-                    <p className="text-[11px] text-slate-400">
-                      by <span className="text-slate-200">{beat.producer || 'Unknown'}</span>
-                    </p>
-                  </div>
-                  <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
-                    <span>
-                      {(beat.genre || 'Genre')}
-                      {beat.bpm ? ` • ${beat.bpm} BPM` : ''}
-                    </span>
-                    <span className="font-semibold text-slate-100">
-                      {beat.price ? `$${Number(beat.price).toFixed(2)}` : ''}
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-1 flex h-8 w-8 items-center justify-center self-center rounded-full border border-white/15 bg-black/60 text-[11px] text-slate-100 opacity-0 shadow-sm transition group-hover:opacity-100">
-                  ▶
-                </div>
-              </Link>
+                id={beat.id}
+                title={beat.title}
+                producer={beat.producer}
+                userId={beat.userId}
+                genre={beat.genre}
+                bpm={beat.bpm}
+                price={beat.price}
+                coverUrl={beat.coverUrl}
+                audioUrl={beat.audioUrl}
+                description={beat.description}
+                licensePrices={beat.licensePrices}
+                freeDownload={beat.freeDownload}
+                compact
+              />
             ))}
             {trendingBeats.length === 0 && (
               <p className="text-xs text-slate-400">
