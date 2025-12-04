@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { fetchBeats } from '../services/beatsRepository'
-import { listBeats } from '../services/beatsService'
 
 export function useBeats() {
   const [beats, setBeats] = useState([])
@@ -12,7 +11,7 @@ export function useBeats() {
       .then((data) => {
         if (!active) return
         if (data && data.length) {
-          // Primary source: Supabase beats table
+          // Supabase beats table is the single source of truth.
           setBeats(
             data.map((b) => ({
               id: b.id,
@@ -32,14 +31,14 @@ export function useBeats() {
             })),
           )
         } else {
-          // Fallback only to user-local beats (from this browser),
-          // never to hard-coded placeholders.
-          setBeats(listBeats())
+          // No Supabase beats found; do not fall back to localStorage.
+          setBeats([])
         }
         setLoading(false)
       })
       .catch(() => {
-        setBeats(listBeats())
+        // If Supabase fails, show no beats rather than device-local ones.
+        setBeats([])
         setLoading(false)
       })
     return () => { active = false }
