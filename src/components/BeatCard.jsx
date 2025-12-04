@@ -33,6 +33,7 @@ export function BeatCard({
   noLink = false,
   sponsored = false,
   compact = false,
+  square = false,
 }) {
   const { addBeat } = useCart() || {}
   const { user } = useSupabaseUser()
@@ -170,6 +171,66 @@ export function BeatCard({
       }
 
   const sizeClasses = compact ? 'p-2' : 'p-3'
+
+  // Square variant: compact artwork-first card (used on landing page grids)
+  if (square) {
+    return (
+      <Wrapper
+        {...wrapperProps}
+        className="group relative aspect-square overflow-hidden rounded-2xl border border-white/10 bg-slate-900/80 shadow-[0_18px_48px_rgba(0,0,0,0.9)] backdrop-blur transition hover:border-red-500/70 hover:bg-slate-900/95"
+      >
+        {coverUrl ? (
+          <img
+            src={coverUrl}
+            alt={title || 'Beat artwork'}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="h-full w-full bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950" />
+        )}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+        {/* Play button */}
+        <button
+          type="button"
+          onClick={handlePlayToggle}
+          className="absolute inset-x-0 top-1/2 z-10 mx-auto flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[13px] font-semibold text-slate-900 shadow-[0_0_30px_rgba(248,250,252,0.6)] hover:bg-slate-100"
+        >
+          {playing ? '⏸' : '▶'}
+        </button>
+
+        {/* Metadata */}
+        <div className="absolute inset-x-3 bottom-3 z-10 flex items-center justify-between gap-2 text-[11px] text-slate-100">
+          <div className="min-w-0">
+            <p className="truncate text-[11px] font-semibold">
+              {title || 'Untitled Beat'}
+            </p>
+            <p className="truncate text-[10px] text-slate-300">
+              {producer || 'Unknown'} • {genre || 'Genre'}
+            </p>
+          </div>
+          <div className="flex flex-col items-end text-[11px]">
+            <span className="font-semibold text-red-400">
+              ${price?.toFixed ? price.toFixed(2) : Number(price || 0).toFixed(2)}
+            </span>
+            {bpm ? (
+              <span className="text-[9px] text-slate-400">
+                {bpm} BPM
+              </span>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Hidden audio */}
+        <audio
+          ref={audioRef}
+          src={audioUrl || ''}
+          preload="metadata"
+          className="hidden"
+        />
+      </Wrapper>
+    )
+  }
 
   return (
     <Wrapper
