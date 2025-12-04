@@ -151,6 +151,68 @@ export async function repostCount(beatId) {
 // Messages
 export async function sendMessage({ senderId, recipientId, content }) {
   if (!senderId || !recipientId || !content) return { success: false }
+
+  // Enforce free-plan monthly message limits (20 messages / month)
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('plan_id')
+      .eq('id', senderId)
+      .maybeSingle()
+
+    const planId = profile?.plan_id || 'free'
+    const isFree = !planId || planId === 'free'
+
+    if (isFree) {
+      const now = new Date()
+      const monthKey = `${now.getFullYear()}-${String(
+        now.getMonth() + 1,
+      ).padStart(2, '0')}`
+
+      const { data: limitRow, error: limitErr } = await supabase
+        .from('message_limits')
+        .select('id,sent_count')
+        .eq('user_id', senderId)
+        .eq('month', monthKey)
+        .maybeSingle()
+
+      if (limitErr) {
+        console.warn('[socialService] message_limits fetch error', limitErr.message)
+      }
+
+      const currentCount = limitRow?.sent_count || 0
+      const maxFree = 20
+
+      if (currentCount >= maxFree) {
+        return {
+          success: false,
+          error:
+            'Free plan messaging limit reached. Upgrade your plan for unlimited messages.',
+          limitReached: true,
+        }
+      }
+
+      const nextCount = currentCount + 1
+      const payload = {
+        user_id: senderId,
+        month: monthKey,
+        sent_count: nextCount,
+        updated_at: new Date().toISOString(),
+      }
+
+      if (limitRow?.id) {
+        await supabase
+          .from('message_limits')
+          .update(payload)
+          .eq('id', limitRow.id)
+      } else {
+        await supabase.from('message_limits').insert(payload)
+      }
+    }
+  } catch (e) {
+    console.warn('[socialService] message limit check failed', e)
+  }
+
   const { data, error } = await supabase.from('messages').insert({ sender_id: senderId, recipient_id: recipientId, content }).select().maybeSingle()
   if (error) return { success: false, error }
   return { success: true, message: data }
