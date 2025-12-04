@@ -58,6 +58,7 @@ export function ProducerPro() {
             </p>
             <ul className="mt-4 flex-1 space-y-2 text-[11px] text-slate-300">
               <li className="flex items-start gap-2"><span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-emerald-400/90" /><span>Unlimited active beats</span></li>
+              <li className="flex items-start gap-2"><span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-emerald-400/90" /><span>Unlimited in-platform messaging with artists & clients</span></li>
               <li className="flex items-start gap-2"><span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-emerald-400/90" /><span>Upload & sell soundkits (drums, loops, samples)</span></li>
               <li className="flex items-start gap-2"><span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-emerald-400/90" /><span>Real-time sales dashboard</span></li>
               <li className="flex items-start gap-2"><span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-emerald-400/90" /><span>Priority chat support</span></li>
@@ -87,7 +88,7 @@ export function ProducerPro() {
         <div className="mt-10 rounded-2xl border border-slate-800/80 bg-slate-900/80 p-6">
           <h3 className="text-sm font-semibold text-slate-100">Included With Pro</h3>
           <ul className="mt-4 grid gap-2 sm:grid-cols-2 text-[11px] text-slate-300">
-            {['Pro badge','Unlimited uploads','Upload & sell soundkits','Higher visibility ranking','Custom profile banners','Advanced analytics','Automated tagging','Playlist placement','Instant payout processing'].map(x => (
+            {['Pro badge','Unlimited uploads','Unlimited in-platform messaging','Upload & sell soundkits','Higher visibility ranking','Custom profile banners','Advanced analytics','Automated tagging','Playlist placement','Instant payout processing'].map(x => (
               <li key={x} className="flex items-start gap-2"><span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-emerald-400/90" /><span>{x}</span></li>
             ))}
           </ul>

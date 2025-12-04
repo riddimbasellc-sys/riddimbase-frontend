@@ -404,21 +404,40 @@ export default function LandingPage() {
           </p>
 
           <div className="mt-6 grid gap-4 md:grid-cols-3">
-            {(plans.length ? plans : []).slice(0, 3).map((plan) => (
-              <PricingCard
-                key={plan.id}
-                name={plan.name}
-                price={
-                  plan.monthly === 0
-                    ? 'Free'
-                    : `$${Number(plan.monthly).toFixed(0)}/mo`
-                }
-                tagline={plan.badge || ''}
-                features={plan.features || []}
-                highlight={plan.id === 'pro'}
-                planId={plan.id}
-              />
-            ))}
+            {(plans.length ? plans : []).slice(0, 3).map((plan) => {
+              const baseFeatures = Array.isArray(plan.features) ? plan.features : []
+              const hasMessaging = baseFeatures.some((f) =>
+                typeof f === 'string' && f.toLowerCase().includes('messag')
+              )
+              const features =
+                hasMessaging
+                  ? baseFeatures
+                  : plan.id === 'free'
+                  ? [
+                      ...baseFeatures,
+                      'Up to 20 in-platform chat messages per month (resets every month).',
+                    ]
+                  : [
+                      ...baseFeatures,
+                      'Unlimited in-platform messaging with artists, producers and clients.',
+                    ]
+
+              return (
+                <PricingCard
+                  key={plan.id}
+                  name={plan.name}
+                  price={
+                    plan.monthly === 0
+                      ? 'Free'
+                      : `$${Number(plan.monthly).toFixed(0)}/mo`
+                  }
+                  tagline={plan.badge || ''}
+                  features={features}
+                  highlight={plan.id === 'pro'}
+                  planId={plan.id}
+                />
+              )
+            })}
             {plans.length === 0 && (
               <div className="rounded-2xl border border-white/10 bg-black/60 p-4 text-xs text-slate-300">
                 Live pricing will appear here once plans are loaded.

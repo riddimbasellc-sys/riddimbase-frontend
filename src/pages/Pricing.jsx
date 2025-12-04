@@ -42,6 +42,24 @@ export function Pricing() {
     : null
   const isExpiringSoon = daysRemaining !== null && daysRemaining >= 0 && daysRemaining <= 3
 
+  const withMessagingFeature = (plan) => {
+    const base = Array.isArray(plan.features) ? plan.features : []
+    const hasMessaging = base.some((f) =>
+      typeof f === 'string' && f.toLowerCase().includes('messag')
+    )
+    if (hasMessaging) return base
+    if (plan.id === 'free') {
+      return [
+        ...base,
+        'Up to 20 in-platform chat messages per month (resets every month).',
+      ]
+    }
+    return [
+      ...base,
+      'Unlimited in-platform messaging with artists, producers and clients.',
+    ]
+  }
+
   const handleCancelAutoRenew = async () => {
     if (!user) return
     await cancelSubscription(user.id)
@@ -155,6 +173,7 @@ export function Pricing() {
         <div className="mt-8 grid gap-6 md:grid-cols-3">
           {plans.map((p) => {
             const price = cycle === 'monthly' ? p.monthly : p.yearly
+            const features = withMessagingFeature(p)
             return (
               <div
                 key={p.id}
@@ -180,7 +199,7 @@ export function Pricing() {
                   </p>
                 )}
                 <ul className="mt-4 flex-1 space-y-2 text-[11px] text-slate-300">
-                  {p.features.map((f) => (
+                  {features.map((f) => (
                     <li key={f} className="flex items-start gap-2">
                       <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-emerald-400/90" />
                       <span>{f}</span>
@@ -249,4 +268,3 @@ export function Pricing() {
 }
 
 export default Pricing
-
