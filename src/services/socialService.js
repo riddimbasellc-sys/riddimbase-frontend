@@ -148,6 +148,94 @@ export async function repostCount(beatId) {
   return count || 0
 }
 
+// Beat comments
+export async function listBeatComments(beatId) {
+  if (!beatId) return []
+  const { data, error } = await supabase
+    .from('beat_comments')
+    .select('id, beat_id, user_id, content, created_at')
+    .eq('beat_id', beatId)
+    .order('created_at', { ascending: false })
+  if (error) {
+    console.warn('[socialService] listBeatComments error', error.message)
+    return []
+  }
+  const rows = data || []
+  const userIds = Array.from(new Set(rows.map((r) => r.user_id).filter(Boolean)))
+  let profileMap = new Map()
+  if (userIds.length) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, display_name')
+      .in('id', userIds)
+    profileMap = new Map((profiles || []).map((p) => [p.id, p.display_name]))
+  }
+  return rows.map((row) => ({
+    id: row.id,
+    beatId: row.beat_id,
+    userId: row.user_id,
+    content: row.content,
+    createdAt: row.created_at,
+    displayName: profileMap.get(row.user_id) || 'User',
+  }))
+}
+
+export async function addBeatComment({ beatId, userId, content }) {
+  if (!beatId || !userId || !content.trim()) return { success: false }
+  const { data, error } = await supabase
+    .from('beat_comments')
+    .insert({ beat_id: beatId, user_id: userId, content: content.trim() })
+    .select('id, beat_id, user_id, content, created_at')
+    .maybeSingle()
+  if (error || !data) {
+    console.warn('[socialService] addBeatComment error', error?.message)
+    return { success: false, error }
+  }
+  // Fetch display name for the new comment
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('display_name')
+    .eq('id', data.user_id)
+    .maybeSingle()
+  return {
+    success: true,
+    comment: {
+      id: data.id,
+      beatId: data.beat_id,
+      userId: data.user_id,
+      content: data.content,
+      createdAt: data.created_at,
+      displayName: profile?.display_name || 'User',
+    },
+  }
+}
+
+export function subscribeBeatComments({ beatId, onComment }) {
+  if (!beatId) return () => {}
+  const channel = supabase
+    .channel(`beat-comments-${beatId}`)
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'beat_comments', filter: `beat_id=eq.${beatId}` },
+      (payload) => {
+        const row = payload.new
+        if (!row) return
+        onComment &&
+          onComment({
+            id: row.id,
+            beatId: row.beat_id,
+            userId: row.user_id,
+            content: row.content,
+            createdAt: row.created_at,
+          })
+      },
+    )
+    .subscribe()
+  return () => {
+    supabase.removeChannel(channel)
+  }
+}
+
 // Messages
 export async function sendMessage({ senderId, recipientId, content }) {
   if (!senderId || !recipientId || !content) return { success: false }
