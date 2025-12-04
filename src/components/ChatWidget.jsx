@@ -53,6 +53,11 @@ export default function ChatWidget({ recipientExternal, initialEmail }) {
     if (res.success) {
       setMessages(prev => [...prev, res.message])
       setText('')
+    } else if (res.limitReached) {
+      alert(
+        res.error ||
+          'You have reached the monthly messaging limit on the Free plan. Upgrade to a paid plan for unlimited chat.',
+      )
     }
   }
 
