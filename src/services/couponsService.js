@@ -1,39 +1,28 @@
-// Coupons service (localStorage backed). Coupons apply ONLY to subscriptions.
-// Structure: { id, code, type: 'fixed'|'percent', value, active, maxRedemptions, used, expiresAt|null }
+// Coupons service: now purely in-memory defaults (no localStorage).
+// In production you should back coupons with Supabase or your backend.
 
-const KEY = 'rb_coupons'
-function load() {
-  try { const raw = localStorage.getItem(KEY); if (!raw) return []; const arr = JSON.parse(raw); return Array.isArray(arr) ? arr : [] } catch { return [] }
-}
-function save(list) { try { localStorage.setItem(KEY, JSON.stringify(list)) } catch {}
+const defaultCoupons = []
+
+export function listCoupons() { return defaultCoupons }
+
+export function createCoupon() {
+  throw new Error('createCoupon is not wired to persistent storage; manage coupons via backend instead.')
 }
 
-export function listCoupons() { return load() }
-export function createCoupon({ code, type, value, maxRedemptions = 0, expiresAt = null }) {
-  const list = load()
-  const id = 'c_' + Date.now()
-  const c = { id, code: (code||'').trim().toUpperCase(), type, value: Number(value||0), active: true, maxRedemptions, used: 0, expiresAt }
-  list.push(c); save(list); return c
+export function deleteCoupon() {
+  throw new Error('deleteCoupon is not wired to persistent storage.')
 }
-export function deleteCoupon(id) { const list = load().filter(c=>c.id!==id); save(list); }
-export function toggleCoupon(id) { const list = load(); const c = list.find(c=>c.id===id); if (c) { c.active=!c.active; save(list) } return c }
+
+export function toggleCoupon() {
+  throw new Error('toggleCoupon is not wired to persistent storage.')
+}
 
 export function validateCoupon({ code, planId, amount }) {
   if (!code) return { valid:false, reason:'No code' }
-  const list = load()
-  const c = list.find(c=>c.code === code.trim().toUpperCase())
-  if (!c) return { valid:false, reason:'Not found' }
-  if (!c.active) return { valid:false, reason:'Inactive' }
-  if (c.expiresAt && Date.now() > c.expiresAt) return { valid:false, reason:'Expired' }
-  if (c.maxRedemptions>0 && c.used >= c.maxRedemptions) return { valid:false, reason:'Limit reached' }
-  // Only allow non-free plan upgrades
-  if (planId === 'free') return { valid:false, reason:'Not applicable to Free' }
-  let discount = 0
-  if (c.type === 'fixed') discount = Math.min(c.value, amount)
-  else if (c.type === 'percent') discount = Math.min(amount, amount * (c.value/100))
-  return { valid:true, coupon:c, discount, final: Math.max(0, amount - discount) }
+  // No active coupons until backed by Supabase.
+  return { valid:false, reason:'Not found' }
 }
 
-export function markCouponUsed(code) {
-  const list = load(); const c = list.find(c=>c.code===code); if (c) { c.used += 1; save(list) }
+export function markCouponUsed() {
+  // no-op until persistent coupons are implemented
 }

@@ -1,24 +1,16 @@
-// Simple support agent + assignment service with Supabase integration and localStorage fallback
+// Support agent + assignment service backed by Supabase only.
 // Adjust path to existing Supabase client (was ../supabaseClient causing Vite error)
 import { supabase } from '../lib/supabaseClient'
 
-const LS_AGENTS_KEY = 'supportAgents'
-const LS_ASSIGN_KEY = 'chatAssignments'
-
-function loadLocal(key) {
-  try { return JSON.parse(localStorage.getItem(key) || '[]') } catch { return [] }
-}
-function saveLocal(key, data) {
-  localStorage.setItem(key, JSON.stringify(data))
-}
-
 export async function fetchAgents() {
-  // Attempt Supabase table; fallback to localStorage
   try {
     const { data, error } = await supabase.from('support_agents').select('*').order('created_at', { ascending: true })
     if (!error && data) return data
-  } catch {}
-  return loadLocal(LS_AGENTS_KEY)
+    throw error
+  } catch (e) {
+    console.warn('[supportAgentService] fetchAgents error', e?.message || e)
+    return []
+  }
 }
 
 export async function createAgent(agent) {
@@ -46,12 +38,12 @@ export async function createAgent(agent) {
   }
   try {
     const { data, error } = await supabase.from('support_agents').insert(record).select().single()
-    if (!error && data) return data
-  } catch {}
-  const list = loadLocal(LS_AGENTS_KEY)
-  list.push(record)
-  saveLocal(LS_AGENTS_KEY, list)
-  return record
+    if (error) throw error
+    return data
+  } catch (e) {
+    console.warn('[supportAgentService] createAgent error', e?.message || e)
+    return null
+  }
 }
 
 export async function updateAgent(id, updates) {
@@ -66,16 +58,12 @@ export async function updateAgent(id, updates) {
   }
   try {
     const { data, error } = await supabase.from('support_agents').update(finalUpdates).eq('id', id).select().single()
-    if (!error && data) return data
-  } catch {}
-  const list = loadLocal(LS_AGENTS_KEY)
-  const idx = list.findIndex(a => a.id === id)
-  if (idx !== -1) {
-    list[idx] = { ...list[idx], ...finalUpdates }
-    saveLocal(LS_AGENTS_KEY, list)
-    return list[idx]
+    if (error) throw error
+    return data
+  } catch (e) {
+    console.warn('[supportAgentService] updateAgent error', e?.message || e)
+    return null
   }
-  return null
 }
 
 export async function updateAgentStatus(id, status) {
@@ -84,16 +72,12 @@ export async function updateAgentStatus(id, status) {
   const updates = { status, last_status_at: new Date().toISOString() }
   try {
     const { data, error } = await supabase.from('support_agents').update(updates).eq('id', id).select().single()
-    if (!error && data) return data
-  } catch {}
-  const list = loadLocal(LS_AGENTS_KEY)
-  const idx = list.findIndex(a => a.id === id)
-  if (idx !== -1) {
-    list[idx] = { ...list[idx], ...updates }
-    saveLocal(LS_AGENTS_KEY, list)
-    return list[idx]
+    if (error) throw error
+    return data
+  } catch (e) {
+    console.warn('[supportAgentService] updateAgentStatus error', e?.message || e)
+    return null
   }
-  return null
 }
 
 export async function toggleAgentActive(id, active) {
@@ -103,25 +87,24 @@ export async function toggleAgentActive(id, active) {
 export async function deleteAgent(id) {
   try {
     const { error } = await supabase.from('support_agents').delete().eq('id', id)
-    if (!error) {
-      // also clean local fallback
-      const list = loadLocal(LS_AGENTS_KEY).filter(a => a.id !== id)
-      saveLocal(LS_AGENTS_KEY, list)
-      return true
-    }
-  } catch {}
-  const list = loadLocal(LS_AGENTS_KEY).filter(a => a.id !== id)
-  saveLocal(LS_AGENTS_KEY, list)
-  return true
+    if (error) throw error
+    return true
+  } catch (e) {
+    console.warn('[supportAgentService] deleteAgent error', e?.message || e)
+    return false
+  }
 }
 
 // Assignment functions
 export async function fetchAssignments() {
   try {
     const { data, error } = await supabase.from('chat_assignments').select('*')
-    if (!error && data) return data
-  } catch {}
-  return loadLocal(LS_ASSIGN_KEY)
+    if (error) throw error
+    return data || []
+  } catch (e) {
+    console.warn('[supportAgentService] fetchAssignments error', e?.message || e)
+    return []
+  }
 }
 
 export async function getAssignment(kind, targetId) {
@@ -140,29 +123,23 @@ export async function assignAgent({ agentId, kind, targetId }) {
   }
   try {
     const { data, error } = await supabase.from('chat_assignments').insert(record).select().single()
-    if (!error && data) return data
-  } catch {}
-  const list = loadLocal(LS_ASSIGN_KEY)
-  // Replace existing active assignment
-  const filtered = list.filter(a => !(a.kind === kind && a.target_id === targetId && a.status !== 'released'))
-  filtered.push(record)
-  saveLocal(LS_ASSIGN_KEY, filtered)
-  return record
+    if (error) throw error
+    return data
+  } catch (e) {
+    console.warn('[supportAgentService] assignAgent error', e?.message || e)
+    return null
+  }
 }
 
 export async function releaseAssignment(id) {
   try {
     const { data, error } = await supabase.from('chat_assignments').update({ status: 'released' }).eq('id', id).select().single()
-    if (!error && data) return data
-  } catch {}
-  const list = loadLocal(LS_ASSIGN_KEY)
-  const idx = list.findIndex(a => a.id === id)
-  if (idx !== -1) {
-    list[idx].status = 'released'
-    saveLocal(LS_ASSIGN_KEY, list)
-    return list[idx]
+    if (error) throw error
+    return data
+  } catch (e) {
+    console.warn('[supportAgentService] releaseAssignment error', e?.message || e)
+    return null
   }
-  return null
 }
 
 export async function claimAssignment({ agentId, kind, targetId }) {

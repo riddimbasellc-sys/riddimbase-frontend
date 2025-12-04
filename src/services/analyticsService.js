@@ -6,9 +6,6 @@ const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
 // Record a play locally and send a fire-and-forget hit to the backend
 export function recordPlay(beatId, producerId) {
   if (!beatId) return
-  const current = parseInt(localStorage.getItem(playKey(beatId)) || '0', 10)
-  localStorage.setItem(playKey(beatId), String(current + 1))
-
   if (!API_BASE) return
   try {
     fetch(`${API_BASE}/api/metrics/beat-play`, {
@@ -24,7 +21,8 @@ export function recordPlay(beatId, producerId) {
 
 export function getPlayCount(beatId) {
   if (!beatId) return 0
-  return parseInt(localStorage.getItem(playKey(beatId)) || '0', 10)
+  // Local counters removed; rely on Supabase metrics instead.
+  return 0
 }
 
 export function getTotalPlaysForBeats(beatIds = []) {

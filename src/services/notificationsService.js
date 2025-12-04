@@ -1,4 +1,4 @@
-// Simple localStorage-backed notifications service (fallback for guests)
+// Simple localStorage-backed notifications service (fallback for guests only)
 const KEY = 'rb_notifications'
 
 function load() {
