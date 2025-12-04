@@ -139,63 +139,21 @@ export default function LandingPage() {
           <div className="relative flex items-center justify-center md:justify-end">
             <div className="absolute -inset-10 -z-10 bg-[radial-gradient(circle_at_top,_rgba(248,113,113,0.18),_transparent_60%),radial-gradient(circle_at_bottom,_rgba(56,189,248,0.16),_transparent_60%)] blur-3xl" />
             {heroBeat ? (
-              <div className="w-full max-w-md rounded-2xl border border-white/10 bg-gradient-to-b from-slate-900/90 via-black/90 to-slate-950/90 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.85)]">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 overflow-hidden rounded-lg border border-white/10 bg-gradient-to-br from-red-500 via-fuchsia-500 to-amber-400" />
-                    <div>
-                      <p className="text-xs font-semibold text-white">
-                        {heroBeat.title}
-                      </p>
-                      <p className="text-[11px] text-slate-400">
-                        by <span className="text-slate-200">{heroBeat.producer || 'Unknown'}</span>
-                      </p>
-                    </div>
-                  </div>
-                  <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold text-emerald-300">
-                    {(heroBeat.genre || 'Dancehall')} {heroBeat.bpm ? `• ${heroBeat.bpm} BPM` : ''}
-                  </span>
-                </div>
-
-                <div className="mt-4 h-16 rounded-xl bg-gradient-to-r from-slate-800 via-slate-900 to-slate-950 p-2">
-                  <div className="flex h-full items-end gap-[2px]">
-                    {Array.from({ length: 60 }).map((_, i) => (
-                      <div
-                        // eslint-disable-next-line react/no-array-index-key
-                        key={i}
-                        className="w-[2px] rounded-full bg-slate-600"
-                        style={{
-                          height: `${20 + Math.abs(Math.sin(i * 0.3)) * 40}px`,
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-4 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <Link
-                      to={`/beat/${heroBeat.id}`}
-                      className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-black shadow-lg transition hover:scale-[1.03]"
-                    >
-                      ▶
-                    </Link>
-                    <div className="text-[11px] text-slate-400">
-                      <p>Preview • MP3 / WAV / STEMS</p>
-                      <p>Tap to open full player</p>
-                    </div>
-                  </div>
-                  <div className="text-right text-[11px]">
-                    {heroBeat.price ? (
-                      <>
-                        <p className="text-sm font-semibold text-white">
-                          ${Number(heroBeat.price).toFixed(2)}
-                        </p>
-                        <p className="text-slate-400">Starter license</p>
-                      </>
-                    ) : null}
-                  </div>
-                </div>
+              <div className="w-full max-w-md">
+                <BeatCard
+                  id={heroBeat.id}
+                  title={heroBeat.title}
+                  producer={heroBeat.producer}
+                  userId={heroBeat.userId}
+                  genre={heroBeat.genre}
+                  bpm={heroBeat.bpm}
+                  price={heroBeat.price}
+                  coverUrl={heroBeat.coverUrl}
+                  audioUrl={heroBeat.audioUrl}
+                  description={heroBeat.description}
+                  licensePrices={heroBeat.licensePrices}
+                  freeDownload={heroBeat.freeDownload}
+                />
               </div>
             ) : (
               <div className="w-full max-w-md rounded-2xl border border-white/10 bg-gradient-to-b from-slate-900/90 via-black/90 to-slate-950/90 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.85)] flex items-center justify-center">
