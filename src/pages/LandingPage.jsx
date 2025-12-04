@@ -3,29 +3,29 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useBeats } from '../hooks/useBeats'
 import { topBeatsByPlays } from '../services/analyticsService'
 import { listPlans } from '../services/plansRepository'
-import { BeatCard } from '../components/BeatCard'
 
 export default function LandingPage() {
   const { beats } = useBeats()
   const navigate = useNavigate()
   const [heroSearch, setHeroSearch] = useState('')
   const [plans, setPlans] = useState([])
+
   const testimonials = [
     {
       role: 'Dancehall Producer',
-      name: 'Jahmel Beats \u2022 Kingston, Jamaica',
+      name: 'Jahmel Beats • Kingston, Jamaica',
       quote:
         '“RiddimBase finally feels like a real home for Caribbean riddims. My beats are getting plays from artists in London and New York I never knew before.”',
     },
     {
       role: 'Afro-Caribbean Artist',
-      name: 'Naila Vibes \u2022 Port of Spain, Trinidad',
+      name: 'Naila Vibes • Port of Spain, Trinidad',
       quote:
         '“Licensing a beat here is as easy as adding it to cart. Contracts, stems and delivery are instant, so I can focus on writing and recording.”',
     },
     {
       role: 'Beat Maker & Mix Engineer',
-      name: 'Kruz Fyah \u2022 Montego Bay, Jamaica',
+      name: 'Kruz Fyah • Montego Bay, Jamaica',
       quote:
         '“Between the jobs board and boosted beats, most of my online clients now come straight through RiddimBase.”',
     },
@@ -134,85 +134,75 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Right - Beat preview card wired to first trending beat */}
+          {/* Right - Beat preview card wired to first trending beat (only real data) */}
           <div className="relative flex items-center justify-center md:justify-end">
             <div className="absolute -inset-10 -z-10 bg-[radial-gradient(circle_at_top,_rgba(248,113,113,0.18),_transparent_60%),radial-gradient(circle_at_bottom,_rgba(56,189,248,0.16),_transparent_60%)] blur-3xl" />
-            <div className="w-full max-w-md rounded-2xl border border-white/10 bg-gradient-to-b from-slate-900/90 via-black/90 to-slate-950/90 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.85)]">
-              {/* Top row */}
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 overflow-hidden rounded-lg border border-white/10 bg-gradient-to-br from-red-500 via-fuchsia-500 to-amber-400" />
-                  <div>
-                    <p className="text-xs font-semibold text-white">
-                      {heroBeat?.title || 'Midnight Riddim'}
-                    </p>
-                    <p className="text-[11px] text-slate-400">
-                      by <span className="text-slate-200">{heroBeat?.producer || 'Producer'}</span>
-                    </p>
-                  </div>
-                </div>
-                <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold text-emerald-300">
-                  {(heroBeat?.genre || 'Dancehall')} {heroBeat?.bpm ? `• ${heroBeat.bpm} BPM` : ''}
-                </span>
-              </div>
-
-              {/* Waveform bar */}
-              <div className="mt-4 h-16 rounded-xl bg-gradient-to-r from-slate-800 via-slate-900 to-slate-950 p-2">
-                <div className="flex h-full items-end gap-[2px]">
-                  {Array.from({ length: 60 }).map((_, i) => (
-                    <div
-                      // eslint-disable-next-line react/no-array-index-key
-                      key={i}
-                      className="w-[2px] rounded-full bg-slate-600"
-                      style={{
-                        height: `${20 + Math.abs(Math.sin(i * 0.3)) * 40}px`,
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Controls + price */}
-              <div className="mt-4 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <Link
-                    to={heroBeat?.id ? `/beat/${heroBeat.id}` : '/beats'}
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-black shadow-lg transition hover:scale-[1.03]"
-                  >
-                    ▶
-                  </Link>
-                  <div className="text-[11px] text-slate-400">
-                    <p>Preview • MP3 / WAV / STEMS</p>
-                    <p>Tap to open full player</p>
-                  </div>
-                </div>
-                <div className="text-right text-[11px]">
-                  {heroBeat?.price ? (
-                    <>
-                      <p className="text-sm font-semibold text-white">
-                        ${Number(heroBeat.price).toFixed(2)}
+            {heroBeat ? (
+              <div className="w-full max-w-md rounded-2xl border border-white/10 bg-gradient-to-b from-slate-900/90 via-black/90 to-slate-950/90 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.85)]">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 overflow-hidden rounded-lg border border-white/10 bg-gradient-to-br from-red-500 via-fuchsia-500 to-amber-400" />
+                    <div>
+                      <p className="text-xs font-semibold text-white">
+                        {heroBeat.title}
                       </p>
-                      <p className="text-slate-400">Starter license</p>
-                    </>
-                  ) : (
-                    <p className="text-sm font-semibold text-white">$29.99 Basic</p>
-                  )}
+                      <p className="text-[11px] text-slate-400">
+                        by <span className="text-slate-200">{heroBeat.producer || 'Unknown'}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold text-emerald-300">
+                    {(heroBeat.genre || 'Dancehall')} {heroBeat.bpm ? `• ${heroBeat.bpm} BPM` : ''}
+                  </span>
+                </div>
+
+                <div className="mt-4 h-16 rounded-xl bg-gradient-to-r from-slate-800 via-slate-900 to-slate-950 p-2">
+                  <div className="flex h-full items-end gap-[2px]">
+                    {Array.from({ length: 60 }).map((_, i) => (
+                      <div
+                        // eslint-disable-next-line react/no-array-index-key
+                        key={i}
+                        className="w-[2px] rounded-full bg-slate-600"
+                        style={{
+                          height: `${20 + Math.abs(Math.sin(i * 0.3)) * 40}px`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <Link
+                      to={`/beat/${heroBeat.id}`}
+                      className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-black shadow-lg transition hover:scale-[1.03]"
+                    >
+                      ▶
+                    </Link>
+                    <div className="text-[11px] text-slate-400">
+                      <p>Preview • MP3 / WAV / STEMS</p>
+                      <p>Tap to open full player</p>
+                    </div>
+                  </div>
+                  <div className="text-right text-[11px]">
+                    {heroBeat.price ? (
+                      <>
+                        <p className="text-sm font-semibold text-white">
+                          ${Number(heroBeat.price).toFixed(2)}
+                        </p>
+                        <p className="text-slate-400">Starter license</p>
+                      </>
+                    ) : null}
+                  </div>
                 </div>
               </div>
-
-              {/* Licensing mini-pills */}
-              <div className="mt-4 flex flex-wrap gap-2 text-[10px]">
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-slate-100">
-                  Basic • MP3
-                </span>
-                <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-amber-200">
-                  Premium • WAV + Stems
-                </span>
-                <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-emerald-200">
-                  Exclusive • Limited
-                </span>
+            ) : (
+              <div className="w-full max-w-md rounded-2xl border border-white/10 bg-gradient-to-b from-slate-900/90 via-black/90 to-slate-950/90 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.85)] flex items-center justify-center">
+                <p className="text-xs text-slate-400 text-center">
+                  Once producers upload their first beats, a featured track will appear here.
+                </p>
               </div>
-            </div>
+            )}
           </div>
         </section>
 
@@ -222,7 +212,7 @@ export default function LandingPage() {
             <div>
               <h2 className="text-lg font-bold text-white sm:text-xl">Trending Caribbean Beats</h2>
               <p className="mt-1 text-xs text-slate-400">
-                Hand-picked Dancehall, Reggae & Afro-Caribbean beats from rising producers.
+                Live beats from real producers. Updated automatically from Supabase.
               </p>
             </div>
             <Link
@@ -234,38 +224,10 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {(trendingBeats.length
-              ? trendingBeats
-              : [
-                  {
-                    id: null,
-                    title: 'Tropical Skyline',
-                    producer: 'JayWave',
-                    genre: 'Afro Dancehall',
-                    bpm: 101,
-                    price: 34.99,
-                  },
-                  {
-                    id: null,
-                    title: 'Kingston Drift',
-                    producer: '808Marley',
-                    genre: 'Trap Dancehall',
-                    bpm: 96,
-                    price: 29.99,
-                  },
-                  {
-                    id: null,
-                    title: 'Island Lovers',
-                    producer: 'SoulFyah',
-                    genre: 'Reggae',
-                    bpm: 88,
-                    price: 39.99,
-                  },
-                ]
-            ).map((beat, index) => (
+            {trendingBeats.map((beat) => (
               <Link
-                key={beat.id || index}
-                to={beat.id ? `/beat/${beat.id}` : '/beats'}
+                key={beat.id}
+                to={`/beat/${beat.id}`}
                 className="group flex gap-3 rounded-xl border border-white/5 bg-white/5 p-3 transition hover:border-red-500/40 hover:bg-white/10"
               >
                 <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-red-500 via-purple-500 to-emerald-400" />
@@ -275,7 +237,7 @@ export default function LandingPage() {
                       {beat.title || 'Untitled Beat'}
                     </p>
                     <p className="text-[11px] text-slate-400">
-                      by <span className="text-slate-200">{beat.producer || 'Producer'}</span>
+                      by <span className="text-slate-200">{beat.producer || 'Unknown'}</span>
                     </p>
                   </div>
                   <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
@@ -293,6 +255,11 @@ export default function LandingPage() {
                 </div>
               </Link>
             ))}
+            {trendingBeats.length === 0 && (
+              <p className="text-xs text-slate-400">
+                No beats available yet. Once beats are uploaded, they will appear here for everyone.
+              </p>
+            )}
           </div>
         </section>
 
@@ -407,7 +374,7 @@ export default function LandingPage() {
             {(plans.length ? plans : []).slice(0, 3).map((plan) => {
               const baseFeatures = Array.isArray(plan.features) ? plan.features : []
               const hasMessaging = baseFeatures.some((f) =>
-                typeof f === 'string' && f.toLowerCase().includes('messag')
+                typeof f === 'string' && f.toLowerCase().includes('messag'),
               )
               const features =
                 hasMessaging
