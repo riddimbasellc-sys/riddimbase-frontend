@@ -48,7 +48,16 @@ export async function uploadBundle(file) { return uploadToFolder('bundles', file
 export async function uploadAvatar(file) { return uploadToFolder('avatars', file) }
 
 // New helper: upload beat audio + metadata via backend /beats/upload-beat
-export async function uploadBeatWithMetadata({ file, userId, title, genre, bpm, description, price }) {
+export async function uploadBeatWithMetadata({
+  file,
+  userId,
+  title,
+  genre,
+  bpm,
+  description,
+  price,
+  coverUrl,
+}) {
   if (!file) throw new Error('No audio file provided')
   const base = API_BASE || ''
   const endpoint = `${base}/beats/upload-beat`
@@ -60,6 +69,7 @@ export async function uploadBeatWithMetadata({ file, userId, title, genre, bpm, 
   if (bpm !== undefined && bpm !== null && bpm !== '') form.append('bpm', String(bpm))
   if (description) form.append('description', description)
   if (price !== undefined && price !== null && price !== '') form.append('price', String(price))
+  if (coverUrl) form.append('cover_url', coverUrl)
 
   const res = await fetch(endpoint, {
     method: 'POST',
