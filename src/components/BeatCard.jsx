@@ -19,6 +19,7 @@ export function BeatCard({
   id,
   title,
   producer,
+  collaborator,
   userId,
   genre,
   bpm,
@@ -182,6 +183,7 @@ export function BeatCard({
             id,
             title,
             producer,
+            collaborator,
             userId,
             genre,
             bpm,
@@ -329,6 +331,11 @@ export function BeatCard({
             <p className="truncate text-[11px] font-semibold text-slate-50">
               {producer || 'Unknown'}
             </p>
+            {collaborator && (
+              <p className="truncate text-[10px] text-slate-400">
+                ft. {collaborator}
+              </p>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-1">
