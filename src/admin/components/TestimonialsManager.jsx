@@ -4,6 +4,8 @@ import {
   upsertTestimonial,
   deleteTestimonial,
 } from '../../services/testimonialsService'
+import { FilePickerButton } from '../../components/FilePickerButton'
+import { uploadAvatar, uploadTestimonialMedia } from '../../services/storageService'
 
 export function TestimonialsManager() {
   const [items, setItems] = useState([])
@@ -11,6 +13,8 @@ export function TestimonialsManager() {
   const [saving, setSaving] = useState(false)
   const [editing, setEditing] = useState(null)
   const [error, setError] = useState(null)
+  const [avatarProgress, setAvatarProgress] = useState(0)
+  const [mediaProgress, setMediaProgress] = useState(0)
 
   useEffect(() => {
     let active = true
@@ -109,6 +113,43 @@ export function TestimonialsManager() {
       if (editing && editing.id === id) setEditing(null)
     } catch (err) {
       setError(err.message || 'Failed to delete testimonial')
+    }
+  }
+
+  const handleAvatarSelect = async (file) => {
+    setAvatarProgress(0)
+    if (!file) {
+      handleChange({ avatar_url: '' })
+      return
+    }
+    try {
+      setAvatarProgress(10)
+      const { publicUrl } = await uploadAvatar(file)
+      handleChange({ avatar_url: publicUrl })
+      setAvatarProgress(100)
+    } catch (err) {
+      console.warn('[TestimonialsManager] avatar upload error', err)
+      setError(err.message || 'Failed to upload avatar image')
+      setAvatarProgress(0)
+    }
+  }
+
+  const handleMediaSelect = async (file) => {
+    setMediaProgress(0)
+    if (!file) {
+      handleChange({ media_url: '', media_type: 'image' })
+      return
+    }
+    try {
+      setMediaProgress(10)
+      const { publicUrl } = await uploadTestimonialMedia(file)
+      const kind = (file.type || '').startsWith('video/') ? 'video' : 'image'
+      handleChange({ media_url: publicUrl, media_type: kind })
+      setMediaProgress(100)
+    } catch (err) {
+      console.warn('[TestimonialsManager] media upload error', err)
+      setError(err.message || 'Failed to upload media')
+      setMediaProgress(0)
     }
   }
 
@@ -280,50 +321,32 @@ export function TestimonialsManager() {
               </div>
               <div className="grid gap-2 sm:grid-cols-2">
                 <div>
-                  <label className="text-[10px] font-medium text-slate-300">
-                    Avatar image URL
-                  </label>
-                  <input
-                    className="mt-1 w-full rounded-md border border-slate-700/80 bg-slate-900/80 px-2 py-1.5 text-[11px] text-slate-100 focus:border-emerald-400/70 focus:outline-none"
-                    value={editing.avatar_url || ''}
-                    onChange={(e) =>
-                      handleChange({ avatar_url: e.target.value })
-                    }
-                    placeholder="https://cdn.example.com/avatar.jpg"
+                  <FilePickerButton
+                    label="Avatar image"
+                    accept="image/"
+                    onSelect={handleAvatarSelect}
+                    progress={avatarProgress}
+                    file={null}
                   />
+                  {editing.avatar_url && (
+                    <p className="mt-1 text-[10px] text-slate-500 truncate">
+                      Stored: {editing.avatar_url}
+                    </p>
+                  )}
                 </div>
                 <div>
-                  <label className="text-[10px] font-medium text-slate-300">
-                    Media URL (image/video)
-                  </label>
-                  <input
-                    className="mt-1 w-full rounded-md border border-slate-700/80 bg-slate-900/80 px-2 py-1.5 text-[11px] text-slate-100 focus:border-emerald-400/70 focus:outline-none"
-                    value={editing.media_url || ''}
-                    onChange={(e) =>
-                      handleChange({ media_url: e.target.value })
-                    }
-                    placeholder="https://cdn.example.com/clip.mp4"
+                  <FilePickerButton
+                    label="Media (image or video)"
+                    accept="image/,video/"
+                    onSelect={handleMediaSelect}
+                    progress={mediaProgress}
+                    file={null}
                   />
-                  <div className="mt-1 flex items-center gap-2 text-[10px] text-slate-400">
-                    <label className="flex items-center gap-1">
-                      <input
-                        type="radio"
-                        className="h-3 w-3 rounded border-slate-600 bg-slate-900"
-                        checked={(editing.media_type || 'image') === 'image'}
-                        onChange={() => handleChange({ media_type: 'image' })}
-                      />
-                      <span>Image</span>
-                    </label>
-                    <label className="flex items-center gap-1">
-                      <input
-                        type="radio"
-                        className="h-3 w-3 rounded border-slate-600 bg-slate-900"
-                        checked={editing.media_type === 'video'}
-                        onChange={() => handleChange({ media_type: 'video' })}
-                      />
-                      <span>Video</span>
-                    </label>
-                  </div>
+                  {editing.media_url && (
+                    <p className="mt-1 text-[10px] text-slate-500 truncate">
+                      Stored: {editing.media_url}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-3 pt-1">
@@ -406,4 +429,3 @@ export function TestimonialsManager() {
     </div>
   )
 }
-
