@@ -25,6 +25,8 @@ import { followerCount, fetchFollowerProfiles } from '../services/socialService'
 import { getSubscription } from '../services/subscriptionService'
 import { queryJobRequests } from '../services/serviceJobRequestsService'
 import { fetchProducerMetrics } from '../services/producerMetricsService'
+import { createBeat } from '../services/beatsRepository'
+import { uploadArtwork } from '../services/storageService'
 
 export function ProducerDashboard() {
   const navigate = useNavigate()
@@ -301,6 +303,28 @@ export function ProducerDashboard() {
 
   const displayName =
     user.user_metadata?.display_name || user.email || 'Producer'
+
+  const handleSaveEdit = async (updated) => {
+    if (!updated || !user) return
+    try {
+      let coverUrl = updated.coverUrl || null
+      if (updated.newArtworkFile) {
+        const { publicUrl } = await uploadArtwork(updated.newArtworkFile)
+        coverUrl = publicUrl
+      }
+      const payload = {
+        id: updated.id,
+        user_id: user.id,
+        title: updated.title,
+        bpm: updated.bpm ? Number(updated.bpm) : null,
+        cover_url: coverUrl,
+        collaborator: updated.collaborator || null,
+      }
+      await createBeat(payload)
+    } finally {
+      setEditingBeat(null)
+    }
+  }
 
   return (
     <ProducerLayout>
@@ -701,46 +725,53 @@ export function ProducerDashboard() {
                 catalog.
               </p>
             )}
-            {!beatsLoading && myBeats.length > 0 && (
-              <div className="mt-3 grid gap-4 md:grid-cols-3 sm:grid-cols-2">
-                {myBeats.slice(0, 6).map((b) => (
-                  <div key={b.id} className="space-y-2">
-                    <BeatCard
-                      id={b.id}
-                      title={b.title}
-                      producer={b.producer || displayName}
-                      userId={b.userId || user.id}
-                      genre={b.genre}
-                      bpm={b.bpm}
-                      price={Number(b.price) || 0}
-                      coverUrl={b.coverUrl}
-                      audioUrl={b.audioUrl}
-                      freeDownload={b.freeDownload}
-                      initialLikes={b.likes || 0}
-                      initialFavs={b.favs || 0}
-                      initialFollowers={0}
-                      compact
-                    />
-                    <div className="flex flex-wrap items-center gap-2 text-[10px]">
-                      <button
-                        type="button"
-                        onClick={() => boostBeat(b.id)}
-                        className="rounded-full bg-red-500 px-3 py-1 text-[10px] font-semibold text-slate-50 hover:bg-red-400"
-                      >
-                        Boost beat
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeBeat(b.id)}
-                        className="rounded-full border border-slate-700/80 px-3 py-1 text-[10px] font-medium text-slate-300 hover:border-red-400/70 hover:text-red-200"
-                      >
-                        Delete
-                      </button>
+              {!beatsLoading && myBeats.length > 0 && (
+                <div className="mt-3 grid gap-4 md:grid-cols-3 sm:grid-cols-2">
+                  {myBeats.slice(0, 6).map((b) => (
+                    <div key={b.id} className="space-y-2">
+                      <BeatCard
+                        id={b.id}
+                        title={b.title}
+                        producer={b.producer || displayName}
+                        userId={b.userId || user.id}
+                        genre={b.genre}
+                        bpm={b.bpm}
+                        price={Number(b.price) || 0}
+                        coverUrl={b.coverUrl}
+                        audioUrl={b.audioUrl}
+                        freeDownload={b.freeDownload}
+                        initialLikes={b.likes || 0}
+                        initialFavs={b.favs || 0}
+                        initialFollowers={0}
+                        compact
+                      />
+                      <div className="flex flex-wrap items-center gap-2 text-[10px]">
+                        <button
+                          type="button"
+                          onClick={() => boostBeat(b.id)}
+                          className="rounded-full bg-red-500 px-3 py-1 text-[10px] font-semibold text-slate-50 hover:bg-red-400"
+                        >
+                          Boost beat
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingBeat(b)}
+                          className="rounded-full border border-slate-700/80 px-3 py-1 text-[10px] font-medium text-slate-200 hover:border-emerald-400/70 hover:text-emerald-200"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeBeat(b.id)}
+                          className="rounded-full border border-slate-700/80 px-3 py-1 text-[10px] font-medium text-slate-300 hover:border-red-400/70 hover:text-red-200"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
           </div>
 
           {subscription?.planId === 'pro' && (
@@ -807,6 +838,14 @@ export function ProducerDashboard() {
                 </div>
               </div>
             </div>
+          )}
+
+          {editingBeat && (
+            <EditBeatModal
+              beat={editingBeat}
+              onClose={() => setEditingBeat(null)}
+              onSave={handleSaveEdit}
+            />
           )}
         </div>
       </section>
@@ -1009,5 +1048,100 @@ function PerformanceChart({ data }) {
         )
       })}
     </svg>
+  )
+}
+
+function EditBeatModal({ beat, onClose, onSave }) {
+  const [title, setTitle] = useState(beat?.title || '')
+  const [bpm, setBpm] = useState(beat?.bpm || '')
+  const [collaborator, setCollaborator] = useState(beat?.collaborator || '')
+  const [artworkFile, setArtworkFile] = useState(null)
+  const [saving, setSaving] = useState(false)
+
+  if (!beat) return null
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!onSave) return
+    setSaving(true)
+    try {
+      await onSave({
+        id: beat.id,
+        title: title || beat.title,
+        bpm,
+        collaborator,
+        coverUrl: beat.coverUrl || beat.cover_url || null,
+        newArtworkFile: artworkFile,
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 px-4">
+      <div className="w-full max-w-md rounded-2xl border border-slate-800/80 bg-slate-950/95 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.85)]">
+        <h2 className="text-sm font-semibold text-slate-100">Edit beat</h2>
+        <p className="mt-1 text-[11px] text-slate-400">
+          Update title, BPM, artwork, or add a collaborator.
+        </p>
+        <form onSubmit={handleSubmit} className="mt-4 space-y-3 text-[11px]">
+          <div>
+            <label className="font-semibold text-slate-300">Title</label>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-[11px] text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="font-semibold text-slate-300">BPM</label>
+            <input
+              type="number"
+              value={bpm}
+              onChange={(e) => setBpm(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-[11px] text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="font-semibold text-slate-300">Collaborator</label>
+            <input
+              value={collaborator}
+              onChange={(e) => setCollaborator(e.target.value)}
+              placeholder="Optional co-producer or beat maker"
+              className="mt-1 w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-[11px] text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="font-semibold text-slate-300">Artwork</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setArtworkFile(e.target.files?.[0] || null)}
+              className="mt-1 block w-full text-[11px] text-slate-300"
+            />
+            <p className="mt-1 text-[10px] text-slate-500">
+              Leave empty to keep current artwork.
+            </p>
+          </div>
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full border border-slate-700/80 px-4 py-1.5 text-[11px] font-medium text-slate-200 hover:bg-slate-800/80"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded-full bg-emerald-500 px-4 py-1.5 text-[11px] font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-60"
+            >
+              {saving ? 'Saving…' : 'Save changes'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   )
 }

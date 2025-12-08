@@ -171,9 +171,7 @@ export default function LandingPage() {
           <div className="flex items-end justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold text-white sm:text-xl">Trending Caribbean Beats</h2>
-              <p className="mt-1 text-xs text-slate-400">
-                Live beats from real producers. Updated automatically from Supabase.
-              </p>
+              <p className="mt-1 text-xs text-slate-400" />
             </div>
             <Link
               to="/beats"
