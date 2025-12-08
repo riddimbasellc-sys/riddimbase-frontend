@@ -35,11 +35,11 @@ export default function LandingPage() {
   const trendingBeats = useMemo(() => {
     if (!beats.length) return []
     const ids = beats.map((b) => b.id)
-    const ranked = topBeatsByPlays(ids, 3)
+    const ranked = topBeatsByPlays(ids, 10)
     const byId = new Map(beats.map((b) => [b.id, b]))
     const mapped = ranked.map((r) => byId.get(r.id)).filter(Boolean)
     if (mapped.length) return mapped
-    return beats.slice(0, 3)
+    return beats.slice(0, 10)
   }, [beats])
 
   const heroBeat = trendingBeats[0] || beats[0] || null
@@ -167,46 +167,53 @@ export default function LandingPage() {
         </section>
 
         {/* TRENDING BEATS */}
-        <section id="trending-beats" className="py-8 md:py-10">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-bold text-white sm:text-xl">Trending Caribbean Beats</h2>
-              <p className="mt-1 text-xs text-slate-400" />
+          <section id="trending-beats" className="py-8 md:py-10">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-bold text-white sm:text-xl">Trending Caribbean Beats</h2>
+                <p className="mt-1 text-xs text-slate-400" />
+              </div>
+              <Link
+                to="/beats"
+                className="text-xs font-medium text-slate-300 underline-offset-4 hover:text-white hover:underline"
+              >
+                View all beats
+              </Link>
             </div>
-            <Link
-              to="/beats"
-              className="text-xs font-medium text-slate-300 underline-offset-4 hover:text-white hover:underline"
-            >
-              View all beats
-            </Link>
-          </div>
 
-          <div className="mt-5 grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {trendingBeats.map((beat) => (
-              <BeatCard
-                key={beat.id}
-                id={beat.id}
-                title={beat.title}
-                producer={beat.producer}
-                userId={beat.userId}
-                genre={beat.genre}
-                bpm={beat.bpm}
-                price={beat.price}
-                coverUrl={beat.coverUrl}
-                audioUrl={beat.audioUrl}
-                description={beat.description}
-                licensePrices={beat.licensePrices}
-                freeDownload={beat.freeDownload}
-                square
-              />
-            ))}
-            {trendingBeats.length === 0 && (
-              <p className="text-xs text-slate-400">
+            {trendingBeats.length === 0 ? (
+              <p className="mt-5 text-xs text-slate-400">
                 No beats available yet. Once beats are uploaded, they will appear here for everyone.
               </p>
+            ) : (
+              <div className="rb-scroll-x mt-5">
+                <div className="flex gap-4 pb-2">
+                  {trendingBeats.map((beat) => (
+                    <div
+                      key={beat.id}
+                      className="shrink-0 w-[55vw] sm:w-[40vw] lg:w-[18%] max-w-[260px]"
+                    >
+                      <BeatCard
+                        id={beat.id}
+                        title={beat.title}
+                        producer={beat.producer}
+                        userId={beat.userId}
+                        genre={beat.genre}
+                        bpm={beat.bpm}
+                        price={beat.price}
+                        coverUrl={beat.coverUrl}
+                        audioUrl={beat.audioUrl}
+                        description={beat.description}
+                        licensePrices={beat.licensePrices}
+                        freeDownload={beat.freeDownload}
+                        square
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
-          </div>
-        </section>
+          </section>
 
         {/* FEATURES GRID */}
         <section className="py-8 md:py-10">
