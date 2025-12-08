@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import FilePickerButton from '../components/FilePickerButton'
 import BackButton from '../components/BackButton'
 import { addBeat, listBeats } from '../services/beatsService'
@@ -33,6 +33,7 @@ export function UploadBeat() {
   const [audioUrlRemote, setAudioUrlRemote] = useState(null)
   const [untaggedUrl, setUntaggedUrl] = useState(null)
   const [bundleUrl, setBundleUrl] = useState(null)
+  const [producerName, setProducerName] = useState('')
   const [uploadingBeat, setUploadingBeat] = useState(false)
   const [error, setError] = useState('')
   const [shareBeat, setShareBeat] = useState(null)
@@ -47,10 +48,16 @@ export function UploadBeat() {
   const [bundleToken, setBundleToken] = useState(null)
   const navigate = useNavigate()
   const { plan, user, loading } = useUserPlan()
-  const producerName =
-    user?.user_metadata?.display_name ||
-    user?.email?.split('@')[0] ||
-    'Producer'
+
+  useEffect(() => {
+    if (!producerName && user) {
+      const derived =
+        user.user_metadata?.display_name ||
+        user.email?.split('@')[0] ||
+        'Producer'
+      setProducerName(derived)
+    }
+  }, [user, producerName])
 
   function startSimulatedUpload(file, setProgress, setUrl, doUpload, setToken) {
     if (!file) return
@@ -107,7 +114,8 @@ export function UploadBeat() {
         genre,
         bpm: Number(bpm),
         description,
-        price: Number(price)
+        price: Number(price),
+        producerName: producerName || null,
       })
       createdBeat = beat
       supabaseAudioUrl = audioUrl
@@ -224,6 +232,15 @@ export function UploadBeat() {
                   <div>
                     <label className="text-[11px] font-semibold text-slate-300">Title</label>
                     <input value={title} onChange={e=>setTitle(e.target.value)} required className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none" placeholder="e.g. Midnight Rain (TrapHall)" />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300">Producer name</label>
+                    <input
+                      value={producerName}
+                      onChange={e => setProducerName(e.target.value)}
+                      className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                      placeholder="e.g. DJ IslandWave"
+                    />
                   </div>
                   <div>
                     <label className="text-[11px] font-semibold text-slate-300">Genre</label>
@@ -388,7 +405,7 @@ export function UploadBeat() {
                 <BeatCard
                   id={999999}
                   title={title || 'Untitled Beat'}
-                  producer={user?.email || 'You'}
+                  producer={producerName || user?.email || 'You'}
                   userId={user?.id || null}
                   genre={genre}
                   bpm={bpm || 0}
