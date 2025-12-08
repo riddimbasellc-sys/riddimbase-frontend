@@ -3,8 +3,9 @@ import { useSiteSettings } from '../context/SiteSettingsContext'
 import { ThemePreview } from './components/ThemePreview'
 import { NavEditor } from './components/NavEditor'
 import { BannerManager } from './components/BannerManager'
+import { TestimonialsManager } from './components/TestimonialsManager'
 
-const TABS = ['appearance', 'announcement', 'navigation', 'hero', 'css']
+const TABS = ['appearance', 'announcement', 'navigation', 'hero', 'testimonials', 'css']
 
 export function DesignPanel() {
   const { settings, loading, error, saving, saveSettings } = useSiteSettings()
@@ -161,6 +162,9 @@ export function DesignPanel() {
                   onChange={handleBannersChange}
                 />
               )}
+              {activeTab === 'testimonials' && (
+                <TestimonialsManager />
+              )}
               {activeTab === 'css' && (
                 <AdvancedCssPanel
                   value={draft.advancedCss || ''}
@@ -310,4 +314,3 @@ function AdvancedCssPanel({ value, onChange }) {
     </div>
   )
 }
-
