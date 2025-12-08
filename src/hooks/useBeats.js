@@ -17,6 +17,7 @@ export function useBeats() {
               id: b.id,
               title: b.title,
               producer: b.producer || 'Unknown',
+              collaborator: b.collaborator || null,
               userId: b.user_id || b.userId || null,
               genre: b.genre || 'Dancehall',
               bpm: b.bpm || 100,
