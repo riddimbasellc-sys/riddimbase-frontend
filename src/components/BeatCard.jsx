@@ -10,6 +10,8 @@ import {
   toggleRepost,
   isReposted,
   repostCount,
+  toggleFollow,
+  isFollowing,
 } from '../services/socialService'
 import { isProducerPro } from '../services/subscriptionService'
 
@@ -40,6 +42,7 @@ export function BeatCard({
 
   const [liked, setLiked] = useState(false)
   const [reposted, setReposted] = useState(false)
+  const [following, setFollowing] = useState(false)
 
   const [likes, setLikes] = useState(initialLikes)
   const [reposts, setReposts] = useState(0)
@@ -59,13 +62,15 @@ export function BeatCard({
         if (!cancelled) setReposts(rc)
 
         if (user) {
-          const [l, r] = await Promise.all([
+          const [l, r, fol] = await Promise.all([
             isLiked({ userId: user.id, beatId: id }),
             isReposted({ userId: user.id, beatId: id }),
+            userId ? isFollowing({ followerId: user.id, producerId: userId }) : Promise.resolve(false),
           ])
           if (!cancelled) {
             setLiked(l)
             setReposted(r)
+            setFollowing(fol)
           }
         }
 
@@ -139,6 +144,26 @@ export function BeatCard({
     }
   }
 
+  const handleFollow = async (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!user || !userId) return
+    const res = await toggleFollow({ followerId: user.id, producerId: userId })
+    if (typeof res.following === 'boolean') {
+      setFollowing(res.following)
+    } else {
+      setFollowing((prev) => !prev)
+    }
+  }
+
+  const handleShare = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (onShare) {
+      onShare({ id, title, producer, userId })
+    }
+  }
+
   const handlePlayToggle = (e) => {
     e.preventDefault()
     e.stopPropagation()
@@ -189,6 +214,60 @@ export function BeatCard({
           <div className="h-full w-full bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950" />
         )}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+        <div className="absolute left-3 right-3 bottom-14 z-10 flex items-center justify-between text-[9px]">
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={handleLike}
+              className={`flex items-center gap-1 rounded-full px-2 py-[3px] border ${
+                liked
+                  ? 'border-pink-400/80 bg-pink-500/30 text-pink-100'
+                  : 'border-slate-700/80 bg-slate-900/70 text-slate-200'
+              }`}
+            >
+              <span>♥</span>
+              <span>{likes}</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleRepost}
+              className={`flex items-center gap-1 rounded-full px-2 py-[3px] border ${
+                reposted
+                  ? 'border-emerald-400/80 bg-emerald-500/30 text-emerald-100'
+                  : 'border-slate-700/80 bg-slate-900/70 text-slate-200'
+              }`}
+            >
+              <span>⟳</span>
+              <span>{reposts}</span>
+            </button>
+          </div>
+          <div className="flex items-center gap-1">
+            {userId && (
+              <button
+                type="button"
+                onClick={handleFollow}
+                className={`rounded-full px-2 py-[3px] border ${
+                  following
+                    ? 'border-sky-400/80 bg-sky-500/30 text-sky-50'
+                    : 'border-slate-700/80 bg-slate-900/70 text-slate-200'
+                }`}
+              >
+                {following ? 'Following' : 'Follow'}
+              </button>
+            )}
+            {onShare && (
+              <button
+                type="button"
+                onClick={handleShare}
+                className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-600/80 bg-slate-900/80 text-[11px] text-slate-100"
+                title="Share"
+              >
+                ✈
+              </button>
+            )}
+          </div>
+        </div>
 
         {/* Play button */}
         <button
