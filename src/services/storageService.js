@@ -57,6 +57,7 @@ export async function uploadBeatWithMetadata({
   description,
   price,
   coverUrl,
+  producerName,
 }) {
   if (!file) throw new Error('No audio file provided')
   const base = API_BASE || ''
@@ -70,6 +71,7 @@ export async function uploadBeatWithMetadata({
   if (description) form.append('description', description)
   if (price !== undefined && price !== null && price !== '') form.append('price', String(price))
   if (coverUrl) form.append('cover_url', coverUrl)
+  if (producerName) form.append('producer', producerName)
 
   const res = await fetch(endpoint, {
     method: 'POST',
