@@ -139,7 +139,7 @@ export default function LandingPage() {
           <div className="relative flex items-center justify-center md:justify-end">
             <div className="absolute -inset-10 -z-10 bg-[radial-gradient(circle_at_top,_rgba(248,113,113,0.18),_transparent_60%),radial-gradient(circle_at_bottom,_rgba(56,189,248,0.16),_transparent_60%)] blur-3xl" />
             {heroBeat ? (
-              <div className="w-full max-w-md">
+              <div className="w-full max-w-xl">
                 <BeatCard
                   id={heroBeat.id}
                   title={heroBeat.title}
@@ -153,6 +153,7 @@ export default function LandingPage() {
                   description={heroBeat.description}
                   licensePrices={heroBeat.licensePrices}
                   freeDownload={heroBeat.freeDownload}
+                  compact
                 />
               </div>
             ) : (
@@ -182,7 +183,7 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-5 grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {trendingBeats.map((beat) => (
               <BeatCard
                 key={beat.id}
@@ -198,7 +199,7 @@ export default function LandingPage() {
                 description={beat.description}
                 licensePrices={beat.licensePrices}
                 freeDownload={beat.freeDownload}
-                compact
+                square
               />
             ))}
             {trendingBeats.length === 0 && (

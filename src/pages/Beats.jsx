@@ -201,7 +201,7 @@ export function Beats() {
                     {boostedBeats.length} active
                   </span>
                 </div>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="mt-3 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
                   {boostedFilteredBeats.map((b) => (
                     <BeatCard
                       key={b.id}
@@ -215,13 +215,13 @@ export function Beats() {
                       }
                       onShare={openShare}
                       sponsored={true}
-                      compact
+                      square
                     />
                   ))}
                 </div>
               </div>
             )}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {!loading &&
                 filteredBeats.map((b) => (
                   <BeatCard
@@ -236,7 +236,7 @@ export function Beats() {
                     }
                     onShare={openShare}
                     sponsored={boostedMap.has(b.id)}
-                    compact
+                    square
                   />
                 ))}
             </div>
