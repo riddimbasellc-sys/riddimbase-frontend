@@ -5,8 +5,35 @@ import { supabase } from '../lib/supabaseClient'
 
 const TABLE_TICKETS = 'support_tickets'
 const TABLE_MESSAGES = 'support_messages'
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
 
 export async function listSupportTickets() {
+  // Prefer server-side admin endpoint so RLS never hides tickets from admins.
+  if (API_BASE) {
+    try {
+      const res = await fetch(`${API_BASE}/admin/support-tickets`)
+      if (!res.ok) throw new Error('Failed to fetch tickets')
+      const payload = await res.json()
+      const rows = payload?.tickets || []
+      return rows.map((t) => ({
+        id: t.id,
+        subject: t.subject,
+        message: t.message,
+        status: t.status,
+        priority: t.priority || 'normal',
+        category: t.category || 'general',
+        createdAt: t.created_at,
+        userId: t.created_by || t.user_id || null,
+        assignedTo: t.assigned_to || null,
+        contactEmail: t.contact_email || null,
+        contactPhone: t.contact_phone || null,
+      }))
+    } catch (e) {
+      console.warn('[supportTicketService] admin listSupportTickets error', e?.message || e)
+      // fall through to client-side Supabase as a backup
+    }
+  }
+
   const { data, error } = await supabase
     .from(TABLE_TICKETS)
     .select('*')
@@ -16,7 +43,19 @@ export async function listSupportTickets() {
     console.warn('[supportTicketService] listSupportTickets error', error.message)
     return []
   }
-  return data || []
+  return (data || []).map((t) => ({
+    id: t.id,
+    subject: t.subject,
+    message: t.message,
+    status: t.status,
+    priority: t.priority || 'normal',
+    category: t.category || 'general',
+    createdAt: t.created_at,
+    userId: t.created_by || t.user_id || null,
+    assignedTo: t.assigned_to || null,
+    contactEmail: t.contact_email || null,
+    contactPhone: t.contact_phone || null,
+  }))
 }
 
 export async function createSupportTicket(ticket) {
