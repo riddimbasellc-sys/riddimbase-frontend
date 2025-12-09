@@ -1,4 +1,4 @@
-import { useParams, useLocation } from 'react-router-dom'
+import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { useState, useEffect, useMemo } from 'react'
 import { LICENSE_TERMS, DEFAULT_TERMS } from '../constants/licenseTerms'
 import BackButton from '../components/BackButton'
@@ -30,6 +30,7 @@ import { getPlayCount } from '../services/analyticsService'
 export function BeatDetails() {
   const params = useParams()
   const location = useLocation()
+  const navigate = useNavigate()
   const locationBeat = location.state && location.state.beat ? location.state.beat : null
   const raw = params.id || params.idSlug
   const id = raw ? raw.split('-')[0] : null
@@ -45,7 +46,6 @@ export function BeatDetails() {
   const [favs, setFavs] = useState(0)
   const [following, setFollowing] = useState(false)
   const [followers, setFollowers] = useState(0)
-  const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const { beats: allBeats } = useBeats()
   const { addBeat } = useCart() || {}
@@ -303,7 +303,11 @@ export function BeatDetails() {
               <div className="mt-4 flex flex-col gap-2">
                 <button
                   disabled={!selected}
-                  onClick={()=> setCheckoutOpen(true)}
+                  onClick={() => {
+                    if (!selected) return
+                    const licenseParam = encodeURIComponent(selected)
+                    navigate(`/checkout/${id}?license=${licenseParam}`)
+                  }}
                   className={`w-full rounded-full px-4 py-2 text-xs font-semibold ${selected ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400' : 'bg-slate-700/60 text-slate-400 cursor-not-allowed'}`}
                 >
                   {selected
@@ -335,9 +339,6 @@ export function BeatDetails() {
           </aside>
         </div>
       </div>
-      {checkoutOpen && (
-        <CheckoutModal open={true} onClose={()=>setCheckoutOpen(false)} beat={beat || { title: 'Beat', producer: 'Producer', genre: 'Genre', bpm: 0 }} license={selected} />
-      )}
       <ReportModal open={reportOpen} onClose={()=>setReportOpen(false)} targetId={id} type="beat" />
       {/* Global comments section (mobile-friendly fallback) */}
       <div className="mx-auto mt-6 max-w-6xl px-3 pb-8 sm:px-4">
