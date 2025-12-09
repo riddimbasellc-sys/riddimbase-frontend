@@ -1,4 +1,6 @@
 import React from 'react'
+import { FilePickerButton } from '../../components/FilePickerButton'
+import { uploadHeroBackground } from '../../services/storageService'
 
 export function BannerManager({ banners, onChange }) {
   const handleUpdate = (index, patch) => {
@@ -33,6 +35,19 @@ export function BannerManager({ banners, onChange }) {
   const setActive = (index) => {
     const next = banners.map((b, i) => ({ ...b, active: i === index }))
     onChange(next)
+  }
+
+  const handleBackgroundSelect = async (index, file) => {
+    if (!file) {
+      handleUpdate(index, { backgroundUrl: '' })
+      return
+    }
+    try {
+      const { publicUrl } = await uploadHeroBackground(file)
+      handleUpdate(index, { backgroundUrl: publicUrl })
+    } catch (err) {
+      console.warn('[BannerManager] hero background upload failed', err)
+    }
   }
 
   return (
@@ -91,17 +106,18 @@ export function BannerManager({ banners, onChange }) {
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <div>
-                    <label className="text-[10px] font-medium text-slate-400">
-                      Background image / video URL
-                    </label>
-                    <input
-                      className="mt-1 w-full rounded-md border border-slate-700/80 bg-slate-900/80 px-2 py-1 text-[11px] text-slate-100 focus:border-red-400 focus:outline-none"
-                      value={banner.backgroundUrl || ''}
-                      onChange={(e) =>
-                        handleUpdate(index, { backgroundUrl: e.target.value })
-                      }
-                      placeholder="https://..."
+                    <FilePickerButton
+                      label="Background image / video"
+                      accept="image/,video/"
+                      onSelect={(file) => handleBackgroundSelect(index, file)}
+                      progress={0}
+                      file={null}
                     />
+                    {banner.backgroundUrl && (
+                      <p className="mt-1 text-[10px] text-slate-500 truncate">
+                        Current: {banner.backgroundUrl}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="text-[10px] font-medium text-slate-400">
@@ -162,4 +178,3 @@ export function BannerManager({ banners, onChange }) {
     </div>
   )
 }
-
