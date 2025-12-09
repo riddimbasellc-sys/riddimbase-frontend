@@ -51,9 +51,16 @@ export function Cart() {
             {cartQuote && (
               <div className="space-y-1 text-[12px] text-slate-300">
                 <p className="flex justify-between"><span>Items Total</span><span>${cartQuote.subtotal.toFixed(2)}</span></p>
-                {cartQuote.couponDiscount > 0 && <p className="flex justify-between text-emerald-300"><span>Coupon ({(cartQuote.discountRate*100).toFixed(0)}%)</span><span>-${cartQuote.couponDiscount.toFixed(2)}</span></p>}
-                <p className="flex justify-between"><span>Service Fee <span className="text-slate-500" title="Platform fee">ⓘ</span></span><span>${cartQuote.serviceFee.toFixed(2)}</span></p>
-                <p className="mt-2 flex justify-between text-[13px] font-semibold text-slate-50"><span>Total ({enriched.length} {enriched.length===1?'item':'items'})</span><span>${cartQuote.grand.toFixed(2)}</span></p>
+                {cartQuote.couponDiscount > 0 && (
+                  <p className="flex justify-between text-emerald-300">
+                    <span>Coupon ({(cartQuote.discountRate * 100).toFixed(0)}%)</span>
+                    <span>- ${cartQuote.couponDiscount.toFixed(2)}</span>
+                  </p>
+                )}
+                <p className="mt-2 flex justify-between text-[13px] font-semibold text-slate-50">
+                  <span>Total ({enriched.length} {enriched.length === 1 ? 'item' : 'items'})</span>
+                  <span>${cartQuote.grand.toFixed(2)}</span>
+                </p>
               </div>
             )}
             <div>
