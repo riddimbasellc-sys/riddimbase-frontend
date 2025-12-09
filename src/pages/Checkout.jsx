@@ -88,11 +88,11 @@ export function Checkout() {
   }
 
   return (
-    <section className="bg-slate-950/95 py-10 min-h-screen">
-      <div className="mx-auto max-w-6xl px-4 flex flex-col md:flex-row gap-8">
+    <section className="bg-slate-950/95 py-6 min-h-screen sm:py-10">
+      <div className="mx-auto max-w-6xl px-3 flex flex-col gap-6 sm:px-4 md:flex-row md:gap-8">
         {/* Left column: Beat & Licensing Details */}
         <div className="flex-1 space-y-4">
-          <div className="rounded-2xl border border-slate-800/70 bg-slate-900/80 p-4 flex items-center justify-between">
+          <div className="rounded-2xl border border-slate-800/70 bg-slate-900/80 p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <BackButton />
               <div>
@@ -239,7 +239,7 @@ export function Checkout() {
         </div>
 
         {/* Right column: Summary & Payment */}
-        <aside className="w-full md:w-80 space-y-4">
+        <aside className="w-full md:w-80 space-y-4 mt-6 md:mt-0">
           <div className="rounded-2xl border border-slate-800/70 bg-slate-900/80 p-5 space-y-4">
             <p className="text-sm font-semibold text-slate-100">Order Summary</p>
             {!freeMode && quote && (
@@ -262,12 +262,6 @@ export function Checkout() {
                     </span>
                   </p>
                 )}
-                <p className="flex justify-between">
-                  <span>Service Fee</span>
-                  <span>
-                    {quote.currency} {quote.serviceFee.toFixed(2)}
-                  </span>
-                </p>
                 <p className="mt-2 flex justify-between font-semibold text-slate-50">
                   <span>Total</span>
                   <span>
