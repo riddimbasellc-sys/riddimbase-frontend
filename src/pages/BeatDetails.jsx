@@ -22,7 +22,6 @@ import {
 import { getBeat } from '../services/beatsService'
 import { fetchBeat as fetchBeatRemote } from '../services/beatsRepository'
 import { useCart } from '../context/CartContext'
-import CheckoutModal from '../components/CheckoutModal'
 import ReportModal from '../components/ReportModal'
 import { useBeats } from '../hooks/useBeats'
 import { getPlayCount } from '../services/analyticsService'

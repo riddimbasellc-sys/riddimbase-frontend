@@ -1,17 +1,56 @@
 import BackButton from '../components/BackButton'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { getBeat } from '../services/beatsService'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { computeBeatQuote, processPayment, generateLicense } from '../services/paymentsService'
 import { sendFreeDownloadEmail } from '../services/notificationService'
 import PayPalButtonsGroup from '../components/payments/PayPalButtonsGroup'
+import { fetchBeat as fetchBeatRemote } from '../services/beatsRepository'
 
 const LICENSES = ['Basic', 'Premium', 'Unlimited', 'Exclusive']
 
 export function Checkout() {
   const { id } = useParams()
-  const beat = getBeat(id)
   const location = useLocation()
+  const navigate = useNavigate()
+
+  const locationBeat = (location.state && location.state.beat) || null
+  const localBeat = getBeat(id)
+  const [remoteBeat, setRemoteBeat] = useState(null)
+  const beat = locationBeat || localBeat || remoteBeat
+
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      if (locationBeat || localBeat || !id) return
+      try {
+        const data = await fetchBeatRemote(id)
+        if (!data || !active) return
+        setRemoteBeat({
+          id: data.id,
+          title: data.title,
+          producer: data.producer || 'Unknown',
+          userId: data.user_id || null,
+          genre: data.genre || 'Dancehall',
+          bpm: data.bpm || 0,
+          price: data.price || 29,
+          audioUrl: data.audio_url || null,
+          untaggedUrl: data.untagged_url || null,
+          coverUrl: data.cover_url || null,
+          bundleUrl: data.bundle_url || null,
+          description: data.description || '',
+          licensePrices: data.license_prices || null,
+          freeDownload: !!data.free_download,
+        })
+      } catch {
+        // ignore fetch errors; beat will remain null
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [id, locationBeat, localBeat])
+
   const queryLicense = new URLSearchParams(location.search).get('license')
   const mode = new URLSearchParams(location.search).get('mode')
   const [license, setLicense] = useState(
@@ -24,12 +63,11 @@ export function Checkout() {
   const [currency, setCurrency] = useState('USD')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
-  const navigate = useNavigate()
 
   if (!beat) {
     return (
       <section className="bg-slate-950/95 min-h-screen flex items-center justify-center">
-        <p className="text-sm text-slate-400">Beat not found.</p>
+        <p className="text-sm text-slate-400">Loading beat detailsƒ?İ</p>
       </section>
     )
   }
