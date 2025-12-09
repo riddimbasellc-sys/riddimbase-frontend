@@ -191,7 +191,7 @@ export default function LandingPage() {
                   {trendingBeats.map((beat) => (
                     <div
                       key={beat.id}
-                      className="shrink-0 snap-start w-[70vw] sm:w-[45vw] lg:w-64"
+                      className="shrink-0 snap-start w-[70vw] sm:w-[45vw] lg:w-[240px]"
                     >
                       <BeatCard
                         id={beat.id}
@@ -206,7 +206,7 @@ export default function LandingPage() {
                         description={beat.description}
                         licensePrices={beat.licensePrices}
                         freeDownload={beat.freeDownload}
-                        square
+                        compact
                       />
                     </div>
                   ))}
