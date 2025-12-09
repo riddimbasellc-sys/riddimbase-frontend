@@ -5,12 +5,19 @@ import { topBeatsByPlays } from '../services/analyticsService'
 import { listPlans } from '../services/plansRepository'
 import { BeatCard } from '../components/BeatCard'
 import TrendingBeatCard from '../components/TrendingBeatCard'
+import { useSiteSettings } from '../context/SiteSettingsContext'
 
 export default function LandingPage() {
   const { beats } = useBeats()
   const navigate = useNavigate()
   const [heroSearch, setHeroSearch] = useState('')
   const [plans, setPlans] = useState([])
+  const { settings } = useSiteSettings()
+  const heroBanners = settings?.hero?.banners || []
+  const heroBackgrounds = heroBanners
+    .filter((b) => b.backgroundUrl)
+    .map((b) => b.backgroundUrl)
+  const [heroBgIndex, setHeroBgIndex] = useState(0)
 
   const testimonials = [
     {
@@ -43,8 +50,6 @@ export default function LandingPage() {
     return beats.slice(0, 10)
   }, [beats])
 
-  const heroBeat = trendingBeats[0] || beats[0] || null
-
   const handleScrollToBeats = () => {
     const el = document.getElementById('trending-beats')
     if (el) el.scrollIntoView({ behavior: 'smooth' })
@@ -68,102 +73,102 @@ export default function LandingPage() {
     })()
   }, [])
 
+  useEffect(() => {
+    if (heroBackgrounds.length <= 1) return
+    setHeroBgIndex(0)
+    const id = setInterval(() => {
+      setHeroBgIndex((idx) => (idx + 1) % heroBackgrounds.length)
+    }, 10000)
+    return () => clearInterval(id)
+  }, [heroBackgrounds.length])
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#050505] via-[#05070a] to-black text-slate-100">
       <main className="mx-auto max-w-6xl px-4">
         {/* HERO */}
-        <section className="grid gap-10 py-10 md:grid-cols-[1.1fr,0.9fr] md:py-14 lg:py-18">
-          {/* Left - Text */}
-          <div className="flex flex-col justify-center space-y-6">
-            <div>
-              <h1 className="text-balance text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-[2.9rem]">
-                The <span className="text-red-500">Home of Caribbean</span> Beats.
-              </h1>
-              <p className="mt-3 max-w-xl text-sm text-slate-300 sm:text-[15px]">
-                Discover, sell and license Dancehall, Reggae, Trap Dancehall, Afro-Caribbean and more on a
-                platform built for Caribbean creators, with global reach.
-              </p>
-
-              {/* Hero search bar forwards into /beats search */}
-              <form
-                onSubmit={handleHeroSearch}
-                className="mt-4 flex max-w-md items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-100 backdrop-blur-sm"
-              >
-                <input
-                  type="text"
-                  value={heroSearch}
-                  onChange={(e) => setHeroSearch(e.target.value)}
-                  placeholder="Search beats by title or producer"
-                  className="flex-1 bg-transparent text-xs text-slate-100 placeholder:text-slate-500 outline-none"
-                />
-                <button
-                  type="submit"
-                  className="rounded-full bg-white px-4 py-1.5 text-[11px] font-semibold text-black shadow hover:bg-slate-100"
+        <section className="relative py-10 md:py-14 lg:py-18 overflow-hidden">
+          {heroBackgrounds.length > 0 && (
+            <div className="absolute inset-0 -z-10">
+              {heroBackgrounds.map((url, idx) => (
+                <div
+                  key={url + idx}
+                  className={`absolute inset-0 transition-opacity duration-[1200ms] ${
+                    idx === heroBgIndex ? 'opacity-100' : 'opacity-0'
+                  }`}
                 >
-                  Explore beats
-                </button>
-              </form>
+                  <img
+                    src={url}
+                    alt="Hero background"
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/75 to-black/95" />
+                </div>
+              ))}
             </div>
+          )}
 
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={handleScrollToBeats}
-                className="rounded-full bg-white px-5 py-2 text-xs font-semibold text-black shadow-[0_0_35px_rgba(248,250,252,0.2)] transition hover:bg-slate-100"
-              >
-                Browse trending beats
-              </button>
-              <Link
-                to="/signup"
-                className="rounded-full border border-white/15 bg-white/5 px-5 py-2 text-xs font-semibold text-slate-100 backdrop-blur transition hover:border-white/40 hover:bg-white/10"
-              >
-                Become a producer
-              </Link>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-5 text-[11px] text-slate-400">
-              <div className="flex items-center gap-1.5">
-                Instant licensing & delivery
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                Tools for producers & artists
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
-                Built for the Caribbean, made for the world
-              </div>
-            </div>
-          </div>
-
-          {/* Right - Beat preview card wired to first trending beat (only real data) */}
-          <div className="relative flex items-center justify-center md:justify-end">
-            <div className="absolute -inset-10 -z-10 bg-[radial-gradient(circle_at_top,_rgba(248,113,113,0.18),_transparent_60%),radial-gradient(circle_at_bottom,_rgba(56,189,248,0.16),_transparent_60%)] blur-3xl" />
-            {heroBeat ? (
-              <div className="w-full max-w-xl">
-                <BeatCard
-                  id={heroBeat.id}
-                  title={heroBeat.title}
-                  producer={heroBeat.producer}
-                  userId={heroBeat.userId}
-                  genre={heroBeat.genre}
-                  bpm={heroBeat.bpm}
-                  price={heroBeat.price}
-                  coverUrl={heroBeat.coverUrl}
-                  audioUrl={heroBeat.audioUrl}
-                  description={heroBeat.description}
-                  licensePrices={heroBeat.licensePrices}
-                  freeDownload={heroBeat.freeDownload}
-                  compact
-                />
-              </div>
-            ) : (
-              <div className="w-full max-w-md rounded-2xl border border-white/10 bg-gradient-to-b from-slate-900/90 via-black/90 to-slate-950/90 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.85)] flex items-center justify-center">
-                <p className="text-xs text-slate-400 text-center">
-                  Once producers upload their first beats, a featured track will appear here.
+          <div className="relative mx-auto flex max-w-6xl flex-col gap-6">
+            <div className="flex flex-col justify-center space-y-6 max-w-2xl">
+              <div>
+                <h1 className="text-balance text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-[2.9rem]">
+                  The <span className="text-red-500">Home of Caribbean</span> Beats.
+                </h1>
+                <p className="mt-3 max-w-xl text-sm text-slate-300 sm:text-[15px]">
+                  Discover, sell and license Dancehall, Reggae, Trap Dancehall, Afro-Caribbean and more on a
+                  platform built for Caribbean creators, with global reach.
                 </p>
+
+                {/* Hero search bar forwards into /beats search */}
+                <form
+                  onSubmit={handleHeroSearch}
+                  className="mt-4 flex max-w-md items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-100 backdrop-blur-sm"
+                >
+                  <input
+                    type="text"
+                    value={heroSearch}
+                    onChange={(e) => setHeroSearch(e.target.value)}
+                    placeholder="Search beats by title or producer"
+                    className="flex-1 bg-transparent text-xs text-slate-100 placeholder:text-slate-500 outline-none"
+                  />
+                  <button
+                    type="submit"
+                    className="rounded-full bg-white px-4 py-1.5 text-[11px] font-semibold text-black shadow hover:bg-slate-100"
+                  >
+                    Explore beats
+                  </button>
+                </form>
               </div>
-            )}
+
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleScrollToBeats}
+                  className="rounded-full bg-white px-5 py-2 text-xs font-semibold text-black shadow-[0_0_35px_rgba(248,250,252,0.2)] transition hover:bg-slate-100"
+                >
+                  Browse trending beats
+                </button>
+                <Link
+                  to="/signup"
+                  className="rounded-full border border-white/15 bg-white/5 px-5 py-2 text-xs font-semibold text-slate-100 backdrop-blur transition hover:border-white/40 hover:bg-white/10"
+                >
+                  Become a producer
+                </Link>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-5 text-[11px] text-slate-400">
+                <div className="flex items-center gap-1.5">
+                  Instant licensing & delivery
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                  Tools for producers & artists
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
+                  Built for the Caribbean, made for the world
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
