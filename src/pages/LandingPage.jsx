@@ -186,12 +186,12 @@ export default function LandingPage() {
                 No beats available yet. Once beats are uploaded, they will appear here for everyone.
               </p>
             ) : (
-              <div className="rb-scroll-x mt-5">
+              <div className="rb-scroll-x mt-5 snap-x snap-mandatory">
                 <div className="flex gap-4 pb-2">
                   {trendingBeats.map((beat) => (
                     <div
                       key={beat.id}
-                      className="shrink-0 w-[55vw] sm:w-[40vw] lg:w-[18%] max-w-[260px]"
+                      className="shrink-0 snap-start w-[70vw] sm:w-[45vw] lg:w-64"
                     >
                       <BeatCard
                         id={beat.id}
