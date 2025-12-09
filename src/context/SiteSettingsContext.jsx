@@ -7,6 +7,8 @@ import React, {
   useState,
 } from 'react'
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+
 // Default design system settings for RiddimBase
 const defaultSettings = {
   theme: {
@@ -71,7 +73,8 @@ export function SiteSettingsProvider({ children }) {
       setLoading(true)
       setError(null)
       try {
-        const res = await fetch('/api/settings')
+        const endpoint = API_BASE ? `${API_BASE}/api/settings` : '/api/settings'
+        const res = await fetch(endpoint)
         if (!res.ok) throw new Error(`Failed to load settings (${res.status})`)
         const data = await res.json()
         if (!cancelled && data) {
@@ -131,7 +134,8 @@ export function SiteSettingsProvider({ children }) {
       setSaving(true)
       setError(null)
       try {
-        const res = await fetch('/api/settings', {
+        const endpoint = API_BASE ? `${API_BASE}/api/settings` : '/api/settings'
+        const res = await fetch(endpoint, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(nextSettings),
@@ -172,4 +176,3 @@ export function SiteSettingsProvider({ children }) {
 export function useSiteSettings() {
   return useContext(SiteSettingsContext)
 }
-
