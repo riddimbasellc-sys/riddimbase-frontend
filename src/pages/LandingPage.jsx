@@ -4,6 +4,7 @@ import { useBeats } from '../hooks/useBeats'
 import { topBeatsByPlays } from '../services/analyticsService'
 import { listPlans } from '../services/plansRepository'
 import { BeatCard } from '../components/BeatCard'
+import TrendingBeatCard from '../components/TrendingBeatCard'
 
 export default function LandingPage() {
   const { beats } = useBeats()
@@ -193,7 +194,7 @@ export default function LandingPage() {
                       key={beat.id}
                       className="shrink-0 snap-start w-[70vw] sm:w-[45vw] lg:w-[240px]"
                     >
-                      <BeatCard
+                      <TrendingBeatCard
                         id={beat.id}
                         title={beat.title}
                         producer={beat.producer}
@@ -203,10 +204,7 @@ export default function LandingPage() {
                         price={beat.price}
                         coverUrl={beat.coverUrl}
                         audioUrl={beat.audioUrl}
-                        description={beat.description}
-                        licensePrices={beat.licensePrices}
                         freeDownload={beat.freeDownload}
-                        compact
                       />
                     </div>
                   ))}
