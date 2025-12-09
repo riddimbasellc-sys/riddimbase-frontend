@@ -305,7 +305,26 @@ export function BeatDetails() {
                   onClick={() => {
                     if (!selected) return
                     const licenseParam = encodeURIComponent(selected)
-                    navigate(`/checkout/${id}?license=${licenseParam}`)
+                    navigate(`/checkout/${id}?license=${licenseParam}`, {
+                      state: {
+                        beat: {
+                          id,
+                          title: beat?.title,
+                          producer: beat?.producer,
+                          userId: beat?.userId || beat?.user_id || null,
+                          genre: beat?.genre,
+                          bpm: beat?.bpm,
+                          price: beat?.price,
+                          audioUrl: beat?.audioUrl || beat?.audio_url || null,
+                          untaggedUrl: beat?.untaggedUrl || beat?.untagged_url || null,
+                          coverUrl: beat?.coverUrl || beat?.cover_url || null,
+                          bundleUrl: beat?.bundleUrl || beat?.bundle_url || null,
+                          description: beat?.description,
+                          licensePrices: beat?.licensePrices || beat?.license_prices || null,
+                          freeDownload: !!(beat?.freeDownload || beat?.free_download),
+                        },
+                      },
+                    })
                   }}
                   className={`w-full rounded-full px-4 py-2 text-xs font-semibold ${selected ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400' : 'bg-slate-700/60 text-slate-400 cursor-not-allowed'}`}
                 >
