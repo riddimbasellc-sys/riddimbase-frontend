@@ -107,13 +107,13 @@ export default function LandingPage() {
             </div>
           )}
 
-          <div className="relative mx-auto flex max-w-6xl flex-col gap-6">
-            <div className="flex flex-col justify-center space-y-6 max-w-2xl">
+          <div className="relative mx-auto flex max-w-4xl flex-col items-center gap-6 text-center">
+            <div className="flex w-full flex-col items-center justify-center space-y-6">
               <div>
                 <h1 className="text-balance text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-[2.9rem]">
                   The <span className="text-red-500">Home of Caribbean</span> Beats.
                 </h1>
-                <p className="mt-3 max-w-xl text-sm text-slate-300 sm:text-[15px]">
+                <p className="mt-3 max-w-2xl mx-auto text-sm text-slate-300 sm:text-[15px]">
                   Discover, sell and license Dancehall, Reggae, Trap Dancehall, Afro-Caribbean and more on a
                   platform built for Caribbean creators, with global reach.
                 </p>
@@ -121,7 +121,7 @@ export default function LandingPage() {
                 {/* Hero search bar forwards into /beats search */}
                 <form
                   onSubmit={handleHeroSearch}
-                  className="mt-4 flex max-w-md items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-100 backdrop-blur-sm"
+                  className="mt-4 mx-auto flex max-w-md items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-100 backdrop-blur-sm"
                 >
                   <input
                     type="text"
@@ -139,7 +139,7 @@ export default function LandingPage() {
                 </form>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center justify-center gap-3">
                 <button
                   type="button"
                   onClick={handleScrollToBeats}
@@ -155,7 +155,7 @@ export default function LandingPage() {
                 </Link>
               </div>
 
-              <div className="flex flex-wrap items-center gap-5 text-[11px] text-slate-400">
+              <div className="flex flex-wrap items-center justify-center gap-5 text-[11px] text-slate-400">
                 <div className="flex items-center gap-1.5">
                   Instant licensing & delivery
                 </div>
