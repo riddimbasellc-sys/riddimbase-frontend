@@ -30,9 +30,18 @@ export default function CartPanel({ onClose }) {
           {(!enriched || enriched.length===0) && <p className="text-xs text-slate-500">Your cart is empty.</p>}
         </div>
         <div className="border-t border-slate-800/60 p-5 space-y-2 text-[12px]">
-          <div className="flex justify-between"><span className="text-slate-400">Subtotal</span><span className="font-medium text-slate-200">${totals?.subtotal.toFixed(2) || '0.00'}</span></div>
-          <div className="flex justify-between"><span className="text-slate-400">Service Fee ({Math.round((totals?.serviceFeeRate||0)*100)}%)</span><span className="font-medium text-slate-200">${totals?.serviceFee.toFixed(2) || '0.00'}</span></div>
-          <div className="flex justify-between text-sm font-semibold"><span className="text-slate-100">Grand Total</span><span className="text-emerald-400">${totals?.grand.toFixed(2) || '0.00'}</span></div>
+          <div className="flex justify-between">
+            <span className="text-slate-400">Subtotal</span>
+            <span className="font-medium text-slate-200">
+              ${totals?.subtotal.toFixed(2) || '0.00'}
+            </span>
+          </div>
+          <div className="flex justify-between text-sm font-semibold">
+            <span className="text-slate-100">Grand Total</span>
+            <span className="text-emerald-400">
+              ${totals?.grand.toFixed(2) || '0.00'}
+            </span>
+          </div>
           <div className="pt-2 flex flex-col gap-2">
             <p className="text-[10px] text-slate-400">Select a beat to purchase from its detail page.</p>
             <p className="text-[10px] text-slate-500 leading-relaxed">Secure on-platform payments only. Instant file delivery & license PDF after payment.</p>
