@@ -3,12 +3,27 @@ export function quoteBeatPurchase(beat, license) {
   return computeBeatQuote({ beat, license })
 }
 
+function resolveLicensePrice(tierPrices, license, fallback) {
+  if (!tierPrices) return fallback
+  const key = license
+  const lower = license.toLowerCase()
+  const candidates = [
+    tierPrices[key],
+    tierPrices[lower],
+  ]
+  for (const v of candidates) {
+    if (v !== undefined && v !== null) return Number(v)
+  }
+  return fallback
+}
+
 // New quote function with currency & coupon support
 // options: { beat, license, currency='USD', coupon } -> returns { base, multiplier, subtotal, discountRate, discountAmount, total, currency }
 export function computeBeatQuote({ beat, license, currency = 'USD', coupon }) {
   if (!beat) return null
   const tierPrices = beat.licensePrices || beat.license_prices || null
-  const baseUSD = tierPrices && tierPrices[license] ? Number(tierPrices[license]) : Number(beat.price || 0)
+  const fallbackPrice = Number(beat.price || 0)
+  const baseUSD = resolveLicensePrice(tierPrices, license, fallbackPrice)
   // No extra multiplier: each tier should use its own exact price
   const m = 1
   const subtotalUSD = baseUSD
@@ -46,7 +61,8 @@ export function computeCartQuote({ items = [], currency = 'USD', coupon }) {
   // Per-item calculations (in USD first)
   const perItem = valid.map(it => {
     const tierPrices = it.beat.licensePrices || it.beat.license_prices || null
-    const baseUSD = tierPrices && tierPrices[it.license] ? Number(tierPrices[it.license]) : Number(it.beat.price || 0)
+    const fallbackPrice = Number(it.beat.price || 0)
+    const baseUSD = resolveLicensePrice(tierPrices, it.license, fallbackPrice)
     const itemSubtotalUSD = baseUSD
     return { ...it, multiplier: 1, subtotalUSD: itemSubtotalUSD }
   })
