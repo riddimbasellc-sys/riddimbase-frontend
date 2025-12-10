@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { getBeat } from '../services/beatsService'
 import { computeBeatQuote } from '../services/paymentsService'
+import { useBeats } from '../hooks/useBeats'
 
 const CartContext = createContext(null)
 
@@ -19,6 +20,9 @@ export function CartProvider({ children }) {
     try { localStorage.setItem('rb_cart', JSON.stringify(items)) } catch {}
   }, [items])
 
+  // Supabase-backed beats (single source of truth for marketplace)
+  const { beats: remoteBeats } = useBeats()
+
   const addBeat = (beatId, license = 'Basic') => {
     setItems(prev => {
       if (prev.some(p => p.beatId === beatId)) return prev
@@ -30,18 +34,28 @@ export function CartProvider({ children }) {
   const clearCart = () => setItems([])
 
   // Derived enriched items with beat data & quote
-  const enriched = useMemo(() => items.map(it => {
-    const beat = getBeat(it.beatId)
-    const quote = computeBeatQuote({ beat, license: it.license })
-    return { ...it, beat, quote }
-  }), [items])
+  const enriched = useMemo(
+    () =>
+      items.map((it) => {
+        const localBeat = getBeat(it.beatId)
+        const remoteBeat =
+          remoteBeats.find((b) => b.id === it.beatId) || null
+        const beat = localBeat || remoteBeat || null
+        const quote = computeBeatQuote({ beat, license: it.license })
+        return { ...it, beat, quote }
+      }),
+    [items, remoteBeats],
+  )
 
   const count = items.length
   const totals = useMemo(() => {
-    const subtotal = enriched.reduce((sum, it) => sum + (it.quote?.total || 0), 0)
-    const serviceFeeRate = 0.12
-    const serviceFee = subtotal * serviceFeeRate
-    return { subtotal, serviceFee, grand: subtotal + serviceFee, serviceFeeRate }
+    const subtotal = enriched.reduce(
+      (sum, it) => sum + (it.quote?.total || 0),
+      0,
+    )
+    const serviceFeeRate = 0
+    const serviceFee = 0
+    return { subtotal, serviceFee, grand: subtotal, serviceFeeRate }
   }, [enriched])
 
   return (
