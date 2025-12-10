@@ -12,6 +12,7 @@
     "@aws-sdk/client-s3": "^3.567.0",
     "@aws-sdk/s3-request-presigner": "^3.567.0",
     "@supabase/supabase-js": "^2.45.0",
+    "wavesurfer.js": "^7.7.12",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^4.19.2",
