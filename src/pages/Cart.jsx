@@ -66,9 +66,18 @@ export function Cart() {
             <div>
               <button
                 disabled={!singleReady && !multiReady}
-                onClick={()=> {
-                  if (singleReady) navigate(`/checkout/${enriched[0].beatId}?license=${enriched[0].license}`)
-                  else if (multiReady) navigate('/checkout/cart')
+                onClick={() => {
+                  if (singleReady) {
+                    const first = enriched[0]
+                    navigate(
+                      `/checkout/${first.beatId}?license=${first.license}`,
+                      {
+                        state: { beat: first.beat },
+                      },
+                    )
+                  } else if (multiReady) {
+                    navigate('/checkout/cart')
+                  }
                 }}
                 className="w-full rounded-full bg-blue-600 px-4 py-2 text-[12px] font-semibold text-slate-50 disabled:opacity-40"
               >
