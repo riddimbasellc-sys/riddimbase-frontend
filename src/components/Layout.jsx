@@ -327,16 +327,6 @@ function MobileMainMenuSheet({ onClose }) {
                 type="button"
                 onClick={() => {
                   onClose()
-                  navigate('/riddims')
-                }}
-                className="block w-full rounded-lg px-2 py-2 text-left hover:bg-slate-900/90"
-              >
-                Riddims
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  onClose()
                   navigate('/producers')
                 }}
                 className="block w-full rounded-lg px-2 py-2 text-left hover:bg-slate-900/90"
