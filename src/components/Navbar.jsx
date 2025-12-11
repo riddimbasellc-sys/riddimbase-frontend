@@ -160,7 +160,6 @@ export function Navbar({ onMobileMenuToggle = () => {} }) {
                       {hasProducer && (
                         <li><button onClick={()=>{navigate('/producer/upload'); setOpen(false)}} className="w-full rounded-lg px-2 py-1 text-left hover:bg-slate-800/80">Upload Beat</button></li>
                       )}
-                      <li><button onClick={()=>{navigate('/chat'); setOpen(false)}} className="w-full rounded-lg px-2 py-1 text-left hover:bg-slate-800/80">Chat</button></li>
                       <li><button onClick={()=>{navigate('/pricing'); setOpen(false)}} className="w-full rounded-lg px-2 py-1 text-left hover:bg-slate-800/80">Manage Plan</button></li>
                       {hasProducer && (
                         <li><button onClick={()=>{navigate('/services/manage'); setOpen(false)}} className="w-full rounded-lg px-2 py-1 text-left hover:bg-slate-800/80">My Services</button></li>

@@ -10,6 +10,7 @@ import { useAdminRole } from '../hooks/useAdminRole'
 import { useCart } from '../context/CartContext'
 import CartPanel from './CartPanel'
 import { supabase } from '../lib/supabaseClient'
+import { loadTawk } from '../services/tawkService'
 
 export function Layout({ children }) {
   const [announcements, setAnnouncements] = useState([])
@@ -29,6 +30,10 @@ export function Layout({ children }) {
     load()
   }, [])
 
+  useEffect(() => {
+    loadTawk()
+  }, [])
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-rb-caribbean text-slate-50 flex flex-col">
       {/* Announcement bar fixed at very top, above navbar */}
@@ -44,10 +49,7 @@ export function Layout({ children }) {
         </div>
       )}
       <Navbar onMobileMenuToggle={() => setMainMenuOpen((v) => !v)} />
-      <main className="relative flex-1 pb-20 md:pb-0">
-        {children}
-        <HelpBubble />
-      </main>
+      <main className="relative flex-1 pb-20 md:pb-0">{children}</main>
       <MobileBottomNav />
       {mainMenuOpen && <MobileMainMenuSheet onClose={() => setMainMenuOpen(false)} />}
       <Footer />
