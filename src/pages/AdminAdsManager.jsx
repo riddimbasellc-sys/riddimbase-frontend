@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import AdminLayout from '../components/AdminLayout'
 import { useAdminRole } from '../hooks/useAdminRole'
 import { useBeats } from '../hooks/useBeats'
-import { getPlayCount } from '../services/analyticsService'
+import { getPlayCount, loadPlayCountsForBeats } from '../services/analyticsService'
 import { fetchCountsForBeats, followerCount } from '../services/socialService'
 
 const TIER_LABEL = {
@@ -26,6 +26,7 @@ export function AdminAdsManager() {
   const [followers, setFollowers] = useState({})
   const [actionId, setActionId] = useState(null)
   const [error, setError] = useState(null)
+  const [playsLoaded, setPlaysLoaded] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -46,6 +47,23 @@ export function AdminAdsManager() {
     }
     load()
   }, [])
+
+  // Load play counts for all boosted beats across the platform.
+  useEffect(() => {
+    const ids = Array.from(new Set(boosts.map((b) => b.beat_id).filter(Boolean)))
+    if (!ids.length) {
+      setPlaysLoaded(false)
+      return
+    }
+    let active = true
+    ;(async () => {
+      await loadPlayCountsForBeats(ids)
+      if (active) setPlaysLoaded(true)
+    })()
+    return () => {
+      active = false
+    }
+  }, [boosts])
 
   useEffect(() => {
     if (!boosts.length) {
@@ -284,4 +302,3 @@ function MetricCard({ label, value }) {
     </div>
   )
 }
-

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import useSupabaseUser from '../hooks/useSupabaseUser'
 import { useBeats } from '../hooks/useBeats'
 import BackButton from '../components/BackButton'
-import { getPlayCount } from '../services/analyticsService'
+import { getPlayCount, loadPlayCountsForBeats } from '../services/analyticsService'
 import { fetchCountsForBeats } from '../services/socialService'
 
 const TIER_LABEL = {
@@ -24,6 +24,7 @@ export function MyAds() {
   const [loading, setLoading] = useState(true)
   const [actionId, setActionId] = useState(null)
   const [counts, setCounts] = useState({ likeCounts: {}, favoriteCounts: {} })
+  const [playsLoaded, setPlaysLoaded] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -51,6 +52,23 @@ export function MyAds() {
     }
     load()
   }, [user])
+
+  // Load play counts for boosted beats from Supabase metrics.
+  useEffect(() => {
+    const ids = Array.from(new Set(boosts.map((b) => b.beat_id).filter(Boolean)))
+    if (!ids.length) {
+      setPlaysLoaded(false)
+      return
+    }
+    let active = true
+    ;(async () => {
+      await loadPlayCountsForBeats(ids)
+      if (active) setPlaysLoaded(true)
+    })()
+    return () => {
+      active = false
+    }
+  }, [boosts])
 
   const beatById = useMemo(() => {
     const map = new Map()

@@ -13,10 +13,7 @@ import {
   deleteBeat,
 } from '../services/beatsService'
 import {
-  getPlayCount,
-  getTotalPlaysForBeats,
-  getAveragePlaysPerBeat,
-  topBeatsByPlays,
+  loadPlayCountsForBeats,
 } from '../services/analyticsService'
 import { listUserPayouts, cancelPayout } from '../services/payoutsRepository'
 import { useSales } from '../hooks/useSales'
@@ -61,6 +58,7 @@ export function ProducerDashboard() {
   const accountType = profile?.accountType || ''
   const roleTokens = accountType.split('+').map(t => t.trim().toLowerCase()).filter(Boolean)
   const isMixEngineer = roleTokens.includes('mix-master engineer') || roleTokens.includes('mixing') || roleTokens.includes('engineer')
+  const [playCounts, setPlayCounts] = useState({})
 
   useEffect(() => {
     if (!loading && !user) navigate('/login')
@@ -109,6 +107,23 @@ export function ProducerDashboard() {
     )
     setManagedBeats(mine)
   }, [beats, user])
+
+  // Load aggregated play counts for this producer's beats from Supabase metrics.
+  useEffect(() => {
+    const ids = managedBeats.map((b) => b.id).filter(Boolean)
+    if (!ids.length) {
+      setPlayCounts({})
+      return
+    }
+    let active = true
+    ;(async () => {
+      const totals = await loadPlayCountsForBeats(ids)
+      if (active) setPlayCounts(totals || {})
+    })()
+    return () => {
+      active = false
+    }
+  }, [managedBeats])
 
   useEffect(() => {
     if (!user) return
@@ -237,9 +252,19 @@ export function ProducerDashboard() {
     : 0
   const myBeats = managedBeats
   const beatIds = myBeats.map((b) => b.id)
-  const totalPlays = getTotalPlaysForBeats(beatIds)
-  const avgPlays = getAveragePlaysPerBeat(beatIds)
-  const top3 = topBeatsByPlays(beatIds, 3)
+  const totalPlays = beatIds.reduce(
+    (sum, id) => sum + (playCounts[id] || 0),
+    0,
+  )
+  const avgPlays = beatIds.length ? totalPlays / beatIds.length : 0
+  const top3 = beatIds
+    .map((id) => ({
+      id,
+      plays: playCounts[id] || 0,
+    }))
+    .filter((b) => b.plays > 0)
+    .sort((a, b) => b.plays - a.plays)
+    .slice(0, 3)
   const likesTotal = myBeats.reduce((sum, b) => sum + (b.likes || 0), 0)
   const favsTotal = myBeats.reduce((sum, b) => sum + (b.favs || 0), 0)
   const completedTotal = payouts
