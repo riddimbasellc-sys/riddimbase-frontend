@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useCart } from '../context/CartContext'
 import useSupabaseUser from '../hooks/useSupabaseUser'
 import { slugify } from '../utils/slugify'
 import { likeCount, isLiked, toggleLike } from '../services/socialService'
+import MiniWavePlayer from './MiniWavePlayer'
 
 export function TrendingBeatCard({
   id,
@@ -21,8 +22,6 @@ export function TrendingBeatCard({
   const { user } = useSupabaseUser()
   const [liked, setLiked] = useState(false)
   const [likes, setLikes] = useState(0)
-  const [playing, setPlaying] = useState(false)
-  const audioRef = useRef(null)
 
   useEffect(() => {
     let cancelled = false
@@ -43,23 +42,6 @@ export function TrendingBeatCard({
     }
   }, [id, user])
 
-  useEffect(() => {
-    const audio = audioRef.current
-    if (!audio) return
-    if (playing) {
-      audio.play().catch(() => setPlaying(false))
-    } else {
-      audio.pause()
-    }
-  }, [playing])
-
-  const handlePlayToggle = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!audioUrl || !audioRef.current) return
-    setPlaying((p) => !p)
-  }
-
   const handleLike = async (e) => {
     e.preventDefault()
     e.stopPropagation()
@@ -67,7 +49,11 @@ export function TrendingBeatCard({
     const optimistic = liked ? likes - 1 : likes + 1
     setLiked(!liked)
     setLikes(Math.max(0, optimistic))
-    const res = await toggleLike({ userId: user.id, beatId: id, producerId: userId })
+    const res = await toggleLike({
+      userId: user.id,
+      beatId: id,
+      producerId: userId,
+    })
     if (res.liked !== !liked) {
       setLiked(res.liked)
       setLikes(await likeCount(id))
@@ -111,26 +97,18 @@ export function TrendingBeatCard({
               : 'border-white/40 bg-black/70 text-white group-hover:border-pink-400/80'
           }`}
         >
-          ♥
+          ❤
         </button>
 
-        {/* Play button */}
-        <button
-          type="button"
-          onClick={handlePlayToggle}
-          className="absolute inset-0 flex items-center justify-center"
-        >
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[13px] font-semibold text-slate-900 shadow-[0_0_30px_rgba(248,250,252,0.6)] group-hover:bg-slate-100">
-            {playing ? '❚❚' : '▶'}
-          </span>
-        </button>
-
-        <audio
-          ref={audioRef}
-          src={audioUrl || ''}
-          preload="metadata"
-          className="hidden"
-        />
+        {/* Mini WaveSurfer player overlay */}
+        <div className="absolute inset-x-2 bottom-2 z-10">
+          <MiniWavePlayer
+            src={audioUrl || ''}
+            beatId={id}
+            producerId={userId}
+            height={32}
+          />
+        </div>
       </div>
 
       <div className="px-3 pt-3 pb-2">
@@ -149,7 +127,7 @@ export function TrendingBeatCard({
           className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-950 shadow-[0_0_24px_rgba(248,250,252,0.35)] hover:bg-slate-100"
         >
           <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-[11px]">
-            🛍
+            🛒
           </span>
           <span>
             ${price?.toFixed ? price.toFixed(2) : Number(price || 0).toFixed(2)}

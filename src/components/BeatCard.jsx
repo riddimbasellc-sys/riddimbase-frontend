@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useCart } from '../context/CartContext'
 import useSupabaseUser from '../hooks/useSupabaseUser'
 import { slugify } from '../utils/slugify'
@@ -14,6 +14,7 @@ import {
   isFollowing,
 } from '../services/socialService'
 import { isProducerPro } from '../services/subscriptionService'
+import MiniWavePlayer from './MiniWavePlayer'
 
 export function BeatCard({
   id,
@@ -44,12 +45,9 @@ export function BeatCard({
   const [liked, setLiked] = useState(false)
   const [reposted, setReposted] = useState(false)
   const [following, setFollowing] = useState(false)
-
   const [likes, setLikes] = useState(initialLikes)
   const [reposts, setReposts] = useState(0)
   const [pro, setPro] = useState(false)
-  const [playing, setPlaying] = useState(false)
-  const audioRef = useRef(null)
 
   useEffect(() => {
     let cancelled = false
@@ -66,7 +64,9 @@ export function BeatCard({
           const [l, r, fol] = await Promise.all([
             isLiked({ userId: user.id, beatId: id }),
             isReposted({ userId: user.id, beatId: id }),
-            userId ? isFollowing({ followerId: user.id, producerId: userId }) : Promise.resolve(false),
+            userId
+              ? isFollowing({ followerId: user.id, producerId: userId })
+              : Promise.resolve(false),
           ])
           if (!cancelled) {
             setLiked(l)
@@ -89,16 +89,6 @@ export function BeatCard({
       cancelled = true
     }
   }, [id, user, userId, initialLikes])
-
-  useEffect(() => {
-    const audio = audioRef.current
-    if (!audio) return
-    if (playing) {
-      audio.play().catch(() => setPlaying(false))
-    } else {
-      audio.pause()
-    }
-  }, [playing])
 
   const initials =
     producer && producer.trim()
@@ -124,7 +114,11 @@ export function BeatCard({
     const optimistic = liked ? likes - 1 : likes + 1
     setLiked(!liked)
     setLikes(Math.max(0, optimistic))
-    const res = await toggleLike({ userId: user.id, beatId: id, producerId: userId })
+    const res = await toggleLike({
+      userId: user.id,
+      beatId: id,
+      producerId: userId,
+    })
     if (res.liked !== !liked) {
       setLiked(res.liked)
       setLikes(await likeCount(id))
@@ -165,13 +159,6 @@ export function BeatCard({
     }
   }
 
-  const handlePlayToggle = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!audioUrl || !audioRef.current) return
-    setPlaying((p) => !p)
-  }
-
   const Wrapper = noLink ? 'div' : Link
   const slug = slugify(title || '')
   const wrapperProps = noLink
@@ -199,7 +186,7 @@ export function BeatCard({
 
   const sizeClasses = compact ? 'p-2' : 'p-3'
 
-  // Square variant: compact artwork-first card (used on landing page grids)
+  // Square variant: compact artwork-first card (used on sliders)
   if (square) {
     return (
       <Wrapper
@@ -217,71 +204,7 @@ export function BeatCard({
         )}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-        <div className="absolute left-3 right-3 bottom-14 z-10 flex items-center justify-between text-[9px]">
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={handleLike}
-              className={`flex items-center gap-1 rounded-full px-2 py-[3px] border ${
-                liked
-                  ? 'border-pink-400/80 bg-pink-500/30 text-pink-100'
-                  : 'border-slate-700/80 bg-slate-900/70 text-slate-200'
-              }`}
-            >
-              <span>♥</span>
-              <span>{likes}</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleRepost}
-              className={`flex items-center gap-1 rounded-full px-2 py-[3px] border ${
-                reposted
-                  ? 'border-emerald-400/80 bg-emerald-500/30 text-emerald-100'
-                  : 'border-slate-700/80 bg-slate-900/70 text-slate-200'
-              }`}
-            >
-              <span>⟳</span>
-              <span>{reposts}</span>
-            </button>
-          </div>
-          <div className="flex items-center gap-1">
-            {userId && (
-              <button
-                type="button"
-                onClick={handleFollow}
-                className={`rounded-full px-2 py-[3px] border ${
-                  following
-                    ? 'border-sky-400/80 bg-sky-500/30 text-sky-50'
-                    : 'border-slate-700/80 bg-slate-900/70 text-slate-200'
-                }`}
-              >
-                {following ? 'Following' : 'Follow'}
-              </button>
-            )}
-            {onShare && (
-              <button
-                type="button"
-                onClick={handleShare}
-                className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-600/80 bg-slate-900/80 text-[11px] text-slate-100"
-                title="Share"
-              >
-                ✈
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Play button */}
-        <button
-          type="button"
-          onClick={handlePlayToggle}
-          className="absolute inset-x-0 top-1/2 z-10 mx-auto flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[13px] font-semibold text-slate-900 shadow-[0_0_30px_rgba(248,250,252,0.6)] hover:bg-slate-100"
-        >
-          {playing ? '⏸' : '▶'}
-        </button>
-
-        {/* Metadata */}
-        <div className="absolute inset-x-3 bottom-3 z-10 flex items-center justify-between gap-2 text-[11px] text-slate-100">
+        <div className="absolute left-3 right-3 bottom-3 z-10 flex items-center justify-between text-[9px] text-slate-100">
           <div className="min-w-0">
             <p className="truncate text-[11px] font-semibold">
               {title || 'Untitled Beat'}
@@ -290,25 +213,10 @@ export function BeatCard({
               {producer || 'Unknown'} • {genre || 'Genre'}
             </p>
           </div>
-          <div className="flex flex-col items-end text-[11px]">
-            <span className="font-semibold text-red-400">
-              ${price?.toFixed ? price.toFixed(2) : Number(price || 0).toFixed(2)}
-            </span>
-            {bpm ? (
-              <span className="text-[9px] text-slate-400">
-                {bpm} BPM
-              </span>
-            ) : null}
-          </div>
+          <span className="text-[11px] font-semibold text-red-400">
+            ${price?.toFixed ? price.toFixed(2) : Number(price || 0).toFixed(2)}
+          </span>
         </div>
-
-        {/* Hidden audio */}
-        <audio
-          ref={audioRef}
-          src={audioUrl || ''}
-          preload="metadata"
-          className="hidden"
-        />
       </Wrapper>
     )
   }
@@ -365,52 +273,27 @@ export function BeatCard({
         )}
       </div>
 
-      {/* Center: small hero area */}
-      <div className="mt-3 flex flex-col items-center text-center">
-        <button
-          type="button"
-          onClick={handlePlayToggle}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-white/5 text-[11px] text-slate-50 shadow-[0_0_18px_rgba(248,250,252,0.25)]"
-        >
-          {playing ? '⏸' : '▶'}
-        </button>
-        <h3
-          className="mt-2 line-clamp-2 text-[13px] font-semibold text-slate-50"
-          title={title}
-        >
-          {title}
-        </h3>
-        <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-slate-400">
-          {genre || 'Caribbean'} • {bpm || 0} BPM
-        </p>
-        <p className="mt-1 text-[13px] font-semibold text-red-400">
-          ${price?.toFixed ? price.toFixed(2) : Number(price || 0).toFixed(2)}
-        </p>
-      </div>
-
-      {/* Hidden audio element controlled by the play button */}
-      <audio
-        ref={audioRef}
-        src={audioUrl || ''}
-        preload="metadata"
-        className="hidden"
-      />
-
-      {/* Mini waveform visualizer tied to play state */}
-      <div className="mt-3 h-10 w-full overflow-hidden rounded-xl bg-slate-900/80 px-2 py-1">
-        <div
-          className={`flex h-full items-end gap-[2px] ${
-            playing ? 'rb-wave-active' : 'rb-wave-idle'
-          }`}
-        >
-          {Array.from({ length: 32 }).map((_, i) => (
-            <div
-              key={i}
-              className="w-[2px] rounded-full bg-slate-500/80"
-              style={{ animationDelay: `${i * 0.03}s` }}
-            />
-          ))}
+      {/* Center: title + mini WaveSurfer player */}
+      <div className="mt-3 flex flex-col gap-2">
+        <div className="flex flex-col items-center text-center">
+          <h3
+            className="line-clamp-2 text-[13px] font-semibold text-slate-50"
+            title={title}
+          >
+            {title}
+          </h3>
+          <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-slate-400">
+            {genre || 'Caribbean'} • {bpm || 0} BPM
+          </p>
+          <p className="mt-1 text-[13px] font-semibold text-red-400">
+            ${price?.toFixed ? price.toFixed(2) : Number(price || 0).toFixed(2)}
+          </p>
         </div>
+        <MiniWavePlayer
+          src={audioUrl || ''}
+          beatId={id}
+          producerId={userId}
+        />
       </div>
 
       {/* Bottom row: cart + like + repost + profile icon */}
@@ -421,7 +304,7 @@ export function BeatCard({
           className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-950 shadow-[0_0_24px_rgba(248,250,252,0.45)] hover:bg-slate-100"
         >
           <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-[11px]">
-            🛒
+            dY>'
           </span>
           <span>
             $
@@ -439,7 +322,7 @@ export function BeatCard({
                 : 'border-slate-700/80 bg-slate-900/60 hover:border-pink-400/70 hover:text-pink-200'
             }`}
           >
-            <span>♥</span>
+            <span>ƒT</span>
             <span>{likes}</span>
           </button>
 
@@ -453,12 +336,12 @@ export function BeatCard({
             }`}
             title="Repost to your followers"
           >
-            <span>⟳</span>
+            <span>ƒY3</span>
             <span>{reposts}</span>
           </button>
 
           <div className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-700/80 bg-slate-900/60 text-[11px] text-slate-300">
-            👤
+            dY`
           </div>
         </div>
       </div>
