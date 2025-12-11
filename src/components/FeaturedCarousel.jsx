@@ -9,9 +9,14 @@ export default function FeaturedCarousel({ beats = [] }) {
         className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2 -mx-1 px-1"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
-        {featured.map(b => (
-          <div key={b.id} className="min-w-[190px] flex-shrink-0">
-            <BeatCard {...b} coverUrl={b.coverUrl || null} audioUrl={b.audioUrl} />
+        {featured.map((b) => (
+          <div key={b.id} className="min-w-[220px] flex-shrink-0">
+            <BeatCard
+              {...b}
+              coverUrl={b.coverUrl || null}
+              audioUrl={b.audioUrl}
+              square
+            />
           </div>
         ))}
         {featured.length===0 && <p className="text-xs text-slate-500">No beats yet.</p>}
