@@ -14,7 +14,6 @@ import { Producers } from './pages/Producers'
 import { Favorites } from './pages/Favorites'
 import { UploadBeat } from './pages/UploadBeat'
 import { ArtistDashboard } from './pages/ArtistDashboard'
-import { Riddims } from './pages/Riddims'
 import { Checkout } from './pages/Checkout'
 import { AdminDashboard } from './pages/AdminDashboard'
 import { AdminBeats } from './pages/AdminBeats'
@@ -98,7 +97,6 @@ function App() {
         <Route path="/producer/withdraw" element={<WithdrawEarnings />} />
         <Route path="/producer/inbox" element={<ProducerInbox />} />
         <Route path="/artist/dashboard" element={<ArtistDashboard />} />
-        <Route path="/riddims" element={<Riddims />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/services" element={<Services />} />
         <Route path="/services/:id" element={<ServiceProviderProfile />} />
