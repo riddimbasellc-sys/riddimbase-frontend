@@ -60,3 +60,26 @@ html, body, #root {
   transform: scaleY(0.35);
   opacity: 0.4;
 }
+
+/* --- Shared beat card theming (WaveSurfer cards) --- */
+
+:root {
+  --rb-card-bg: #0d0d0d;
+  --rb-card-surface: #151515;
+  --rb-card-border: rgba(255, 255, 255, 0.06);
+  --rb-card-accent: #ff1a1a;
+}
+
+.rb-beat-card {
+  background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.04), transparent 40%), var(--rb-card-bg);
+  border-color: var(--rb-card-border);
+}
+
+.rb-beat-card:hover {
+  box-shadow: 0 0 0 1px rgba(255, 26, 26, 0.4), 0 0 20px rgba(255, 26, 26, 0.6);
+}
+
+.rb-beat-card-playing {
+  border-color: var(--rb-card-accent);
+  box-shadow: 0 0 0 1px rgba(255, 26, 26, 0.45), 0 0 28px rgba(255, 26, 26, 0.75);
+}
