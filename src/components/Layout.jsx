@@ -10,7 +10,7 @@ import { useAdminRole } from '../hooks/useAdminRole'
 import { useCart } from '../context/CartContext'
 import CartPanel from './CartPanel'
 import { supabase } from '../lib/supabaseClient'
-import { loadTawk, openTawk } from '../services/tawkService'
+import { loadTawk } from '../services/tawkService'
 
 export function Layout({ children }) {
   const [announcements, setAnnouncements] = useState([])
@@ -51,7 +51,6 @@ export function Layout({ children }) {
       <Navbar onMobileMenuToggle={() => setMainMenuOpen((v) => !v)} />
       <main className="relative flex-1 pb-20 md:pb-0">
         {children}
-        <TawkBubble />
       </main>
       <MobileBottomNav />
       {mainMenuOpen && <MobileMainMenuSheet onClose={() => setMainMenuOpen(false)} />}
