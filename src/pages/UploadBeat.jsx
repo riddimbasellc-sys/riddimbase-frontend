@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import FilePickerButton from '../components/FilePickerButton'
 import BackButton from '../components/BackButton'
 import { addBeat, listBeats } from '../services/beatsService'
-import { createBeat } from '../services/beatsRepository'
+import { createBeat, countBeatsForUser } from '../services/beatsRepository'
 import ShareBeatModal from '../components/ShareBeatModal'
 import { useNavigate } from 'react-router-dom'
 import { uploadArtwork, uploadBundle, uploadAudio, uploadBeatWithMetadata } from '../services/storageService'
@@ -40,6 +40,7 @@ export function UploadBeat() {
   const [freeDownload, setFreeDownload] = useState(false)
   const [artworkPreviewUrl, setArtworkPreviewUrl] = useState(null)
   const [audioPreviewUrl, setAudioPreviewUrl] = useState(null)
+  const [userBeatsCount, setUserBeatsCount] = useState(0)
 
   // cancellation tokens
   const [artworkToken, setArtworkToken] = useState(null)
@@ -58,6 +59,25 @@ export function UploadBeat() {
       setProducerName(derived)
     }
   }, [user, producerName])
+
+  useEffect(() => {
+    let active = true
+
+    async function loadUserBeatCount() {
+      if (!user?.id) {
+        if (active) setUserBeatsCount(0)
+        return
+      }
+      const count = await countBeatsForUser(user.id)
+      if (active) setUserBeatsCount(count || 0)
+    }
+
+    loadUserBeatCount()
+
+    return () => {
+      active = false
+    }
+  }, [user?.id])
 
   function startSimulatedUpload(file, setProgress, setUrl, doUpload, setToken) {
     if (!file) return
@@ -196,7 +216,6 @@ export function UploadBeat() {
     }
   }
 
-  const userBeatsCount = listBeats({ includeHidden: true }).filter(b => b.userId && user && b.userId === user.id).length
   const remainingFree = Math.max(0, 5 - userBeatsCount)
   const limitReached = plan === 'free' && userBeatsCount >= 5
 
