@@ -743,7 +743,7 @@ export function ProducerDashboard() {
                         initialLikes={b.likes || 0}
                         initialFavs={b.favs || 0}
                         initialFollowers={0}
-                        compact
+                        square
                       />
                       <div className="flex flex-wrap items-center gap-2 text-[10px]">
                         <button

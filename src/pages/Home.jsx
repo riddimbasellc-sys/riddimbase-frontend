@@ -209,6 +209,7 @@ export function Home() {
                         {...b}
                         coverUrl={b.coverUrl || null}
                         audioUrl={b.audioUrl}
+                        square
                       />
                     ))}
                 </div>

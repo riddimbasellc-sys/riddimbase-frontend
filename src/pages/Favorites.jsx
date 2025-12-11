@@ -25,7 +25,15 @@ export function Favorites() {
         </div>
         <p className="mt-1 text-sm text-slate-300">Beats you have favorited.</p>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {beats.map(b => <BeatCard key={b.id} {...b} coverUrl={b.coverUrl || null} audioUrl={b.audioUrl} />)}
+          {beats.map((b) => (
+            <BeatCard
+              key={b.id}
+              {...b}
+              coverUrl={b.coverUrl || null}
+              audioUrl={b.audioUrl}
+              square
+            />
+          ))}
           {beats.length===0 && <p className="text-xs text-slate-500">No favorites yet. Tap ★ on a beat to add.</p>}
         </div>
       </div>

@@ -99,7 +99,7 @@ export default function Feed() {
               </h2>
               <div className="grid grid-cols-1 gap-3 xs:grid-cols-2 lg:grid-cols-3">
                 {repostFeed.map(({ beat }) => (
-                  <BeatCard key={beat.id} {...beat} />
+                  <BeatCard key={beat.id} {...beat} square />
                 ))}
               </div>
             </div>
@@ -159,4 +159,3 @@ export default function Feed() {
     </section>
   )
 }
-

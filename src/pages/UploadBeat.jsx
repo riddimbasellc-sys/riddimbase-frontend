@@ -417,6 +417,7 @@ export function UploadBeat() {
                   initialFavs={0}
                   initialFollowers={0}
                   noLink
+                  square
                 />
                 <p className="mt-3 text-[10px] text-slate-500">Preview simulates marketplace appearance. Actions are disabled for unpublished content.</p>
               </div>
