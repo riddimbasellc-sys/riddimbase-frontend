@@ -32,3 +32,22 @@ export async function createBeat(payload) {
   }
   return data
 }
+
+export async function countBeatsForUser(userId) {
+  if (!userId) return 0
+  try {
+    const { count, error } = await supabase
+      .from(TABLE)
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+
+    if (error) {
+      console.warn('[beatsRepository] countBeatsForUser error', error.message)
+      return 0
+    }
+
+    return typeof count === 'number' ? count : 0
+  } catch {
+    return 0
+  }
+}
