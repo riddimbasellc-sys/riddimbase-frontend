@@ -44,9 +44,20 @@ export default function useAdminCounts() {
   useEffect(() => { refresh() }, [refresh])
 
   useEffect(() => {
-    const channel = supabase.channel('admin-counts-reports')
+    const channel = supabase
+      .channel('admin-counts-stream')
+      // Reports: new or updated
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reports' }, refresh)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'reports' }, refresh)
+      // Support tickets: new or updated
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_tickets' }, refresh)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'support_tickets' }, refresh)
+      // Payouts: new request or status change
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'payouts' }, refresh)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'payouts' }, refresh)
+      // Jobs: new job or status change (pending/open/etc.)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'job_requests' }, refresh)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'job_requests' }, refresh)
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [refresh])
