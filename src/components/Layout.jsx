@@ -10,7 +10,7 @@ import { useAdminRole } from '../hooks/useAdminRole'
 import { useCart } from '../context/CartContext'
 import CartPanel from './CartPanel'
 import { supabase } from '../lib/supabaseClient'
-import { loadTawk } from '../services/tawkService'
+import { loadTawk, openTawk } from '../services/tawkService'
 
 export function Layout({ children }) {
   const [announcements, setAnnouncements] = useState([])
@@ -49,7 +49,10 @@ export function Layout({ children }) {
         </div>
       )}
       <Navbar onMobileMenuToggle={() => setMainMenuOpen((v) => !v)} />
-      <main className="relative flex-1 pb-20 md:pb-0">{children}</main>
+      <main className="relative flex-1 pb-20 md:pb-0">
+        {children}
+        <TawkBubble />
+      </main>
       <MobileBottomNav />
       {mainMenuOpen && <MobileMainMenuSheet onClose={() => setMainMenuOpen(false)} />}
       <Footer />
@@ -99,6 +102,24 @@ function HelpBubble() {
         aria-label="Help me"
       >
         ?
+      </button>
+    </div>
+  )
+}
+
+function TawkBubble() {
+  return (
+    <div className="pointer-events-none fixed bottom-20 right-4 z-40 md:bottom-5 md:right-5">
+      <button
+        type="button"
+        onClick={() => openTawk()}
+        className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-[11px] font-semibold text-slate-50 shadow-rb-gloss-btn hover:bg-red-400 transition"
+        aria-label="Chat with us"
+      >
+        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-black/40">
+          <span className="text-base leading-none">💬</span>
+        </span>
+        <span>Chat with us</span>
       </button>
     </div>
   )
