@@ -23,8 +23,30 @@ export function loadTawk() {
 }
 
 export function openTawk() {
-  if (window.Tawk_API && typeof window.Tawk_API.maximize === 'function') {
-    window.Tawk_API.maximize()
+  // Ensure the script is injected
+  loadTawk()
+
+  const api = (window.Tawk_API = window.Tawk_API || {})
+
+  // If the widget API is ready, open immediately
+  if (typeof api.maximize === 'function') {
+    api.maximize()
+    return
+  }
+
+  // Otherwise, register an onLoad handler so it opens
+  // as soon as the Tawk script finishes loading.
+  const previousOnLoad = api.onLoad
+  api.onLoad = function () {
+    if (typeof previousOnLoad === 'function') {
+      try {
+        previousOnLoad()
+      } catch {
+        // ignore handler errors
+      }
+    }
+    if (typeof api.maximize === 'function') {
+      api.maximize()
+    }
   }
 }
-
