@@ -297,40 +297,26 @@ export function Checkout() {
             )}
 
             {!freeMode && (
-              <>
-                <div className="flex items-end gap-3">
-                  <div className="flex-1">
-                    <label className="text-[10px] font-semibold text-slate-400">
-                      Coupon Code
-                    </label>
-                    <input
-                      value={coupon}
-                      onChange={(e) => setCoupon(e.target.value)}
-                      placeholder="SAVE10"
-                      className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-950/70 px-2 py-1.5 text-[12px] text-slate-100"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setCouponApplied(coupon.trim() || null)}
-                    className="rounded-full bg-emerald-500 px-4 py-1.5 text-[11px] font-semibold text-slate-950 hover:bg-emerald-400"
-                  >
-                    Apply
-                  </button>
-                </div>
-                <div>
-                  <label className="text-[10px] font-semibold text-slate-400">Currency</label>
-                  <select
-                    value={currency}
-                    onChange={(e) => setCurrency(e.target.value)}
+              <div className="flex items-end gap-3">
+                <div className="flex-1">
+                  <label className="text-[10px] font-semibold text-slate-400">
+                    Coupon Code
+                  </label>
+                  <input
+                    value={coupon}
+                    onChange={(e) => setCoupon(e.target.value)}
+                    placeholder="SAVE10"
                     className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-950/70 px-2 py-1.5 text-[12px] text-slate-100"
-                  >
-                    {['USD', 'EUR', 'GBP', 'CAD', 'JMD', 'TTD'].map((c) => (
-                      <option key={c}>{c}</option>
-                    ))}
-                  </select>
+                  />
                 </div>
-              </>
+                <button
+                  type="button"
+                  onClick={() => setCouponApplied(coupon.trim() || null)}
+                  className="rounded-full bg-emerald-500 px-4 py-1.5 text-[11px] font-semibold text-slate-950 hover:bg-emerald-400"
+                >
+                  Apply
+                </button>
+              </div>
             )}
 
             {result && (
