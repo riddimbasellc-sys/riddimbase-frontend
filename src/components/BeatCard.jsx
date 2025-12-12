@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useCart } from '../context/CartContext'
 import useSupabaseUser from '../hooks/useSupabaseUser'
 import { slugify } from '../utils/slugify'
@@ -49,14 +49,10 @@ export function BeatCard({
   const [reposts, setReposts] = useState(0)
   const [pro, setPro] = useState(false)
 
-  // Used so the big center play button can control the MiniWavePlayer
-  const squareWaveButtonRef = useRef(null)
-
   useEffect(() => {
     let cancelled = false
     ;(async () => {
       try {
-        // Fetch live counts if not already provided
         if (initialLikes === 0) {
           const c = await likeCount(id)
           if (!cancelled) setLikes(c)
@@ -86,7 +82,7 @@ export function BeatCard({
           setPro(false)
         }
       } catch {
-        // background metrics are non‑critical
+        // ignore background errors
       }
     })()
     return () => {
@@ -163,14 +159,6 @@ export function BeatCard({
     }
   }
 
-  const handleSquarePlay = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (squareWaveButtonRef.current) {
-      squareWaveButtonRef.current.click()
-    }
-  }
-
   const Wrapper = noLink ? 'div' : Link
   const slug = slugify(title || '')
   const wrapperProps = noLink
@@ -198,7 +186,7 @@ export function BeatCard({
 
   const sizeClasses = compact ? 'p-2' : 'p-3'
 
-  // Square beat card: 1:1 artwork, center play, waveform + like/cart
+  // Square beat card: 1:1 artwork, waveform + like/cart (no center play)
   if (square) {
     return (
       <Wrapper
@@ -231,16 +219,7 @@ export function BeatCard({
           ♥
         </button>
 
-        {/* Center play button (controls MiniWavePlayer) */}
-        <button
-          type="button"
-          onClick={handleSquarePlay}
-          className="absolute left-1/2 top-1/2 z-10 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[14px] font-semibold text-slate-900 shadow-lg transition hover:scale-105 group-hover:shadow-[0_0_32px_rgba(248,250,252,0.45)]"
-        >
-          ▶
-        </button>
-
-        {/* Bottom overlay: title/producer + cart + waveform */}
+        {/* Bottom overlay: title/producer + waveform + cart/price */}
         <div className="absolute inset-x-3 bottom-3 z-10 flex flex-col gap-1.5">
           <div className="flex items-center justify-between gap-2 text-[9px] text-slate-100">
             <div className="min-w-0">
@@ -252,21 +231,6 @@ export function BeatCard({
                 {collaborator && <> • ft. {collaborator}</>}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={handleAdd}
-              className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold text-slate-950 shadow-[0_0_20px_rgba(248,250,252,0.35)] hover:bg-slate-100"
-            >
-              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-[11px]">
-                $
-              </span>
-              <span>
-                $
-                {price?.toFixed
-                  ? price.toFixed(2)
-                  : Number(price || 0).toFixed(2)}
-              </span>
-            </button>
           </div>
 
           <div className="mt-1">
@@ -275,8 +239,23 @@ export function BeatCard({
               beatId={id}
               producerId={userId}
               height={28}
-              buttonRef={squareWaveButtonRef}
             />
+          </div>
+
+          <div className="mt-1 flex items-center justify-between text-[10px] text-slate-100">
+            <button
+              type="button"
+              onClick={handleAdd}
+              className="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 font-semibold text-slate-950 shadow-[0_0_18px_rgba(248,250,252,0.35)] hover:bg-white"
+            >
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-[11px]">
+                Cart
+              </span>
+              <span>Add to cart</span>
+            </button>
+            <span className="text-[11px] font-semibold text-red-400">
+              ${price?.toFixed ? price.toFixed(2) : Number(price || 0).toFixed(2)}
+            </span>
           </div>
         </div>
       </Wrapper>
@@ -363,7 +342,7 @@ export function BeatCard({
           className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-950 shadow-[0_0_24px_rgba(248,250,252,0.45)] hover:bg-slate-100"
         >
           <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-[11px]">
-            $
+            Cart
           </span>
           <span>
             $
@@ -406,7 +385,7 @@ export function BeatCard({
             className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-700/80 bg-slate-900/60 text-[11px] text-slate-300"
             title="Share beat"
           >
-            ↗
+            Share
           </button>
         </div>
       </div>
