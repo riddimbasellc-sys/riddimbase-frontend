@@ -34,6 +34,8 @@ export function UploadBeat() {
   const [untaggedUrl, setUntaggedUrl] = useState(null)
   const [bundleUrl, setBundleUrl] = useState(null)
   const [producerName, setProducerName] = useState('')
+  const [collaborators, setCollaborators] = useState([''])
+  const [musicalKey, setMusicalKey] = useState('')
   const [uploadingBeat, setUploadingBeat] = useState(false)
   const [error, setError] = useState('')
   const [shareBeat, setShareBeat] = useState(null)
@@ -123,6 +125,11 @@ export function UploadBeat() {
     }
     setUploadingBeat(true)
 
+    const collaboratorString = collaborators
+      .map((c) => c.trim())
+      .filter(Boolean)
+      .join(', ')
+
     // 1) Upload audio + metadata via backend /beats/upload-beat (S3 + Supabase)
     let createdBeat = null
     let supabaseAudioUrl = null
@@ -136,6 +143,8 @@ export function UploadBeat() {
         description,
         price: Number(price),
         producerName: producerName || null,
+        collaborator: collaboratorString || null,
+        musicalKey: musicalKey || null,
       })
       createdBeat = beat
       supabaseAudioUrl = audioUrl
@@ -173,6 +182,7 @@ export function UploadBeat() {
       bpm: Number(bpm),
       price: Number(price),
       producer: producerName,
+      collaborator: collaboratorString || null,
       userId: user?.id || null,
       audioUrl: localAudioUrl,
       untaggedUrl: localUntaggedUrl,
@@ -185,20 +195,22 @@ export function UploadBeat() {
 
     // 3) Optionally patch Supabase row with extra URLs (untagged / artwork / bundle)
     try {
-      if (createdBeat?.id && (supabaseUntaggedUrl || supabaseCoverUrl || supabaseBundleUrl)) {
-        await createBeat({
-          id: createdBeat.id,
-          title: createdBeat.title,
-          description: createdBeat.description,
-          genre: createdBeat.genre,
-          bpm: createdBeat.bpm,
-          price: createdBeat.price,
-          producer: producerName,
-          user_id: createdBeat.user_id,
-          audio_url: createdBeat.audio_url,
-          untagged_url: supabaseUntaggedUrl,
-          cover_url: supabaseCoverUrl,
-          bundle_url: supabaseBundleUrl,
+        if (createdBeat?.id) {
+          await createBeat({
+            id: createdBeat.id,
+            title: createdBeat.title,
+            description: createdBeat.description,
+            genre: createdBeat.genre,
+            bpm: createdBeat.bpm,
+            price: createdBeat.price,
+            producer: producerName,
+            collaborator: collaboratorString || createdBeat.collaborator || null,
+            musical_key: musicalKey || createdBeat.musical_key || null,
+            user_id: createdBeat.user_id,
+            audio_url: createdBeat.audio_url,
+            untagged_url: supabaseUntaggedUrl,
+            cover_url: supabaseCoverUrl,
+            bundle_url: supabaseBundleUrl,
           bundle_name: bundleFile?.name || createdBeat.bundle_name || null,
           license_prices: createdBeat.license_prices || licensePrices,
           free_download: createdBeat.free_download ?? freeDownload,
@@ -245,9 +257,9 @@ export function UploadBeat() {
             {/* Left: form steps */}
             <form onSubmit={handleSubmit} className="space-y-8">
               {/* Step 1: Metadata */}
-              <div className="rounded-3xl border border-slate-800/80 bg-slate-900/80 p-6 space-y-5">
-                <h2 className="text-sm font-semibold text-slate-100 flex items-center gap-2">Metadata <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300">Step 1</span></h2>
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-3xl border border-slate-800/80 bg-slate-900/80 p-6 space-y-5">
+                  <h2 className="text-sm font-semibold text-slate-100 flex items-center gap-2">Metadata <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300">Step 1</span></h2>
+                  <div className="grid gap-4 md:grid-cols-2">
                   <div>
                     <label className="text-[11px] font-semibold text-slate-300">Title</label>
                     <input value={title} onChange={e=>setTitle(e.target.value)} required className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none" placeholder="e.g. Midnight Rain (TrapHall)" />
@@ -267,27 +279,81 @@ export function UploadBeat() {
                       {GENRES.map(g=> <option key={g}>{g}</option>)}
                     </select>
                   </div>
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-300">BPM</label>
-                    <input type="number" value={bpm} onChange={e=>setBpm(e.target.value)} required className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none" placeholder="140" />
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300">BPM</label>
+                      <input type="number" value={bpm} onChange={e=>setBpm(e.target.value)} required className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none" placeholder="140" />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300">Key (optional)</label>
+                      <input
+                        value={musicalKey}
+                        onChange={(e) => setMusicalKey(e.target.value)}
+                        className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                        placeholder="e.g. F#m"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300">Base Price (USD)</label>
+                      <input type="number" value={price} onChange={e=>setPrice(e.target.value)} required className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none" placeholder="29" />
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-300">Base Price (USD)</label>
-                    <input type="number" value={price} onChange={e=>setPrice(e.target.value)} required className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none" placeholder="29" />
-                  </div>
-                </div>
                 <div className="mt-3">
                   <label className="text-[11px] font-semibold text-slate-300 flex items-center justify-between">
                     Description <span className="text-[10px] font-normal text-slate-500">(optional)</span>
                   </label>
-                  <textarea
-                    value={description}
-                    onChange={e=>setDescription(e.target.value)}
-                    rows={3}
-                    className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-[12px] text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/70 focus:outline-none"
-                    placeholder="Describe the mood, instruments, key artists it fits, and any licensing notes."
-                  />
-                </div>
+                    <textarea
+                      value={description}
+                      onChange={e=>setDescription(e.target.value)}
+                      rows={3}
+                      className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-[12px] text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/70 focus:outline-none"
+                      placeholder="Describe the mood, instruments, key artists it fits, and any licensing notes."
+                    />
+                  </div>
+                  <div className="mt-3">
+                    <label className="text-[11px] font-semibold text-slate-300 flex items-center justify-between">
+                      Collaborators <span className="text-[10px] font-normal text-slate-500">(optional, co‑producers)</span>
+                    </label>
+                    <div className="mt-1 space-y-2">
+                      {collaborators.map((name, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <input
+                            value={name}
+                            onChange={(e) => {
+                              const next = [...collaborators]
+                              next[index] = e.target.value
+                              setCollaborators(next)
+                            }}
+                            className="flex-1 rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                            placeholder={index === 0 ? 'e.g. Co‑producer name' : 'Another collaborator'}
+                          />
+                          {index === collaborators.length - 1 && collaborators.length < 4 && (
+                            <button
+                              type="button"
+                              onClick={() => setCollaborators((prev) => [...prev, ''])}
+                              className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-700/70 bg-slate-900/80 text-sm font-semibold text-slate-200 hover:border-emerald-400/70 hover:text-emerald-300"
+                              aria-label="Add collaborator"
+                            >
+                              +
+                            </button>
+                          )}
+                          {collaborators.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setCollaborators((prev) =>
+                                  prev.filter((_, i) => i !== index) || [''],
+                                )
+                              }
+                              className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-700/70 bg-slate-900/80 text-xs font-semibold text-slate-300 hover:border-rose-400/70 hover:text-rose-300"
+                              aria-label="Remove collaborator"
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 <p className="text-[10px] text-slate-500">Choose a clear, searchable title, add a helpful description, and set an accurate genre for better discovery.</p>
               </div>
               {/* Step 2: Files */}

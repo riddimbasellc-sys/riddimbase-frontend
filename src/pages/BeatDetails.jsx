@@ -71,6 +71,7 @@ export function BeatDetails() {
         title: data.title,
         producer: data.producer || 'Unknown',
         collaborator: data.collaborator || null,
+        musicalKey: data.musical_key || null,
         userId: data.user_id || null,
         genre: data.genre || 'Dancehall',
         bpm: data.bpm || 0,
