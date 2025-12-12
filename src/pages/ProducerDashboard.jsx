@@ -10,7 +10,6 @@ import {
   totalEarnings,
   monthlySalesCount,
   computeProducerEarnings,
-  deleteBeat,
 } from '../services/beatsService'
 import {
   loadPlayCountsForBeats,
@@ -22,7 +21,7 @@ import { followerCount, fetchFollowerProfiles } from '../services/socialService'
 import { getSubscription } from '../services/subscriptionService'
 import { queryJobRequests } from '../services/serviceJobRequestsService'
 import { fetchProducerMetrics } from '../services/producerMetricsService'
-import { createBeat } from '../services/beatsRepository'
+import { createBeat, deleteBeat as deleteBeatRemote } from '../services/beatsRepository'
 import { uploadArtwork } from '../services/storageService'
 
 export function ProducerDashboard() {
@@ -320,7 +319,11 @@ export function ProducerDashboard() {
       return
     }
     try {
-      await deleteBeat(deleteConfirm.beatId)
+      const targetId = deleteConfirm.beatId
+      const ok = await deleteBeatRemote(targetId)
+      if (ok) {
+        setManagedBeats((prev) => prev.filter((b) => b.id !== targetId))
+      }
     } finally {
       setDeleteConfirm({ open: false, beatId: null, title: '' })
     }
