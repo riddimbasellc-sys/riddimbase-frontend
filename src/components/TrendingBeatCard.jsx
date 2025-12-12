@@ -66,13 +66,26 @@ export function TrendingBeatCard({
     if (addBeat) addBeat(id, 'Basic')
   }
 
-  const Wrapper = Link
   const slug = slugify(title || '')
   const to = slug ? `/beat/${id}-${slug}` : `/beat/${id}`
 
   return (
-    <Wrapper
+    <Link
       to={to}
+      state={{
+        beat: {
+          id,
+          title,
+          producer,
+          userId,
+          genre,
+          bpm,
+          price,
+          coverUrl,
+          audioUrl,
+          freeDownload,
+        },
+      }}
       className="group flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-900/90 shadow-[0_18px_48px_rgba(0,0,0,0.9)] backdrop-blur transition hover:border-red-500/70 hover:bg-slate-900"
     >
       <div className="relative aspect-square w-full overflow-hidden bg-slate-900">
@@ -97,7 +110,7 @@ export function TrendingBeatCard({
               : 'border-white/40 bg-black/70 text-white group-hover:border-pink-400/80'
           }`}
         >
-          ❤
+          ♥
         </button>
 
         {/* Mini WaveSurfer player overlay */}
@@ -127,7 +140,7 @@ export function TrendingBeatCard({
           className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-950 shadow-[0_0_24px_rgba(248,250,252,0.35)] hover:bg-slate-100"
         >
           <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-[11px]">
-            🛒
+            $
           </span>
           <span>
             ${price?.toFixed ? price.toFixed(2) : Number(price || 0).toFixed(2)}
@@ -143,13 +156,12 @@ export function TrendingBeatCard({
             className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-600/80 bg-slate-900/80 text-[13px] text-slate-100 hover:border-emerald-400/70 hover:text-emerald-200"
             title="Free download"
           >
-            ⬇
+            ↓
           </a>
         )}
       </div>
-    </Wrapper>
+    </Link>
   )
 }
 
 export default TrendingBeatCard
-
