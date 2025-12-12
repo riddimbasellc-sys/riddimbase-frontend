@@ -51,3 +51,13 @@ export async function countBeatsForUser(userId) {
     return 0
   }
 }
+
+export async function deleteBeat(id) {
+  if (!id) return false
+  const { error } = await supabase.from(TABLE).delete().eq('id', id)
+  if (error) {
+    console.warn('[beatsRepository] delete error', error.message)
+    return false
+  }
+  return true
+}
