@@ -63,6 +63,14 @@ export function Checkout() {
   const [currency, setCurrency] = useState('USD')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
+  const [billingAddress, setBillingAddress] = useState({
+    line1: '',
+    line2: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    country: '',
+  })
 
   if (!beat) {
     return (
@@ -80,7 +88,11 @@ export function Checkout() {
   const handlePay = async () => {
     if (!quote || !buyerEmail || !buyerName) return
     setLoading(true)
-    const res = await processPayment({ amount: quote.total, currency: quote.currency })
+    const res = await processPayment({
+      amount: quote.total,
+      currency: quote.currency,
+      billingAddress,
+    })
     if (res.success) {
       const licenseRes = await generateLicense({
         beatTitle: beat.title,
@@ -195,6 +207,94 @@ export function Checkout() {
                 />
               </div>
             </div>
+
+            {/* Billing address */}
+            {!freeMode && (
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="md:col-span-2">
+                  <label className="text-[10px] font-semibold text-slate-400">
+                    Billing Address
+                  </label>
+                  <input
+                    value={billingAddress.line1}
+                    onChange={(e) =>
+                      setBillingAddress((prev) => ({ ...prev, line1: e.target.value }))
+                    }
+                    placeholder="Street address"
+                    className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-950/70 px-2 py-1.5 text-[12px] text-slate-100"
+                  />
+                  <input
+                    value={billingAddress.line2}
+                    onChange={(e) =>
+                      setBillingAddress((prev) => ({ ...prev, line2: e.target.value }))
+                    }
+                    placeholder="Apartment, suite, etc. (optional)"
+                    className="mt-2 w-full rounded-lg border border-slate-700/70 bg-slate-950/70 px-2 py-1.5 text-[12px] text-slate-100"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-slate-400">City</label>
+                  <input
+                    value={billingAddress.city}
+                    onChange={(e) =>
+                      setBillingAddress((prev) => ({ ...prev, city: e.target.value }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-950/70 px-2 py-1.5 text-[12px] text-slate-100"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-slate-400">
+                    State / Parish
+                  </label>
+                  <input
+                    value={billingAddress.state}
+                    onChange={(e) =>
+                      setBillingAddress((prev) => ({ ...prev, state: e.target.value }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-950/70 px-2 py-1.5 text-[12px] text-slate-100"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-slate-400">
+                    Postal / Zip
+                  </label>
+                  <input
+                    value={billingAddress.postalCode}
+                    onChange={(e) =>
+                      setBillingAddress((prev) => ({
+                        ...prev,
+                        postalCode: e.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-950/70 px-2 py-1.5 text-[12px] text-slate-100"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-slate-400">Country</label>
+                  <select
+                    value={billingAddress.country}
+                    onChange={(e) =>
+                      setBillingAddress((prev) => ({ ...prev, country: e.target.value }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-950/70 px-2 py-1.5 text-[12px] text-slate-100"
+                  >
+                    <option value="">Select country</option>
+                    <option value="JM">Jamaica</option>
+                    <option value="TT">Trinidad &amp; Tobago</option>
+                    <option value="BB">Barbados</option>
+                    <option value="US">United States</option>
+                    <option value="CA">Canada</option>
+                    <option value="GB">United Kingdom</option>
+                    <option value="NG">Nigeria</option>
+                    <option value="GH">Ghana</option>
+                    <option value="BR">Brazil</option>
+                    <option value="FR">France</option>
+                    <option value="DE">Germany</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+              </div>
+            )}
 
             {!freeMode && (
               <>
@@ -371,4 +471,3 @@ export function Checkout() {
     </section>
   )
 }
-
