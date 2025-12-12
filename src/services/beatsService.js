@@ -41,29 +41,11 @@ function persistUserBeats(beats) {
 let beats = [...loadUserBeatsFromStorage()]
 
 // ---------------------------------------------------------------------------
-// Sales prototype (still local/in-memory; Supabase-backed sales are layered in
-// via salesRepository when available).
+// Sales state (local/in-memory; Supabase-backed sales are layered in via
+// salesRepository when available). Starts empty so dashboards only ever show
+// real sales, not seeded demo data.
 // ---------------------------------------------------------------------------
-
-// Initialize sales with timestamps derived from minutesAgo for legacy entries
-let sales = [
-  {
-    beatId: '1',
-    license: 'Basic License',
-    buyer: '@IslandVoice',
-    amount: 39,
-    minutesAgo: 120,
-    createdAt: new Date(Date.now() - 120 * 60 * 1000).toISOString(),
-  },
-  {
-    beatId: '2',
-    license: 'Premium License',
-    buyer: '@TriniStar',
-    amount: 59,
-    minutesAgo: 1440,
-    createdAt: new Date(Date.now() - 1440 * 60 * 1000).toISOString(),
-  },
-]
+let sales = []
 
 // ---------------------------------------------------------------------------
 // Beat helpers (used across dashboard, homepage, etc.)
@@ -113,9 +95,12 @@ export async function listSalesAsync() {
         createdAt: r.created_at,
       }))
     }
-    return sales
+    // No remote sales yet; return an empty list instead of any seeded data.
+    return []
   } catch {
-    return sales
+    // On error, also fall back to an empty list so only real sales created
+    // during this session (via recordSale) are shown.
+    return []
   }
 }
 
@@ -206,4 +191,3 @@ export function flagProducer(id) {
   if (b) b.flagged = true
   return b
 }
-
