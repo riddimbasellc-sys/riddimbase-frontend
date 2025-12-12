@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import WaveSurfer from 'wavesurfer.js'
 import { recordPlay } from '../services/analyticsService'
 
-export function MiniWavePlayer({ src, beatId, producerId, height = 40 }) {
+export function MiniWavePlayer({ src, beatId, producerId, height = 40, buttonRef }) {
   const containerRef = useRef(null)
   const waveSurferRef = useRef(null)
   const hasRecordedRef = useRef(false)
@@ -68,6 +68,7 @@ export function MiniWavePlayer({ src, beatId, producerId, height = 40 }) {
       <button
         type="button"
         onClick={toggle}
+        ref={buttonRef}
         className="flex h-7 w-7 items-center justify-center rounded-full border border-white/25 bg-white/5 text-[10px] text-slate-50 shadow-sm"
       >
         {playing ? '❚❚' : '▶'}
@@ -81,4 +82,3 @@ export function MiniWavePlayer({ src, beatId, producerId, height = 40 }) {
 }
 
 export default MiniWavePlayer
-
