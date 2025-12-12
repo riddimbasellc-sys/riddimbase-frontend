@@ -48,12 +48,15 @@ export function BeatCard({
   const [likes, setLikes] = useState(initialLikes)
   const [reposts, setReposts] = useState(0)
   const [pro, setPro] = useState(false)
+
+  // Used so the big center play button can control the MiniWavePlayer
   const squareWaveButtonRef = useRef(null)
 
   useEffect(() => {
     let cancelled = false
     ;(async () => {
       try {
+        // Fetch live counts if not already provided
         if (initialLikes === 0) {
           const c = await likeCount(id)
           if (!cancelled) setLikes(c)
@@ -83,7 +86,7 @@ export function BeatCard({
           setPro(false)
         }
       } catch {
-        // ignore background errors
+        // background metrics are non‑critical
       }
     })()
     return () => {
@@ -195,42 +198,7 @@ export function BeatCard({
 
   const sizeClasses = compact ? 'p-2' : 'p-3'
 
-  // Square variant: legacy compact artwork-first card (kept for reference)
-  if (false && square) {
-    return (
-      <Wrapper
-        {...wrapperProps}
-        className="group relative aspect-square overflow-hidden rounded-2xl border border-white/10 bg-slate-900/80 shadow-[0_18px_48px_rgba(0,0,0,0.9)] backdrop-blur transition hover:border-red-500/70 hover:bg-slate-900/95"
-      >
-        {coverUrl ? (
-          <img
-            src={coverUrl}
-            alt={title || 'Beat artwork'}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="h-full w-full bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950" />
-        )}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-
-        <div className="absolute left-3 right-3 bottom-3 z-10 flex items-center justify-between text-[9px] text-slate-100">
-          <div className="min-w-0">
-            <p className="truncate text-[11px] font-semibold">
-              {title || 'Untitled Beat'}
-            </p>
-            <p className="truncate text-[10px] text-slate-300">
-              {producer || 'Unknown'} • {genre || 'Genre'}
-            </p>
-          </div>
-          <span className="text-[11px] font-semibold text-red-400">
-            ${price?.toFixed ? price.toFixed(2) : Number(price || 0).toFixed(2)}
-          </span>
-        </div>
-      </Wrapper>
-    )
-  }
-
-  // New square variant: full artwork card with center play + waveform
+  // Square beat card: 1:1 artwork, center play, waveform + like/cart
   if (square) {
     return (
       <Wrapper
@@ -260,7 +228,7 @@ export function BeatCard({
               : 'border-white/40 bg-black/70 text-white group-hover:border-pink-400/80'
           }`}
         >
-          ƒ?
+          ♥
         </button>
 
         {/* Center play button (controls MiniWavePlayer) */}
@@ -269,7 +237,7 @@ export function BeatCard({
           onClick={handleSquarePlay}
           className="absolute left-1/2 top-1/2 z-10 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[14px] font-semibold text-slate-900 shadow-lg transition hover:scale-105 group-hover:shadow-[0_0_32px_rgba(248,250,252,0.45)]"
         >
-          ƒ-
+          ▶
         </button>
 
         {/* Bottom overlay: title/producer + cart + waveform */}
@@ -280,8 +248,8 @@ export function BeatCard({
                 {title || 'Untitled Beat'}
               </p>
               <p className="truncate text-[10px] text-slate-300">
-                {producer || 'Unknown'} ƒ?› {genre || 'Genre'}
-                {collaborator && <> ƒ?› ft. {collaborator}</>}
+                {producer || 'Unknown'} • {genre || 'Genre'}
+                {collaborator && <> • ft. {collaborator}</>}
               </p>
             </div>
             <button
@@ -290,7 +258,7 @@ export function BeatCard({
               className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold text-slate-950 shadow-[0_0_20px_rgba(248,250,252,0.35)] hover:bg-slate-100"
             >
               <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-[11px]">
-                dY>'
+                $
               </span>
               <span>
                 $
@@ -315,6 +283,7 @@ export function BeatCard({
     )
   }
 
+  // Default vertical beat card layout
   return (
     <Wrapper
       {...wrapperProps}
@@ -383,11 +352,7 @@ export function BeatCard({
             ${price?.toFixed ? price.toFixed(2) : Number(price || 0).toFixed(2)}
           </p>
         </div>
-        <MiniWavePlayer
-          src={audioUrl || ''}
-          beatId={id}
-          producerId={userId}
-        />
+        <MiniWavePlayer src={audioUrl || ''} beatId={id} producerId={userId} />
       </div>
 
       {/* Bottom row: cart + like + repost + profile icon */}
@@ -398,7 +363,7 @@ export function BeatCard({
           className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-950 shadow-[0_0_24px_rgba(248,250,252,0.45)] hover:bg-slate-100"
         >
           <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-[11px]">
-            dY>'
+            $
           </span>
           <span>
             $
@@ -416,7 +381,7 @@ export function BeatCard({
                 : 'border-slate-700/80 bg-slate-900/60 hover:border-pink-400/70 hover:text-pink-200'
             }`}
           >
-            <span>ƒT</span>
+            <span>Like</span>
             <span>{likes}</span>
           </button>
 
@@ -430,13 +395,19 @@ export function BeatCard({
             }`}
             title="Repost to your followers"
           >
-            <span>ƒY3</span>
+            <span>Repost</span>
             <span>{reposts}</span>
           </button>
 
-          <div className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-700/80 bg-slate-900/60 text-[11px] text-slate-300">
-            dY`
-          </div>
+          <button
+            type="button"
+            onClick={handleShare}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-700/80 bg-slate-900/60 text-[11px] text-slate-300"
+            title="Share beat"
+          >
+            ↗
+          </button>
         </div>
       </div>
 
@@ -456,3 +427,5 @@ export function BeatCard({
     </Wrapper>
   )
 }
+
+export default BeatCard
