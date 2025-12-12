@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useCart } from '../context/CartContext'
 import useSupabaseUser from '../hooks/useSupabaseUser'
 import { slugify } from '../utils/slugify'
@@ -48,6 +48,7 @@ export function BeatCard({
   const [likes, setLikes] = useState(initialLikes)
   const [reposts, setReposts] = useState(0)
   const [pro, setPro] = useState(false)
+  const squareWaveButtonRef = useRef(null)
 
   useEffect(() => {
     let cancelled = false
@@ -159,6 +160,14 @@ export function BeatCard({
     }
   }
 
+  const handleSquarePlay = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (squareWaveButtonRef.current) {
+      squareWaveButtonRef.current.click()
+    }
+  }
+
   const Wrapper = noLink ? 'div' : Link
   const slug = slugify(title || '')
   const wrapperProps = noLink
@@ -186,8 +195,8 @@ export function BeatCard({
 
   const sizeClasses = compact ? 'p-2' : 'p-3'
 
-  // Square variant: compact artwork-first card (used on sliders)
-  if (square) {
+  // Square variant: legacy compact artwork-first card (kept for reference)
+  if (false && square) {
     return (
       <Wrapper
         {...wrapperProps}
@@ -216,6 +225,91 @@ export function BeatCard({
           <span className="text-[11px] font-semibold text-red-400">
             ${price?.toFixed ? price.toFixed(2) : Number(price || 0).toFixed(2)}
           </span>
+        </div>
+      </Wrapper>
+    )
+  }
+
+  // New square variant: full artwork card with center play + waveform
+  if (square) {
+    return (
+      <Wrapper
+        {...wrapperProps}
+        className="group relative aspect-square overflow-hidden rounded-2xl border border-white/10 bg-slate-900/80 shadow-[0_18px_48px_rgba(0,0,0,0.9)] backdrop-blur transition hover:border-red-500/80 hover:shadow-[0_0_32px_rgba(248,113,113,0.45)]"
+      >
+        {coverUrl ? (
+          <img
+            src={coverUrl}
+            alt={title || 'Beat artwork'}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="h-full w-full bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950" />
+        )}
+
+        {/* Dark overlay for readability */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
+
+        {/* Heart / like button */}
+        <button
+          type="button"
+          onClick={handleLike}
+          className={`absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full border text-[11px] backdrop-blur-sm ${
+            liked
+              ? 'border-pink-400/80 bg-pink-500/80 text-white'
+              : 'border-white/40 bg-black/70 text-white group-hover:border-pink-400/80'
+          }`}
+        >
+          ƒ?
+        </button>
+
+        {/* Center play button (controls MiniWavePlayer) */}
+        <button
+          type="button"
+          onClick={handleSquarePlay}
+          className="absolute left-1/2 top-1/2 z-10 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[14px] font-semibold text-slate-900 shadow-lg transition hover:scale-105 group-hover:shadow-[0_0_32px_rgba(248,250,252,0.45)]"
+        >
+          ƒ-
+        </button>
+
+        {/* Bottom overlay: title/producer + cart + waveform */}
+        <div className="absolute inset-x-3 bottom-3 z-10 flex flex-col gap-1.5">
+          <div className="flex items-center justify-between gap-2 text-[9px] text-slate-100">
+            <div className="min-w-0">
+              <p className="truncate text-[11px] font-semibold">
+                {title || 'Untitled Beat'}
+              </p>
+              <p className="truncate text-[10px] text-slate-300">
+                {producer || 'Unknown'} ƒ?› {genre || 'Genre'}
+                {collaborator && <> ƒ?› ft. {collaborator}</>}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleAdd}
+              className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold text-slate-950 shadow-[0_0_20px_rgba(248,250,252,0.35)] hover:bg-slate-100"
+            >
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-[11px]">
+                dY>'
+              </span>
+              <span>
+                $
+                {price?.toFixed
+                  ? price.toFixed(2)
+                  : Number(price || 0).toFixed(2)}
+              </span>
+            </button>
+          </div>
+
+          <div className="mt-1">
+            <MiniWavePlayer
+              src={audioUrl || ''}
+              beatId={id}
+              producerId={userId}
+              height={28}
+              buttonRef={squareWaveButtonRef}
+            />
+          </div>
         </div>
       </Wrapper>
     )
