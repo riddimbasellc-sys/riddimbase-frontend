@@ -14,6 +14,13 @@ const BOOST_OPTIONS = [
   { days: 30, label: '30 days', price: 59.99 },
 ]
 
+function estimateCustomPrice(days) {
+  const base = BOOST_OPTIONS[BOOST_OPTIONS.length - 1] // use 30‑day tier as basis
+  const perDay = base.price / base.days
+  const raw = perDay * days
+  return Number(raw.toFixed(2))
+}
+
 export function BoostBeat() {
   const { beatId } = useParams()
   const navigate = useNavigate()
@@ -24,6 +31,7 @@ export function BoostBeat() {
   const [selected, setSelected] = useState(BOOST_OPTIONS[1]) // default 3 days
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState(null)
+  const [customDays, setCustomDays] = useState('')
 
   const beat =
     useMemo(
@@ -195,6 +203,39 @@ export function BoostBeat() {
               })}
             </div>
 
+            {/* Custom duration */}
+            <div className="mt-4 space-y-1 text-[11px]">
+              <label className="font-semibold text-slate-200">
+                Or set a custom duration
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  max={90}
+                  value={customDays}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    setCustomDays(value)
+                    const n = Number(value)
+                    if (!Number.isFinite(n) || n <= 0) return
+                    const price = estimateCustomPrice(n)
+                    setSelected({
+                      days: n,
+                      label: `${n} day${n === 1 ? '' : 's'} (custom)`,
+                      price,
+                    })
+                  }}
+                  className="w-24 rounded-lg border border-slate-700/80 bg-slate-950/80 px-2 py-1.5 text-[11px] text-slate-100"
+                  placeholder="e.g. 10"
+                />
+                <span className="text-slate-400">days</span>
+              </div>
+              <p className="text-[10px] text-slate-500">
+                Custom boosts use a similar per‑day rate to the 30‑day option.
+              </p>
+            </div>
+
             <div className="mt-4 rounded-xl border border-slate-800/80 bg-slate-950/80 p-3 text-[11px] text-slate-300">
               <p className="flex items-center justify-between">
                 <span>Selected duration</span>
@@ -258,4 +299,3 @@ export function BoostBeat() {
 }
 
 export default BoostBeat
-
