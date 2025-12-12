@@ -4,7 +4,6 @@ import { useBeats } from '../hooks/useBeats'
 import { topBeatsByPlays } from '../services/analyticsService'
 import { listPlans } from '../services/plansRepository'
 import { BeatCard } from '../components/BeatCard'
-import TrendingBeatCard from '../components/TrendingBeatCard'
 import { useSiteSettings } from '../context/SiteSettingsContext'
 
 export default function LandingPage() {
@@ -199,17 +198,12 @@ export default function LandingPage() {
                       key={beat.id}
                       className="shrink-0 snap-start w-[70vw] sm:w-[45vw] lg:w-[240px]"
                     >
-                      <TrendingBeatCard
-                        id={beat.id}
-                        title={beat.title}
-                        producer={beat.producer}
-                        userId={beat.userId}
-                        genre={beat.genre}
-                        bpm={beat.bpm}
-                        price={beat.price}
+                      <BeatCard
+                        {...beat}
                         coverUrl={beat.coverUrl}
                         audioUrl={beat.audioUrl}
                         freeDownload={beat.freeDownload}
+                        square
                       />
                     </div>
                   ))}
