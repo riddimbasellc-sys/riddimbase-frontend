@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import useSupabaseUser from '../hooks/useSupabaseUser'
-import { supabase } from '../lib/supabaseClient'
 import { sendMessage, fetchMessages, subscribeMessages, findUserByEmail } from '../services/socialService'
+import { uploadChatAttachment } from '../services/storageService'
 
 const EMOJI_PICKER_EMOJIS = [
   '😀',
@@ -103,27 +103,14 @@ export default function ChatWidget({ recipientExternal, initialEmail }) {
     if (!file || !user || !recipient) return
     setUploading(true)
     try {
-      const ext = file.name.split('.').pop()
-      const path = `${user.id}/${Date.now()}-${Math.random()
-        .toString(36)
-        .slice(2)}${ext ? `.${ext}` : ''}`
-      const bucket = 'chat-attachments'
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(path, file, {
-          cacheControl: '3600',
-          upsert: false,
-        })
-      if (uploadError) throw uploadError
-      const { data: publicData } = supabase.storage.from(bucket).getPublicUrl(path)
-      const url = publicData?.publicUrl
-      if (!url) throw new Error('Unable to generate file URL.')
+      const { publicUrl } = await uploadChatAttachment(file)
+      if (!publicUrl) throw new Error('Unable to generate file URL.')
 
       const res = await sendMessage({
         senderId: user.id,
         recipientId: recipient.id,
         content: text.trim(),
-        attachmentUrl: url,
+        attachmentUrl: publicUrl,
         attachmentType: file.type || 'file',
         attachmentName: file.name,
       })
