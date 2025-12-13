@@ -189,3 +189,16 @@ export async function addPostComment({ postId, userId, content }) {
   }
 }
 
+export async function deletePost({ userId, postId }) {
+  if (!userId || !postId) return { success: false }
+  const { error } = await supabase
+    .from(POSTS_TABLE)
+    .delete()
+    .eq('id', postId)
+    .eq('user_id', userId)
+  if (error) {
+    console.warn('[feedService] deletePost error', error.message)
+    return { success: false, error }
+  }
+  return { success: true }
+}
