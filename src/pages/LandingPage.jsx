@@ -5,11 +5,14 @@ import { topBeatsByPlays } from '../services/analyticsService'
 import { listPlans } from '../services/plansRepository'
 import { BeatCard } from '../components/BeatCard'
 import { useSiteSettings } from '../context/SiteSettingsContext'
+import { supabase } from '../lib/supabaseClient'
 
 export default function LandingPage() {
   const { beats } = useBeats()
   const navigate = useNavigate()
   const [heroSearch, setHeroSearch] = useState('')
+  const [searchSuggestions, setSearchSuggestions] = useState([])
+  const [searchOpen, setSearchOpen] = useState(false)
   const [plans, setPlans] = useState([])
   const { settings } = useSiteSettings()
   const heroBanners = settings?.hero?.banners || []
@@ -59,6 +62,7 @@ export default function LandingPage() {
     const query = heroSearch.trim()
     const target = query ? `/beats?search=${encodeURIComponent(query)}` : '/beats'
     navigate(target)
+    setSearchOpen(false)
   }
 
   useEffect(() => {
@@ -80,6 +84,31 @@ export default function LandingPage() {
     }, 10000)
     return () => clearInterval(id)
   }, [heroBackgrounds.length])
+
+  useEffect(() => {
+    const term = heroSearch.trim()
+    if (!term) {
+      setSearchSuggestions([])
+      return
+    }
+    let cancelled = false
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('beats')
+          .select('id, title, producer, genre')
+          .or(`title.ilike.%${term}%,producer.ilike.%${term}%`)
+          .order('created_at', { ascending: false })
+          .limit(6)
+        if (!cancelled) setSearchSuggestions(data || [])
+      } catch {
+        if (!cancelled) setSearchSuggestions([])
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [heroSearch])
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#050505] via-[#05070a] to-black text-slate-100">
@@ -117,25 +146,56 @@ export default function LandingPage() {
                   platform built for Caribbean creators, with global reach.
                 </p>
 
-                {/* Hero search bar forwards into /beats search */}
-                <form
-                  onSubmit={handleHeroSearch}
-                  className="mt-4 mx-auto flex max-w-md items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-100 backdrop-blur-sm"
-                >
-                  <input
-                    type="text"
-                    value={heroSearch}
-                    onChange={(e) => setHeroSearch(e.target.value)}
-                    placeholder="Search beats by title or producer"
-                    className="flex-1 bg-transparent text-xs text-slate-100 placeholder:text-slate-500 outline-none"
-                  />
-                  <button
-                    type="submit"
-                    className="rounded-full bg-white px-4 py-1.5 text-[11px] font-semibold text-black shadow hover:bg-slate-100"
+                {/* Hero search bar with live suggestions */}
+                <div className="relative mt-4 mx-auto w-full max-w-md">
+                  <form
+                    onSubmit={handleHeroSearch}
+                    className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-100 backdrop-blur-sm"
                   >
-                    Explore beats
-                  </button>
-                </form>
+                    <input
+                      type="text"
+                      value={heroSearch}
+                      onChange={(e) => {
+                        setHeroSearch(e.target.value)
+                        setSearchOpen(true)
+                      }}
+                      onFocus={() => {
+                        if (searchSuggestions.length) setSearchOpen(true)
+                      }}
+                      placeholder="Search beats by title or producer"
+                      className="flex-1 bg-transparent text-xs text-slate-100 placeholder:text-slate-500 outline-none"
+                    />
+                    <button
+                      type="submit"
+                      className="rounded-full bg-white px-4 py-1.5 text-[11px] font-semibold text-black shadow hover:bg-slate-100"
+                    >
+                      Explore beats
+                    </button>
+                  </form>
+                  {searchOpen && searchSuggestions.length > 0 && (
+                    <div className="absolute z-20 mt-1 w-full max-h-64 overflow-auto rounded-2xl border border-slate-800/80 bg-slate-950/95 text-[11px] shadow-xl">
+                      {searchSuggestions.map((b) => (
+                        <button
+                          key={b.id}
+                          type="button"
+                          onClick={() => {
+                            navigate(`/beat/${b.id}`)
+                            setSearchOpen(false)
+                          }}
+                          className="flex w-full items-center justify-between px-3 py-2 text-left text-slate-100 hover:bg-slate-900/90"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold">{b.title}</p>
+                            <p className="mt-0.5 truncate text-[10px] text-slate-400">
+                              {b.producer || 'Unknown'} • {b.genre || 'Beat'}
+                            </p>
+                          </div>
+                          <span className="ml-2 text-[9px] text-slate-500">View</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex flex-wrap items-center justify-center gap-3">
