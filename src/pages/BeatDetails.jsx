@@ -31,8 +31,17 @@ export function BeatDetails() {
   const location = useLocation()
   const navigate = useNavigate()
   const locationBeat = location.state && location.state.beat ? location.state.beat : null
+
   const raw = params.id || params.idSlug
-  const id = raw ? raw.split('-')[0] : null
+  const id = (() => {
+    if (!raw) return null
+    const trimmed = String(raw)
+    const uuidCandidate = trimmed.substring(0, 36)
+    const uuidRegex =
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    if (uuidRegex.test(uuidCandidate)) return uuidCandidate
+    return trimmed.split('-')[0]
+  })()
   const [selected, setSelected] = useState(null)
   const { user } = useSupabaseUser()
   const localBeat = locationBeat || getBeat(id)
