@@ -1,28 +1,188 @@
-// Coupons service: now purely in-memory defaults (no localStorage).
-// In production you should back coupons with Supabase or your backend.
+import { supabase } from '../lib/supabaseClient'
 
-const defaultCoupons = []
+// Basic Supabase-backed coupons service for subscription plans.
+// All functions are async; callers should await them.
 
-export function listCoupons() { return defaultCoupons }
+const TABLE = 'coupons'
+let memoryCoupons = []
 
-export function createCoupon() {
-  throw new Error('createCoupon is not wired to persistent storage; manage coupons via backend instead.')
+function mapRow(row) {
+  return {
+    id: row.id,
+    code: row.code,
+    type: row.type,
+    value: Number(row.value || 0),
+    maxRedemptions: row.max_redemptions ?? null,
+    used: Number(row.used || 0),
+    active: !!row.active,
+    createdAt: row.created_at,
+  }
 }
 
-export function deleteCoupon() {
-  throw new Error('deleteCoupon is not wired to persistent storage.')
+export async function listCoupons() {
+  try {
+    const { data, error } = await supabase
+      .from(TABLE)
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    memoryCoupons = (data || []).map(mapRow)
+    return memoryCoupons
+  } catch {
+    return [...memoryCoupons]
+  }
 }
 
-export function toggleCoupon() {
-  throw new Error('toggleCoupon is not wired to persistent storage.')
+export async function createCoupon({ code, type, value, maxRedemptions }) {
+  const payload = {
+    code: code.trim(),
+    type,
+    value,
+    max_redemptions: maxRedemptions || null,
+  }
+  try {
+    const { data, error } = await supabase
+      .from(TABLE)
+      .insert(payload)
+      .select('*')
+      .maybeSingle()
+    if (error) throw error
+    if (data) {
+      const mapped = mapRow(data)
+      memoryCoupons = [mapped, ...memoryCoupons.filter((c) => c.id !== mapped.id)]
+      return mapped
+    }
+  } catch {
+    // keep in-memory only if Supabase fails
+    const temp = {
+      id: `local_${Date.now()}`,
+      code: payload.code,
+      type: payload.type,
+      value: payload.value,
+      maxRedemptions: payload.max_redemptions,
+      used: 0,
+      active: true,
+      createdAt: new Date().toISOString(),
+    }
+    memoryCoupons = [temp, ...memoryCoupons]
+    return temp
+  }
 }
 
-export function validateCoupon({ code, planId, amount }) {
-  if (!code) return { valid:false, reason:'No code' }
-  // No active coupons until backed by Supabase.
-  return { valid:false, reason:'Not found' }
+export async function deleteCoupon(id) {
+  if (!id) return
+  try {
+    await supabase.from(TABLE).delete().eq('id', id)
+  } catch {
+    // ignore
+  }
+  memoryCoupons = memoryCoupons.filter((c) => c.id !== id)
 }
 
-export function markCouponUsed() {
-  // no-op until persistent coupons are implemented
+export async function toggleCoupon(id) {
+  if (!id) return
+  const existing = memoryCoupons.find((c) => c.id === id)
+  const nextActive = existing ? !existing.active : true
+  try {
+    const { data, error } = await supabase
+      .from(TABLE)
+      .update({ active: nextActive })
+      .eq('id', id)
+      .select('*')
+      .maybeSingle()
+    if (error) throw error
+    if (data) {
+      const mapped = mapRow(data)
+      memoryCoupons = memoryCoupons.map((c) => (c.id === id ? mapped : c))
+      return mapped
+    }
+  } catch {
+    // fall back to local toggle
+    memoryCoupons = memoryCoupons.map((c) =>
+      c.id === id ? { ...c, active: nextActive } : c,
+    )
+  }
+}
+
+export async function validateCoupon({ code, planId, amount }) {
+  if (!code) return { valid: false, reason: 'No code' }
+  const normalized = code.trim().toUpperCase()
+
+  try {
+    const { data, error } = await supabase
+      .from(TABLE)
+      .select('*')
+      .eq('code', normalized)
+      .maybeSingle()
+    if (error) throw error
+    if (!data) return { valid: false, reason: 'Not found' }
+
+    const coupon = mapRow(data)
+    if (!coupon.active) return { valid: false, reason: 'Inactive' }
+    if (
+      coupon.maxRedemptions &&
+      coupon.maxRedemptions > 0 &&
+      coupon.used >= coupon.maxRedemptions
+    ) {
+      return { valid: false, reason: 'Max redemptions reached' }
+    }
+
+    const base = Number(amount || 0)
+    if (base <= 0) return { valid: false, reason: 'Nothing to discount' }
+
+    let discount = 0
+    if (coupon.type === 'fixed') {
+      discount = Math.min(coupon.value, base)
+    } else if (coupon.type === 'percent') {
+      discount = (base * coupon.value) / 100
+    }
+    const final = Math.max(0, base - discount)
+
+    return {
+      valid: true,
+      coupon,
+      discount,
+      final,
+    }
+  } catch (e) {
+    console.warn('[couponsService] validate error', e?.message)
+    return { valid: false, reason: 'Error validating code' }
+  }
+}
+
+export async function markCouponUsed(code) {
+  if (!code) return
+  const normalized = code.trim().toUpperCase()
+  try {
+    const { data: existing, error: fetchError } = await supabase
+      .from(TABLE)
+      .select('*')
+      .eq('code', normalized)
+      .maybeSingle()
+    if (fetchError || !existing) throw fetchError || new Error('Not found')
+
+    const current = mapRow(existing)
+    const nextUsed = (current.used || 0) + 1
+
+    const { data, error } = await supabase
+      .from(TABLE)
+      .update({ used: nextUsed })
+      .eq('code', normalized)
+      .select('*')
+      .maybeSingle()
+    if (error || !data) throw error || new Error('Update failed')
+
+    const mapped = mapRow(data)
+    memoryCoupons = memoryCoupons.map((c) =>
+      c.id === mapped.id ? mapped : c,
+    )
+    return
+  } catch {
+    // Fallback: naive increment in memory only
+    memoryCoupons = memoryCoupons.map((c) =>
+      c.code.toUpperCase() === normalized
+        ? { ...c, used: (c.used || 0) + 1 }
+        : c,
+    )
+  }
 }
