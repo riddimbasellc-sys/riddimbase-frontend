@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import AdminLayout from '../components/AdminLayout'
 import useSupabaseUser from '../hooks/useSupabaseUser'
 import { fetchThreads, fetchProfilesByIds } from '../services/socialService'
@@ -7,10 +8,12 @@ import { supabase } from '../lib/supabaseClient'
 
 export function AdminChat() {
   const { user } = useSupabaseUser()
+  const location = useLocation()
+  const emailFromQuery = new URLSearchParams(location.search).get('email') || ''
   const [threads, setThreads] = useState([])
   const [profiles, setProfiles] = useState([])
   const [selected, setSelected] = useState(null)
-  const [searchEmail, setSearchEmail] = useState('')
+  const [searchEmail, setSearchEmail] = useState(emailFromQuery)
   const [searchSuggestions, setSearchSuggestions] = useState([])
 
   useEffect(() => {
@@ -22,6 +25,12 @@ export function AdminChat() {
       if (ids.length) setProfiles(await fetchProfilesByIds(ids))
     })()
   }, [user])
+
+  useEffect(() => {
+    if (emailFromQuery) {
+      setSearchEmail(emailFromQuery)
+    }
+  }, [emailFromQuery])
 
   useEffect(() => {
     const term = searchEmail.trim()

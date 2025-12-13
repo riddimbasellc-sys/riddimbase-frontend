@@ -12,6 +12,7 @@ import YouTubePreview from '../components/YouTubePreview'
 import { getProducerProfile } from '../services/producerProfileService'
 import ReportModal from '../components/ReportModal'
 import { isBeatBoosted } from '../services/boostsService'
+import { useAdminRole } from '../hooks/useAdminRole'
 
 export function ProducerProfile() {
   const { producerId } = useParams()
@@ -25,6 +26,7 @@ export function ProducerProfile() {
   const [reportOpen, setReportOpen] = useState(false)
   const [following, setFollowing] = useState(false)
   const [authPrompt, setAuthPrompt] = useState('')
+  const { isAdmin } = useAdminRole()
 
   useEffect(()=> {
     (async ()=> {
@@ -101,7 +103,15 @@ export function ProducerProfile() {
       return
     }
     if (user.id === producerId) return
-    navigate(`/producer/inbox?to=${encodeURIComponent(producerId)}`)
+    if (isAdmin) {
+      const targetLabel =
+        profile?.displayName ||
+        catalog[0]?.producer ||
+        producerId
+      navigate(`/admin/chat?email=${encodeURIComponent(targetLabel)}`)
+    } else {
+      navigate(`/producer/inbox?to=${encodeURIComponent(producerId)}`)
+    }
   }
 
   const sampleBeat = catalog[0] || null
