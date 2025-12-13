@@ -351,8 +351,17 @@ export function subscribeBeatComments({ beatId, onComment }) {
 }
 
 // Messages
-export async function sendMessage({ senderId, recipientId, content }) {
-  if (!senderId || !recipientId || !content) return { success: false }
+export async function sendMessage({
+  senderId,
+  recipientId,
+  content,
+  attachmentUrl,
+  attachmentType,
+  attachmentName,
+}) {
+  if (!senderId || !recipientId || (!content && !attachmentUrl)) {
+    return { success: false }
+  }
 
   // Enforce free-plan monthly message limits (20 messages / month)
   try {
@@ -417,7 +426,14 @@ export async function sendMessage({ senderId, recipientId, content }) {
 
   const { data, error } = await supabase
     .from('messages')
-    .insert({ sender_id: senderId, recipient_id: recipientId, content })
+    .insert({
+      sender_id: senderId,
+      recipient_id: recipientId,
+      content: content || '',
+      attachment_url: attachmentUrl || null,
+      attachment_type: attachmentType || null,
+      attachment_name: attachmentName || null,
+    })
     .select()
     .maybeSingle()
   if (error || !data) return { success: false, error }
@@ -438,7 +454,9 @@ export async function sendMessage({ senderId, recipientId, content }) {
         type: 'message',
         data: {
           from: actorName,
-          snippet: content.slice(0, 80),
+          snippet:
+            (content && content.slice(0, 80)) ||
+            (attachmentName ? `[Attachment] ${attachmentName}` : '[Attachment]'),
         },
       })
     }
@@ -521,7 +539,7 @@ export async function fetchThreads({ userId, limit = 20 }) {
   if (!userId) return []
   const { data } = await supabase
     .from('messages')
-    .select('id,sender_id,recipient_id,content,created_at')
+    .select('id,sender_id,recipient_id,content,created_at,attachment_url,attachment_type,attachment_name')
     .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
     .order('created_at', { ascending: false })
     .limit(200)
