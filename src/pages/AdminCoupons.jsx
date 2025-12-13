@@ -10,16 +10,31 @@ export function AdminCoupons() {
   const [type, setType] = useState('fixed')
   const [value, setValue] = useState('')
   const [maxRedemptions, setMaxRedemptions] = useState('')
-  useEffect(()=> { if (isAdmin) setItems(listCoupons()) }, [isAdmin])
+
+  useEffect(() => {
+    if (!isAdmin) return
+    ;(async () => {
+      const rows = await listCoupons()
+      setItems(rows || [])
+    })()
+  }, [isAdmin])
   if (loading) return <section className="min-h-screen flex items-center justify-center bg-slate-950/95"><p className="text-sm text-slate-400">Loading auth…</p></section>
   if (!isAdmin) return <section className="min-h-screen flex items-center justify-center bg-slate-950/95"><p className="text-sm text-slate-400">Access denied.</p></section>
 
-  const create = (e) => {
+  const create = async (e) => {
     e.preventDefault()
     if (!code || !value) return
-    createCoupon({ code, type, value: Number(value), maxRedemptions: Number(maxRedemptions||0) })
-    setItems(listCoupons())
-    setCode(''); setValue(''); setMaxRedemptions('')
+    await createCoupon({
+      code,
+      type,
+      value: Number(value),
+      maxRedemptions: Number(maxRedemptions || 0),
+    })
+    const rows = await listCoupons()
+    setItems(rows || [])
+    setCode('')
+    setValue('')
+    setMaxRedemptions('')
   }
 
   return (
@@ -62,8 +77,26 @@ export function AdminCoupons() {
                 <p className="text-[10px] text-slate-400">{c.type==='fixed'?'$'+c.value: c.value+'%'} • Used {c.used}{c.maxRedemptions?'/'+c.maxRedemptions:''} • {c.active?'Active':'Disabled'}</p>
               </div>
               <div className="flex gap-2 text-[10px]">
-                <button onClick={()=>{toggleCoupon(c.id); setItems(listCoupons())}} className="rounded-full border border-emerald-500/60 px-3 py-1 text-emerald-300 hover:bg-emerald-500/10">{c.active?'Disable':'Enable'}</button>
-                <button onClick={()=>{deleteCoupon(c.id); setItems(listCoupons())}} className="rounded-full border border-red-500/60 px-3 py-1 text-red-300 hover:bg-red-500/10">Delete</button>
+                <button
+                  onClick={async () => {
+                    await toggleCoupon(c.id)
+                    const rows = await listCoupons()
+                    setItems(rows || [])
+                  }}
+                  className="rounded-full border border-emerald-500/60 px-3 py-1 text-emerald-300 hover:bg-emerald-500/10"
+                >
+                  {c.active ? 'Disable' : 'Enable'}
+                </button>
+                <button
+                  onClick={async () => {
+                    await deleteCoupon(c.id)
+                    const rows = await listCoupons()
+                    setItems(rows || [])
+                  }}
+                  className="rounded-full border border-red-500/60 px-3 py-1 text-red-300 hover:bg-red-500/10"
+                >
+                  Delete
+                </button>
               </div>
             </div>
           ))}

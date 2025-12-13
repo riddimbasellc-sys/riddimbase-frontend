@@ -32,7 +32,7 @@ export function SubscriptionCheckout() {
     if (!user) return
     setProcessing(true)
     try {
-      if (appliedCode) markCouponUsed(appliedCode)
+      if (appliedCode) await markCouponUsed(appliedCode)
       // Optionally call backend to mirror subscription immediately
       if (paypalSubId) {
         try {
@@ -61,9 +61,9 @@ export function SubscriptionCheckout() {
   const [couponResult, setCouponResult] = useState(null)
   const finalAmount = couponResult?.valid ? couponResult.final : baseAmount
 
-  const applyCoupon = () => {
+  const applyCoupon = async () => {
     if (!couponCode.trim()) return
-    const res = validateCoupon({ code: couponCode, planId, amount: baseAmount })
+    const res = await validateCoupon({ code: couponCode, planId, amount: baseAmount })
     setCouponResult(res)
   }
 
