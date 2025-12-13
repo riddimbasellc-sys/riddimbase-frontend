@@ -6,6 +6,7 @@ import { listPlans } from '../services/plansRepository'
 import { BeatCard } from '../components/BeatCard'
 import { useSiteSettings } from '../context/SiteSettingsContext'
 import { supabase } from '../lib/supabaseClient'
+import BeatCarousel from '../components/BeatCarousel'
 
 export default function LandingPage() {
   const { beats } = useBeats()
@@ -251,24 +252,7 @@ export default function LandingPage() {
                 No beats available yet. Once beats are uploaded, they will appear here for everyone.
               </p>
             ) : (
-              <div className="rb-scroll-x mt-5 snap-x snap-mandatory">
-                <div className="flex gap-4 pb-2">
-                  {trendingBeats.map((beat) => (
-                    <div
-                      key={beat.id}
-                      className="shrink-0 snap-start w-1/2 sm:w-1/2 md:w-1/3 lg:w-1/5"
-                    >
-                      <BeatCard
-                        {...beat}
-                        coverUrl={beat.coverUrl}
-                        audioUrl={beat.audioUrl}
-                        freeDownload={beat.freeDownload}
-                        square
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <BeatCarousel beats={trendingBeats} />
             )}
           </section>
 
