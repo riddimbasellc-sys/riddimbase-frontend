@@ -94,7 +94,32 @@ export function ProducerInbox() {
                 const mine = m.sender_id === userId
                 return (
                   <div key={m.id} className={`max-w-[70%] ${mine? 'ml-auto text-right':'text-left'}`}>
-                    <div className={`rounded-lg px-3 py-2 text-[11px] leading-snug border ${mine? 'bg-emerald-500/10 border-emerald-400/50 text-emerald-200':'bg-slate-800/60 border-slate-700/60 text-slate-200'}`}>{m.content}</div>
+                    <div className={`rounded-lg px-3 py-2 text-[11px] leading-snug border ${mine? 'bg-emerald-500/10 border-emerald-400/50 text-emerald-200':'bg-slate-800/60 border-slate-700/60 text-slate-200'}`}>
+                      {m.content && <p className="whitespace-pre-wrap">{m.content}</p>}
+                      {m.attachment_url && (
+                        <div className={m.content ? 'mt-2' : ''}>
+                          {m.attachment_type && m.attachment_type.startsWith('image/') ? (
+                            <img
+                              src={m.attachment_url}
+                              alt={m.attachment_name || 'Attachment'}
+                              className="max-h-32 w-full rounded-lg object-cover"
+                            />
+                          ) : (
+                            <a
+                              href={m.attachment_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 rounded-full border border-slate-500/70 bg-slate-900/60 px-2 py-1 text-[10px]"
+                            >
+                              <span className="inline-block h-3 w-3 rounded-full bg-emerald-400/80" />
+                              <span className="truncate max-w-[7rem]">
+                                {m.attachment_name || 'Download file'}
+                              </span>
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </div>
                     <span className="mt-1 block text-[8px] text-slate-500">{formatTime(m.created_at)}</span>
                   </div>
                 )

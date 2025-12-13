@@ -161,7 +161,10 @@ export function Chat() {
                         {prof?.display_name || prof?.email || 'User'}
                       </p>
                       <p className="mt-0.5 line-clamp-1 text-[10px] text-slate-500">
-                        {th.last.content}
+                        {th.last.content ||
+                          (th.last.attachment_name
+                            ? `[Attachment] ${th.last.attachment_name}`
+                            : '[Attachment]')}
                       </p>
                     </button>
                   )
