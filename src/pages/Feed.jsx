@@ -8,6 +8,14 @@ import {
 } from '../services/socialService'
 import { listProviders } from '../services/serviceProvidersService'
 import { topBeatsByPlays } from '../services/analyticsService'
+import {
+  fetchFeedForUser,
+  togglePostLike,
+  postLikeCount,
+  listPostComments,
+  addPostComment,
+} from '../services/feedService'
+import ReportModal from '../components/ReportModal'
 
 function timeAgo(ts) {
   if (!ts) return ''
@@ -30,6 +38,11 @@ export default function Feed() {
   const [suggested, setSuggested] = useState([])
   const [mode, setMode] = useState('following') // 'following' | 'recommended'
   const [repostProfiles, setRepostProfiles] = useState({})
+  const [posts, setPosts] = useState([])
+  const [postLikes, setPostLikes] = useState({})
+  const [postComments, setPostComments] = useState({})
+  const [commentDrafts, setCommentDrafts] = useState({})
+  const [reportTarget, setReportTarget] = useState(null)
 
   // Build a quick map of beats by id for lookups
   const beatsById = useMemo(() => {
@@ -108,6 +121,60 @@ export default function Feed() {
     return ranked.map((r) => byId.get(r.id)).filter(Boolean)
   }, [beats])
 
+  // Load social posts for feed
+  useEffect(() => {
+    if (!user) {
+      setPosts([])
+      setPostLikes({})
+      setPostComments({})
+      return
+    }
+    let active = true
+    ;(async () => {
+      const rows = await fetchFeedForUser(user.id, { limit: 40 })
+      if (!active) return
+      setPosts(rows || [])
+      const likeCounts = {}
+      for (const p of rows || []) {
+        likeCounts[p.id] = await postLikeCount(p.id)
+      }
+      if (!active) return
+      setPostLikes(likeCounts)
+    })()
+    return () => {
+      active = false
+    }
+  }, [user])
+
+  const handleTogglePostLike = async (postId) => {
+    if (!user || !postId) return
+    const res = await togglePostLike({ userId: user.id, postId })
+    setPostLikes((prev) => {
+      const cur = prev[postId] || 0
+      return { ...prev, [postId]: res.liked ? cur + 1 : Math.max(0, cur - 1) }
+    })
+  }
+
+  const handleLoadComments = async (postId) => {
+    if (!postId) return
+    const rows = await listPostComments(postId)
+    setPostComments((prev) => ({ ...prev, [postId]: rows }))
+  }
+
+  const handleAddComment = async (postId) => {
+    if (!user || !postId) return
+    const text = (commentDrafts[postId] || '').trim()
+    if (!text) return
+    const c = await addPostComment({ postId, userId: user.id, content: text })
+    if (c) {
+      setPostComments((prev) => ({
+        ...prev,
+        [postId]: [...(prev[postId] || []), c],
+      }))
+      setCommentDrafts((prev) => ({ ...prev, [postId]: '' }))
+    }
+  }
+
   return (
     <section className="bg-slate-950/95 min-h-screen">
       <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-8">
@@ -155,6 +222,200 @@ export default function Feed() {
 
         <div className="mt-6 flex flex-col gap-6 md:flex-row">
           <div className="min-w-0 flex-1 space-y-4">
+            {user && posts.length > 0 && (
+              <div className="space-y-3">
+                <h2 className="text-sm font-semibold text-slate-100">
+                  Latest updates
+                </h2>
+                <div className="space-y-3">
+                  {posts.map((p) => (
+                    <div
+                      key={p.id}
+                      className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-3 text-[11px] text-slate-200"
+                    >
+                      <div className="flex items-start gap-2">
+                        <a
+                          href={`/producer/${p.userId}`}
+                          className="mt-0.5 flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-slate-800 text-[11px] font-semibold text-slate-100"
+                        >
+                          {p.avatarUrl ? (
+                            <img
+                              src={p.avatarUrl}
+                              alt={p.displayName}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            (p.displayName || 'RB')
+                              .slice(0, 2)
+                              .toUpperCase()
+                          )}
+                        </a>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                              <a
+                                href={`/producer/${p.userId}`}
+                                className="truncate text-[11px] font-semibold text-slate-100 hover:text-emerald-300"
+                              >
+                                {p.displayName}
+                              </a>
+                              <p className="text-[10px] text-slate-500">
+                                {timeAgo(p.createdAt)}
+                              </p>
+                            </div>
+                          </div>
+                          {p.content && (
+                            <p className="mt-2 whitespace-pre-wrap text-[11px] text-slate-200">
+                              {p.content}
+                            </p>
+                          )}
+                          {p.attachmentUrl && (
+                            <div className="mt-2">
+                              {p.attachmentType?.startsWith('image/') ? (
+                                <img
+                                  src={p.attachmentUrl}
+                                  alt={p.attachmentName || 'Attachment'}
+                                  className="max-h-56 w-full rounded-xl object-cover"
+                                />
+                              ) : p.attachmentType?.startsWith('video/') ? (
+                                <video
+                                  src={p.attachmentUrl}
+                                  controls
+                                  className="max-h-56 w-full rounded-xl"
+                                />
+                              ) : (
+                                <a
+                                  href={p.attachmentUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 rounded-full border border-slate-600 bg-slate-950/80 px-3 py-1 text-[10px]"
+                                >
+                                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                                  <span className="truncate max-w-[10rem]">
+                                    {p.attachmentName || 'View attachment'}
+                                  </span>
+                                </a>
+                              )}
+                            </div>
+                          )}
+                          <div className="mt-3 flex flex-wrap items-center gap-3 text-[10px] text-slate-300">
+                            <button
+                              type="button"
+                              onClick={() => handleTogglePostLike(p.id)}
+                              className="inline-flex items-center gap-1 rounded-full border border-slate-700/80 bg-slate-900/80 px-3 py-1 hover:border-pink-400/70 hover:text-pink-200"
+                            >
+                              <span>♥</span>
+                              <span>{postLikes[p.id] || 0}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleLoadComments(p.id)}
+                              className="inline-flex items-center gap-1 rounded-full border border-slate-700/80 bg-slate-900/80 px-3 py-1 hover:border-emerald-400/70 hover:text-emerald-200"
+                            >
+                              <span>💬</span>
+                              <span>
+                                {(postComments[p.id] && postComments[p.id].length) || 0}
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                createPost({
+                                  userId: user.id,
+                                  content: p.content,
+                                  attachmentUrl: p.attachmentUrl,
+                                  attachmentType: p.attachmentType,
+                                  attachmentName: p.attachmentName,
+                                  originalPostId: p.id,
+                                })
+                              }
+                              className="inline-flex items-center gap-1 rounded-full border border-slate-700/80 bg-slate-900/80 px-3 py-1 hover:border-sky-400/70 hover:text-sky-200"
+                            >
+                              <span>🔁</span>
+                              <span>Repost</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const url = `${window.location.origin}/feed`
+                                if (navigator.share) {
+                                  navigator.share({
+                                    title: 'RiddimBase update',
+                                    text: p.content?.slice(0, 80) || '',
+                                    url,
+                                  })
+                                } else {
+                                  navigator.clipboard
+                                    .writeText(url)
+                                    .catch(() => {})
+                                  alert('Feed link copied to clipboard.')
+                                }
+                              }}
+                              className="inline-flex items-center gap-1 rounded-full border border-slate-700/80 bg-slate-900/80 px-3 py-1 hover:border-slate-500/80 hover:text-slate-100"
+                            >
+                              <span>↗</span>
+                              <span>Share</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setReportTarget({ id: p.id, type: 'post' })}
+                              className="inline-flex items-center gap-1 rounded-full border border-slate-700/80 bg-slate-900/80 px-3 py-1 hover:border-rose-400/70 hover:text-rose-200"
+                            >
+                              <span>⚑</span>
+                              <span>Report</span>
+                            </button>
+                          </div>
+                          {postComments[p.id] && postComments[p.id].length > 0 && (
+                            <div className="mt-3 space-y-1.5 border-t border-slate-800/70 pt-2">
+                              {postComments[p.id].map((c) => (
+                                <div key={c.id} className="flex items-start gap-2 text-[10px]">
+                                  <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-slate-800 text-[9px] font-semibold text-slate-100">
+                                    {c.displayName.slice(0, 2).toUpperCase()}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-[10px] font-semibold text-slate-200">
+                                      {c.displayName}{' '}
+                                      <span className="text-slate-500">
+                                        · {timeAgo(c.createdAt)}
+                                      </span>
+                                    </p>
+                                    <p className="text-[10px] text-slate-200">
+                                      {c.content}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {user && (
+                            <div className="mt-2 flex items-center gap-2 border-t border-slate-800/70 pt-2">
+                              <input
+                                value={commentDrafts[p.id] || ''}
+                                onChange={(e) =>
+                                  setCommentDrafts((prev) => ({
+                                    ...prev,
+                                    [p.id]: e.target.value,
+                                  }))
+                                }
+                                placeholder="Add a comment…"
+                                className="flex-1 rounded-full border border-slate-700/70 bg-slate-950/70 px-3 py-1.5 text-[10px] text-slate-100 placeholder:text-slate-500 focus:outline-none"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleAddComment(p.id)}
+                                className="rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-semibold text-slate-950 hover:bg-emerald-400"
+                              >
+                                Post
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {!user && (
               <p className="text-sm text-slate-400">
                 Log in to see a personalized feed from producers you follow.
@@ -281,6 +542,14 @@ export default function Feed() {
           </aside>
         </div>
       </div>
+      {reportTarget && (
+        <ReportModal
+          open={!!reportTarget}
+          onClose={() => setReportTarget(null)}
+          targetId={reportTarget.id}
+          type={reportTarget.type}
+        />
+      )}
     </section>
   )
 }

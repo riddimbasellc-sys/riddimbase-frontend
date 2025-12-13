@@ -23,6 +23,8 @@ import { queryJobRequests } from '../services/serviceJobRequestsService'
 import { fetchProducerMetrics } from '../services/producerMetricsService'
 import { createBeat, deleteBeat as deleteBeatRemote } from '../services/beatsRepository'
 import { uploadArtwork } from '../services/storageService'
+import { createPost } from '../services/feedService'
+import { supabase } from '../lib/supabaseClient'
 
 export function ProducerDashboard() {
   const navigate = useNavigate()
@@ -58,6 +60,10 @@ export function ProducerDashboard() {
   const roleTokens = accountType.split('+').map(t => t.trim().toLowerCase()).filter(Boolean)
   const isMixEngineer = roleTokens.includes('mix-master engineer') || roleTokens.includes('mixing') || roleTokens.includes('engineer')
   const [playCounts, setPlayCounts] = useState({})
+  const [statusText, setStatusText] = useState('')
+  const [statusUploading, setStatusUploading] = useState(false)
+  const [statusAttachment, setStatusAttachment] = useState(null)
+  const [statusEmojiOpen, setStatusEmojiOpen] = useState(false)
 
   useEffect(() => {
     if (!loading && !user) navigate('/login')
@@ -269,10 +275,10 @@ export function ProducerDashboard() {
   const completedTotal = payouts
     .filter((p) => p.status === 'completed')
     .reduce((sum, p) => sum + p.amount, 0)
-  const pendingTotal = payouts
-    .filter((p) => p.status === 'pending')
-    .reduce((sum, p) => sum + p.amount, 0)
-  const availableBalance = Math.max(0, grossProducer - completedTotal - pendingTotal)
+    const pendingTotal = payouts
+      .filter((p) => p.status === 'pending')
+      .reduce((sum, p) => sum + p.amount, 0)
+    const availableBalance = Math.max(0, grossProducer - completedTotal - pendingTotal)
   const monthSales = monthlySalesCount()
 
   const subExpiresAt = subscription?.expiresAt
@@ -283,12 +289,69 @@ export function ProducerDashboard() {
         (subExpiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
       )
     : null
-  const planLabel =
-    subscription?.planId === 'starter'
-      ? 'Starter'
-      : subscription?.planId === 'pro'
-      ? 'Pro'
-      : 'Free'
+    const planLabel =
+      subscription?.planId === 'starter'
+        ? 'Starter'
+        : subscription?.planId === 'pro'
+        ? 'Pro'
+        : 'Free'
+
+  const handleStatusEmojiSelect = (emoji) => {
+    setStatusText((prev) => (prev || '') + emoji)
+    setStatusEmojiOpen(false)
+  }
+
+  const handleStatusFileChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file || !user) return
+    setStatusUploading(true)
+    try {
+      const ext = file.name.split('.').pop()
+      const path = `${user.id}/${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2)}${ext ? `.${ext}` : ''}`
+      const bucket = 'feed-attachments'
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(path, file, { cacheControl: '3600', upsert: false })
+      if (uploadError) throw uploadError
+      const { data: publicData } = supabase.storage.from(bucket).getPublicUrl(path)
+      const url = publicData?.publicUrl
+      if (!url) throw new Error('Unable to generate file URL.')
+      setStatusAttachment({
+        url,
+        type: file.type || 'file',
+        name: file.name,
+      })
+    } catch (err) {
+      alert(err.message || 'Failed to upload attachment.')
+    } finally {
+      setStatusUploading(false)
+      if (e.target) e.target.value = ''
+    }
+  }
+
+  const handlePostStatus = async (e) => {
+    e.preventDefault()
+    if (!user) return
+    if (!statusText.trim() && !statusAttachment) return
+    setStatusUploading(true)
+    try {
+      await createPost({
+        userId: user.id,
+        content: statusText.trim(),
+        attachmentUrl: statusAttachment?.url || null,
+        attachmentType: statusAttachment?.type || null,
+        attachmentName: statusAttachment?.name || null,
+      })
+      setStatusText('')
+      setStatusAttachment(null)
+    } catch (err) {
+      alert(err.message || 'Failed to post update.')
+    } finally {
+      setStatusUploading(false)
+    }
+  }
 
   const timeAgoHours = (s) => {
     if (s.createdAt) {
@@ -356,20 +419,112 @@ export function ProducerDashboard() {
 
   return (
     <ProducerLayout>
-      <section className="bg-slate-950/95">
-        <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-8">
-          <div className="flex items-center gap-3">
-            <BackButton />
-            <div>
+        <section className="bg-slate-950/95">
+          <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-8">
+            <div className="flex items-center gap-3">
+              <BackButton />
+              <div>
               <h1 className="font-display text-xl font-semibold text-slate-50 sm:text-2xl">
                 My Dashboard
               </h1>
               <p className="mt-1 text-xs text-slate-400 sm:text-sm">
                 Welcome back, {displayName}. Track catalog, sales, ads and jobs in one
                 place.
-              </p>
+                </p>
+              </div>
             </div>
-          </div>
+
+            {/* What's happening panel */}
+            <div className="mt-5 grid gap-4 md:grid-cols-[minmax(0,1.4fr),minmax(0,1fr)]">
+              <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 shadow-rb-gloss-panel">
+                <h2 className="text-sm font-semibold text-slate-100">
+                  Share an update
+                </h2>
+                <p className="mt-1 text-[11px] text-slate-400">
+                  Let followers know what you&apos;re working on — new riddims, placements,
+                  studio sessions or releases.
+                </p>
+                <form onSubmit={handlePostStatus} className="mt-3 space-y-3 text-[11px]">
+                  <div className="flex items-start gap-2">
+                    <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-[11px] font-semibold text-slate-200">
+                      {(profile?.displayName || user.email)
+                        .slice(0, 2)
+                        .toUpperCase()}
+                    </div>
+                    <div className="flex-1 rounded-2xl border border-slate-800/80 bg-slate-950/80 px-3 py-2">
+                      <textarea
+                        value={statusText}
+                        onChange={(e) => setStatusText(e.target.value)}
+                        rows={3}
+                        placeholder="What are you working on today? New beat drop, placements, studio updates..."
+                        className="w-full resize-none bg-transparent text-[11px] text-slate-100 placeholder:text-slate-500 focus:outline-none"
+                      />
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setStatusEmojiOpen((v) => !v)}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-[13px] text-slate-400 hover:text-emerald-300"
+                            aria-label="Add emoji"
+                          >
+                            😊
+                          </button>
+                          <label className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-slate-900 text-slate-400 hover:text-emerald-300">
+                            📎
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept="image/*,video/*,audio/*,application/pdf,application/zip"
+                              onChange={handleStatusFileChange}
+                            />
+                          </label>
+                          {statusAttachment && (
+                            <span className="truncate text-[10px] text-slate-400">
+                              {statusAttachment.name}
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          type="submit"
+                          disabled={statusUploading || (!statusText.trim() && !statusAttachment)}
+                          className="inline-flex items-center rounded-full bg-red-500 px-4 py-1.5 text-[11px] font-semibold text-slate-50 hover:bg-red-400 disabled:opacity-40"
+                        >
+                          {statusUploading ? 'Posting…' : 'Post update'}
+                        </button>
+                      </div>
+                      {statusEmojiOpen && (
+                        <div className="mt-2 inline-flex flex-wrap gap-1 rounded-xl border border-slate-800/80 bg-slate-950/95 p-2 shadow-xl">
+                          {['🔥', '🎧', '🎶', '🥁', '📀', '📝', '🚀', '💼', '💿', '🎹'].map(
+                            (emoji) => (
+                              <button
+                                key={emoji}
+                                type="button"
+                                onClick={() => handleStatusEmojiSelect(emoji)}
+                                className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900 hover:bg-slate-800"
+                              >
+                                {emoji}
+                              </button>
+                            ),
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+              <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 text-[11px] text-slate-300 shadow-rb-gloss-panel">
+                <h2 className="text-sm font-semibold text-slate-100">
+                  Tips for strong updates
+                </h2>
+                <ul className="mt-2 space-y-1.5">
+                  <li>• Share behind-the-scenes clips of beats in progress.</li>
+                  <li>• Announce new uploads and link the beat in your bio.</li>
+                  <li>• Shout out artists, collaborators and recent placements.</li>
+                  <li>• Use visuals — cover art, studio photos, short videos.</li>
+                </ul>
+              </div>
+            </div>
 
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard label="Total earnings" value={`$${earnings.toFixed(2)}`} />
