@@ -22,9 +22,8 @@ import { getSubscription } from '../services/subscriptionService'
 import { queryJobRequests } from '../services/serviceJobRequestsService'
 import { fetchProducerMetrics } from '../services/producerMetricsService'
 import { createBeat, deleteBeat as deleteBeatRemote } from '../services/beatsRepository'
-import { uploadArtwork } from '../services/storageService'
+import { uploadArtwork, uploadFeedAttachment } from '../services/storageService'
 import { createPost } from '../services/feedService'
-import { supabase } from '../lib/supabaseClient'
 
 export function ProducerDashboard() {
   const navigate = useNavigate()
@@ -306,20 +305,10 @@ export function ProducerDashboard() {
     if (!file || !user) return
     setStatusUploading(true)
     try {
-      const ext = file.name.split('.').pop()
-      const path = `${user.id}/${Date.now()}-${Math.random()
-        .toString(36)
-        .slice(2)}${ext ? `.${ext}` : ''}`
-      const bucket = 'feed-attachments'
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(path, file, { cacheControl: '3600', upsert: false })
-      if (uploadError) throw uploadError
-      const { data: publicData } = supabase.storage.from(bucket).getPublicUrl(path)
-      const url = publicData?.publicUrl
-      if (!url) throw new Error('Unable to generate file URL.')
+      const { publicUrl } = await uploadFeedAttachment(file)
+      if (!publicUrl) throw new Error('Unable to generate file URL.')
       setStatusAttachment({
-        url,
+        url: publicUrl,
         type: file.type || 'file',
         name: file.name,
       })
