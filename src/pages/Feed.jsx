@@ -14,6 +14,7 @@ import {
   postLikeCount,
   listPostComments,
   addPostComment,
+  deletePost,
 } from '../services/feedService'
 import ReportModal from '../components/ReportModal'
 
@@ -43,6 +44,7 @@ export default function Feed() {
   const [postComments, setPostComments] = useState({})
   const [commentDrafts, setCommentDrafts] = useState({})
   const [reportTarget, setReportTarget] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
 
   // Build a quick map of beats by id for lookups
   const beatsById = useMemo(() => {
@@ -175,6 +177,20 @@ export default function Feed() {
     }
   }
 
+  const handleConfirmDelete = async () => {
+    if (!user || !deleteTarget) return
+    const postId = deleteTarget.id
+    const res = await deletePost({ userId: user.id, postId })
+    if (res.success) {
+      setPosts((prev) => prev.filter((p) => p.id !== postId))
+      const { [postId]: _, ...restLikes } = postLikes
+      setPostLikes(restLikes)
+      const { [postId]: __, ...restComments } = postComments
+      setPostComments(restComments)
+    }
+    setDeleteTarget(null)
+  }
+
   return (
     <section className="bg-slate-950/95 min-h-screen">
       <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-8">
@@ -263,6 +279,18 @@ export default function Feed() {
                                 {timeAgo(p.createdAt)}
                               </p>
                             </div>
+                            {user && user.id === p.userId && (
+                              <div className="relative">
+                                <button
+                                  type="button"
+                                  onClick={() => setDeleteTarget(p)}
+                                  className="inline-flex h-6 w-6 items-center justify-center rounded-full text-slate-500 hover:bg-slate-800 hover:text-slate-100"
+                                  aria-label="Post options"
+                                >
+                                  <span className="text-base leading-none">⋯</span>
+                                </button>
+                              </div>
+                            )}
                           </div>
                           {p.content && (
                             <p className="mt-2 whitespace-pre-wrap text-[11px] text-slate-200">
@@ -549,6 +577,36 @@ export default function Feed() {
           targetId={reportTarget.id}
           type={reportTarget.type}
         />
+      )}
+      {user && deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
+          <div className="w-full max-w-sm rounded-2xl border border-slate-800/80 bg-slate-950/95 p-5 shadow-2xl">
+            <h2 className="text-sm font-semibold text-slate-100">Delete post?</h2>
+            <p className="mt-2 text-[11px] text-slate-400">
+              This update and its comments will be removed from your feed. This action cannot be
+              undone.
+            </p>
+            <p className="mt-3 line-clamp-3 rounded-lg border border-slate-800/70 bg-slate-900/80 px-3 py-2 text-[11px] text-slate-200">
+              {deleteTarget.content || '(Attachment only post)'}
+            </p>
+            <div className="mt-4 flex justify-end gap-2 text-[11px]">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                className="rounded-full border border-slate-700/80 px-4 py-1.5 text-slate-200 hover:bg-slate-800/80"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="rounded-full bg-rose-500 px-4 py-1.5 font-semibold text-slate-950 hover:bg-rose-400"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </section>
   )
