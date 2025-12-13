@@ -87,9 +87,46 @@ export default function ChatWidget({ recipientExternal, initialEmail }) {
             })}
             {messages.length===0 && <p className="text-[10px] text-slate-500">No messages yet.</p>}
           </div>
-          <form onSubmit={handleSend} className="mt-3 flex gap-2">
-            <input value={text} onChange={e=>setText(e.target.value)} placeholder="Type a message" className="flex-1 rounded-lg border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-[12px] text-slate-100" />
-            <button disabled={!text.trim()} className="rounded-full bg-emerald-500 px-4 py-2 text-[11px] font-semibold text-slate-950 disabled:opacity-40">Send</button>
+          <form onSubmit={handleSend} className="mt-3 flex items-end gap-2">
+            <div className="flex flex-1 items-end gap-2 rounded-lg border border-slate-700/70 bg-slate-950/70 px-2 py-1">
+              <button
+                type="button"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-lg text-slate-400 hover:text-emerald-300 hover:bg-slate-800/80"
+                aria-label="Add emoji"
+              >
+                <span>😊</span>
+              </button>
+              <button
+                type="button"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:text-emerald-300 hover:bg-slate-800/80"
+                aria-label="Attach file"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4"
+                >
+                  <path d="M21 15V6.5A4.5 4.5 0 0 0 16.5 2h0A4.5 4.5 0 0 0 12 6.5v9a3 3 0 0 1-6 0V8" />
+                </svg>
+              </button>
+              <textarea
+                value={text}
+                onChange={e=>setText(e.target.value)}
+                placeholder="Type a message"
+                rows={1}
+                className="flex-1 resize-none bg-transparent px-1 py-1 text-[12px] text-slate-100 placeholder:text-slate-500 focus:outline-none"
+              />
+            </div>
+            <button
+              disabled={!text.trim()}
+              className="inline-flex items-center justify-center rounded-full bg-emerald-500 px-4 py-2 text-[11px] font-semibold text-slate-950 disabled:opacity-40 hover:bg-emerald-400 transition"
+            >
+              Send
+            </button>
           </form>
         </div>
       )}

@@ -20,6 +20,7 @@ const navItems = [
   { label: 'Reports', to: '/admin/reports', icon: ReportIcon },
   { label: 'Tickets', to: '/admin/tickets', icon: TicketIcon },
   { label: 'Agents', to: '/admin/agents', icon: AgentIcon },
+  { label: 'Chat', to: '/admin/chat', icon: MailIcon },
   { label: 'Footer Links', to: '/admin/footer-links', icon: LinkIcon },
   { label: 'Socials', to: '/admin/socials', icon: SocialIcon },
   { label: 'Analytics', to: '/admin/analytics', icon: SparkIcon },
