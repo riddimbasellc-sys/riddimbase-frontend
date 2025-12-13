@@ -66,7 +66,10 @@ export function AdminChat() {
               <p className="text-[11px] text-slate-500">Log in as admin to view threads.</p>
             )}
             {user && threads.length === 0 && (
-              <p className="text-[11px] text-slate-500">No conversations yet.</p>
+              <p className="text-[11px] text-slate-500">
+                No conversations yet. Use the search panel on the right to find a user by email or
+                username and start a chat.
+              </p>
             )}
             {user &&
               threads.map((th) => {
