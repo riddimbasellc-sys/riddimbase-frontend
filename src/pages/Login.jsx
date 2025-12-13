@@ -36,7 +36,7 @@ export function Login() {
       if (isAdmin) {
         navigate('/admin')
       } else {
-        navigate('/producer/dashboard')
+        navigate('/feed')
       }
     } catch (err) {
       setError(friendlyError(err.message))
