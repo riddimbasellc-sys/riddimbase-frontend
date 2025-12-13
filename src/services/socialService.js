@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabaseClient'
 import useSupabaseUser from '../hooks/useSupabaseUser'
+import { addNotification } from './notificationsRepository'
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
 
@@ -43,6 +44,37 @@ export async function toggleLike({ userId, beatId, producerId }) {
     await supabase.from('likes').insert({ user_id: userId, beat_id: beatId })
     if (producerId) {
       fireProducerMetric({ producerId, metric: 'likes', delta: 1 })
+      // fire notification for producer in background
+      try {
+        if (producerId !== userId) {
+          const [{ data: profile }, { data: beat }] = await Promise.all([
+            supabase
+              .from('profiles')
+              .select('display_name,email')
+              .eq('id', userId)
+              .maybeSingle(),
+            supabase
+              .from('beats')
+              .select('title')
+              .eq('id', beatId)
+              .maybeSingle(),
+          ])
+          const actorName =
+            profile?.display_name || profile?.email || 'Someone'
+          await addNotification({
+            recipientId: producerId,
+            actorId: userId,
+            type: 'like',
+            data: {
+              user: actorName,
+              beatTitle: beat?.title || null,
+              beatId,
+            },
+          })
+        }
+      } catch {
+        // ignore notification failure
+      }
     }
     return { liked: true }
   }
@@ -58,7 +90,7 @@ export async function likeCount(beatId) {
 }
 
 // Favorites
-export async function toggleFavorite({ userId, beatId }) {
+export async function toggleFavorite({ userId, beatId, producerId }) {
   if (!userId || !beatId) return { success: false }
   const existing = await supabase.from('favorites').select('id').eq('user_id', userId).eq('beat_id', beatId).maybeSingle()
   if (existing.data && existing.data.id) {
@@ -66,6 +98,36 @@ export async function toggleFavorite({ userId, beatId }) {
     return { favorited: false }
   } else {
     await supabase.from('favorites').insert({ user_id: userId, beat_id: beatId })
+    // send producer notification if available
+    if (producerId && producerId !== userId) {
+      try {
+        const [{ data: profile }, { data: beat }] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('display_name,email')
+            .eq('id', userId)
+            .maybeSingle(),
+          supabase
+            .from('beats')
+            .select('title')
+            .eq('id', beatId)
+            .maybeSingle(),
+        ])
+        const actorName = profile?.display_name || profile?.email || 'Someone'
+        await addNotification({
+          recipientId: producerId,
+          actorId: userId,
+          type: 'favorite',
+          data: {
+            user: actorName,
+            beatTitle: beat?.title || null,
+            beatId,
+          },
+        })
+      } catch {
+        // ignore
+      }
+    }
     return { favorited: true }
   }
 }
@@ -98,6 +160,26 @@ export async function toggleFollow({ followerId, producerId }) {
       .from('follows')
       .insert({ follower_id: followerId, producer_id: producerId })
     fireProducerMetric({ producerId, metric: 'followers', delta: 1 })
+    // Notify producer about new follower
+    try {
+      if (producerId !== followerId) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('display_name,email')
+          .eq('id', followerId)
+          .maybeSingle()
+        const actorName =
+          profile?.display_name || profile?.email || 'Someone'
+        await addNotification({
+          recipientId: producerId,
+          actorId: followerId,
+          type: 'follow',
+          data: { user: actorName },
+        })
+      }
+    } catch {
+      // ignore
+    }
     return { following: true }
   }
 }
@@ -197,6 +279,38 @@ export async function addBeatComment({ beatId, userId, content }) {
     .select('display_name')
     .eq('id', data.user_id)
     .maybeSingle()
+  // Notify beat owner about new comment
+  try {
+    const { data: beatRow } = await supabase
+      .from('beats')
+      .select('user_id,title')
+      .eq('id', beatId)
+      .maybeSingle()
+    const recipientId = beatRow?.user_id || null
+    if (recipientId && recipientId !== userId) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name,email')
+        .eq('id', userId)
+        .maybeSingle()
+      const actorName =
+        profile?.display_name || profile?.email || 'Someone'
+      await addNotification({
+        recipientId,
+        actorId: userId,
+        type: 'comment',
+        data: {
+          user: actorName,
+          text: content.trim(),
+          beatTitle: beatRow?.title || null,
+          beatId,
+        },
+      })
+    }
+  } catch {
+    // ignore notification failure
+  }
+
   return {
     success: true,
     comment: {
@@ -301,8 +415,37 @@ export async function sendMessage({ senderId, recipientId, content }) {
     console.warn('[socialService] message limit check failed', e)
   }
 
-  const { data, error } = await supabase.from('messages').insert({ sender_id: senderId, recipient_id: recipientId, content }).select().maybeSingle()
-  if (error) return { success: false, error }
+  const { data, error } = await supabase
+    .from('messages')
+    .insert({ sender_id: senderId, recipient_id: recipientId, content })
+    .select()
+    .maybeSingle()
+  if (error || !data) return { success: false, error }
+
+  // Notify recipient of new message
+  try {
+    if (recipientId !== senderId) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name,email')
+        .eq('id', senderId)
+        .maybeSingle()
+      const actorName =
+        profile?.display_name || profile?.email || 'Someone'
+      await addNotification({
+        recipientId,
+        actorId: senderId,
+        type: 'message',
+        data: {
+          from: actorName,
+          snippet: content.slice(0, 80),
+        },
+      })
+    }
+  } catch {
+    // ignore notification failure
+  }
+
   return { success: true, message: data }
 }
 export async function fetchMessages({ userId, otherUserId, limit = 50 }) {

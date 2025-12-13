@@ -1,5 +1,6 @@
 import { fetchSales, createSale } from './salesRepository'
 import { sendSaleEmail } from './notificationService'
+import { addNotification } from './notificationsRepository'
 
 // For prototypes without real producer auth linking, we optionally map producer names
 // to stable pseudo IDs; when Supabase beats carry a user_id column we use that instead.
@@ -128,6 +129,25 @@ export async function recordSale({ beatId, license, buyer, amount, beatTitle }) 
     } catch {
       // ignore email errors
     }
+  }
+  // Fire producer sale notification (if beat + producer known)
+  try {
+    const beat = beats.find((b) => b.id === beatId)
+    const producerId = beat?.userId
+    if (producerId) {
+      await addNotification({
+        recipientId: producerId,
+        actorId: null,
+        type: 'sale',
+        data: {
+          beatTitle: beatTitle || beat?.title || String(beatId),
+          amount,
+          currency: 'USD',
+        },
+      })
+    }
+  } catch {
+    // ignore notification failure
   }
   return sale
 }
