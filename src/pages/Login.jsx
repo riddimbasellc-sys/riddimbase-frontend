@@ -30,7 +30,14 @@ export function Login() {
       const data = await apiLogin(email, password)
       console.log('Logged in user:', data.user)
       setLoading(false)
-      navigate('/producer/dashboard')
+
+      const ownerEmail = import.meta.env.VITE_OWNER_EMAIL
+      const isAdmin = data?.user?.email && ownerEmail && data.user.email === ownerEmail
+      if (isAdmin) {
+        navigate('/admin')
+      } else {
+        navigate('/producer/dashboard')
+      }
     } catch (err) {
       setError(friendlyError(err.message))
       setLoading(false)
