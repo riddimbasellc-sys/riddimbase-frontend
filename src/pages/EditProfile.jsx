@@ -19,6 +19,7 @@ export function EditProfile() {
   const ROLE_OPTIONS = ['mix-master engineer', 'producer', 'beat maker', 'artist']
   const [selectedRoles, setSelectedRoles] = useState(existingRoles)
   const [avatarFile, setAvatarFile] = useState(null)
+  const [avatarPreview, setAvatarPreview] = useState(profile?.avatarUrl || null)
   const fileRef = useRef(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
@@ -96,6 +97,12 @@ export function EditProfile() {
       if (!blob) return
       const croppedFile = new File([blob], 'avatar-cropped.png', { type: 'image/png' })
       setAvatarFile(croppedFile)
+      try {
+        const localUrl = URL.createObjectURL(croppedFile)
+        setAvatarPreview(localUrl)
+      } catch {
+        // If URL.createObjectURL fails, just rely on uploaded URL later.
+      }
       setShowCropper(false)
     }, 'image/png')
   }
@@ -105,6 +112,9 @@ export function EditProfile() {
     try {
       setUploading(true)
       const { publicUrl } = await uploadAvatar(avatarFile)
+      if (publicUrl) {
+        setAvatarPreview(publicUrl)
+      }
       updateProfile({ avatarUrl: publicUrl })
     } catch (err) {
       setError(err.message || 'Avatar upload failed')
@@ -131,6 +141,9 @@ export function EditProfile() {
           '',
       )
       setSelectedRoles((profile.accountType || 'producer').split('+'))
+      if (profile.avatarUrl) {
+        setAvatarPreview(profile.avatarUrl)
+      }
 
       setCountry(profile.country || '')
       setPhone(profile.phone || '')
@@ -266,7 +279,11 @@ export function EditProfile() {
             <div className="flex flex-col items-center gap-5 md:flex-row md:items-start">
               <div className="flex flex-col items-center gap-3">
                 <div className="h-32 w-32 overflow-hidden rounded-2xl border border-slate-800/70 bg-slate-950/70 flex items-center justify-center text-[11px] text-slate-500 shadow-inner">
-                  {profile?.avatarUrl ? <img src={profile.avatarUrl} alt="profile" className="h-full w-full object-cover" /> : 'No photo'}
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="profile" className="h-full w-full object-cover" />
+                  ) : (
+                    'No photo'
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <input ref={fileRef} type="file" accept="image/*" onChange={handleAvatar} className="hidden" />
