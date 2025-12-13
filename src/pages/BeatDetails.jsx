@@ -102,7 +102,11 @@ export function BeatDetails() {
     const optimistic = favorited ? favs - 1 : favs + 1
     setFavorited(!favorited)
     setFavs(Math.max(0, optimistic))
-    const res = await toggleFavorite({ userId: user.id, beatId: id })
+    const res = await toggleFavorite({
+      userId: user.id,
+      beatId: id,
+      producerId,
+    })
     if (res.favorited !== !favorited) {
       setFavorited(res.favorited)
       setFavs(await favoriteCount(id))
