@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useBeats } from '../hooks/useBeats'
 import { topBeatsByPlays } from '../services/analyticsService'
@@ -21,6 +21,8 @@ export default function LandingPage() {
     .filter((b) => b.backgroundUrl)
     .map((b) => b.backgroundUrl)
   const [heroBgIndex, setHeroBgIndex] = useState(0)
+  const [cartToast, setCartToast] = useState('')
+  const cartToastTimeoutRef = useRef(null)
 
   const testimonials = [
     {
@@ -110,6 +112,17 @@ export default function LandingPage() {
       cancelled = true
     }
   }, [heroSearch])
+
+  const handleAddedToCart = (beat) => {
+    const label = beat?.title ? `"${beat.title}" added to cart` : 'Beat added to cart'
+    setCartToast(label)
+    if (cartToastTimeoutRef.current) {
+      clearTimeout(cartToastTimeoutRef.current)
+    }
+    cartToastTimeoutRef.current = setTimeout(() => {
+      setCartToast('')
+    }, 2000)
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#050505] via-[#05070a] to-black text-slate-100">
@@ -252,7 +265,7 @@ export default function LandingPage() {
                 No beats available yet. Once beats are uploaded, they will appear here for everyone.
               </p>
             ) : (
-              <BeatCarousel beats={trendingBeats} />
+              <BeatCarousel beats={trendingBeats} onAddedToCart={handleAddedToCart} />
             )}
           </section>
 
@@ -406,6 +419,11 @@ export default function LandingPage() {
           </div>
         </section>
       </main>
+      {cartToast && (
+        <div className="fixed bottom-4 left-1/2 z-40 -translate-x-1/2 rounded-full border border-emerald-400/70 bg-slate-950/95 px-4 py-2 text-[11px] font-medium text-emerald-200 shadow-lg">
+          {cartToast}
+        </div>
+      )}
     </div>
   )
 }
