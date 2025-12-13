@@ -39,6 +39,7 @@ export function BeatCard({
   sponsored = false,
   compact = false,
   square = false,
+  onAddedToCart,
 }) {
   const { addBeat } = useCart() || {}
   const { user } = useSupabaseUser()
@@ -105,7 +106,12 @@ export function BeatCard({
   const handleAdd = (e) => {
     e.preventDefault()
     e.stopPropagation()
-    if (addBeat) addBeat(id, 'Basic')
+    if (addBeat) {
+      addBeat(id, 'Basic')
+      if (onAddedToCart) {
+        onAddedToCart({ id, title, price })
+      }
+    }
   }
 
   const handleLike = async (e) => {

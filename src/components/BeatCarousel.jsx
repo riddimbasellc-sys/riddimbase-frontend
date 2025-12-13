@@ -14,9 +14,9 @@ import { BeatCard } from './BeatCard'
  */
 
 /**
- * @param {{ beats: Beat[] }} props
+ * @param {{ beats: Beat[], onAddedToCart?: (beat: Beat) => void }} props
  */
-export function BeatCarousel({ beats }) {
+export function BeatCarousel({ beats, onAddedToCart }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({
     align: 'start',
     loop: false,
@@ -129,6 +129,7 @@ export function BeatCarousel({ beats }) {
                   userId={beat.userId}
                   square
                   compact
+                  onAddedToCart={onAddedToCart}
                 />
               </div>
             </div>
