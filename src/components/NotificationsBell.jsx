@@ -20,6 +20,38 @@ function timeAgo(ts) {
   return d + 'd'
 }
 
+const jobIcon = (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-4 w-4 text-sky-400"
+  >
+    <path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" />
+    <path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+    <path d="M3 11h18" />
+  </svg>
+)
+
+const payoutIcon = (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-4 w-4 text-emerald-400"
+  >
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="M16 12h.01" />
+    <path d="M7 12h5" />
+  </svg>
+)
+
 const ICONS = {
   like: (
     <svg
@@ -104,6 +136,12 @@ const ICONS = {
       <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 3.5 4 5.5 3.5 7 3.2 8.5 4 9.3 5.2L12 9l2.7-3.8C15.5 4 17 3.2 18.5 3.5 20.5 4 22 6 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
     </svg>
   ),
+  'job-approved': jobIcon,
+  'job-denied': jobIcon,
+  'job-accepted': jobIcon,
+  'job-files': jobIcon,
+  'job-paid': payoutIcon,
+  'payout-completed': payoutIcon,
 }
 
 export default function NotificationsBell() {
@@ -245,6 +283,69 @@ export default function NotificationsBell() {
                       <>
                         Message from {n.data.from || 'someone'}: "
                         {n.data.snippet || ''}"
+                      </>
+                    )}
+                    {n.type === 'job-approved' && (
+                      <>
+                        Job approved:{' '}
+                        <span className="text-slate-100">
+                          {n.data.title || 'Your job post'}
+                        </span>
+                      </>
+                    )}
+                    {n.type === 'job-denied' && (
+                      <>
+                        Job not approved:{' '}
+                        <span className="text-slate-100">
+                          {n.data.title || 'Your job post'}
+                        </span>
+                      </>
+                    )}
+                    {n.type === 'job-accepted' && (
+                      <>
+                        Proposal accepted for{' '}
+                        <span className="text-slate-100">
+                          {n.data.title || 'a job'}
+                        </span>
+                        {typeof n.data.amount !== 'undefined' && (
+                          <>
+                            {' '}
+                            •{' '}
+                            <span className="text-emerald-300">
+                              ${Number(n.data.amount || 0).toFixed(2)}
+                            </span>
+                          </>
+                        )}
+                      </>
+                    )}
+                    {n.type === 'job-files' && (
+                      <>
+                        Files shared for job{' '}
+                        <span className="text-slate-100">
+                          {n.data.title || ''}
+                        </span>
+                      </>
+                    )}
+                    {n.type === 'job-paid' && (
+                      <>
+                        Job paid:{' '}
+                        <span className="text-emerald-300">
+                          {(n.data.currency || 'USD')}{' '}
+                          {Number(n.data.amount || 0).toFixed(2)}
+                        </span>{' '}
+                        for{' '}
+                        <span className="text-slate-100">
+                          {n.data.title || 'a job'}
+                        </span>
+                      </>
+                    )}
+                    {n.type === 'payout-completed' && (
+                      <>
+                        Payout completed:{' '}
+                        <span className="text-emerald-300">
+                          {(n.data.currency || 'USD')}{' '}
+                          {Number(n.data.amount || 0).toFixed(2)}
+                        </span>
                       </>
                     )}
                   </p>
