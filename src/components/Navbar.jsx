@@ -99,8 +99,32 @@ export function Navbar({ onMobileMenuToggle = () => {} }) {
               </NavLink>
             ) : (
               <>
-                <NavLink to="/" className={({ isActive }) => `hover:text-emerald-400 ${isActive ? 'text-emerald-400' : ''}`}>Home</NavLink>
-                <NavLink to="/beats" className={({ isActive }) => `hover:text-emerald-400 ${isActive ? 'text-emerald-400' : ''}`}>Beats</NavLink>
+                <NavLink
+                  to="/"
+                  className={({ isActive }) =>
+                    `hover:text-emerald-400 ${isActive ? 'text-emerald-400' : ''}`
+                  }
+                >
+                  Home
+                </NavLink>
+                {user && (
+                  <NavLink
+                    to="/feed"
+                    className={({ isActive }) =>
+                      `hover:text-emerald-400 ${isActive ? 'text-emerald-400' : ''}`
+                    }
+                  >
+                    My Feed
+                  </NavLink>
+                )}
+                <NavLink
+                  to="/beats"
+                  className={({ isActive }) =>
+                    `hover:text-emerald-400 ${isActive ? 'text-emerald-400' : ''}`
+                  }
+                >
+                  Beats
+                </NavLink>
                 <NavLink to="/soundkits" className={({ isActive }) => `hover:text-emerald-400 ${isActive ? 'text-emerald-400' : ''}`}>Soundkits</NavLink>
                 <NavLink to="/producers" className={({ isActive }) => `hover:text-emerald-400 ${isActive ? 'text-emerald-400' : ''}`}>Producers</NavLink>
                 <NavLink to="/services" className={({ isActive }) => `hover:text-emerald-400 ${isActive ? 'text-emerald-400' : ''}`}>Services</NavLink>

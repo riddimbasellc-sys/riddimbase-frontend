@@ -161,28 +161,42 @@ function MobileBottomNav() {
     )
   }
 
-  const isActive = (match) => {
-    if (match === '/') return path === '/'
-    return path.startsWith(match)
-  }
+    const isActive = (match) => {
+      if (match === '/') return path === '/'
+      return path.startsWith(match)
+    }
 
   return (
     <>
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-800 bg-slate-950/95 backdrop-blur md:hidden">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-3 py-2 text-[11px] font-medium text-slate-300">
-          <button
-            type="button"
-            onClick={() => go('/')}
-            className={`flex flex-1 flex-col items-center gap-0.5 ${isActive('/') ? 'text-emerald-400' : ''}`}
+            <button
+              type="button"
+              onClick={() => go('/')}
+              className={`flex flex-1 flex-col items-center gap-0.5 ${isActive('/') ? 'text-emerald-400' : ''}`}
           >
             <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-800/90">
               <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" stroke="currentColor" fill="none" strokeWidth="2">
                 <path d="M3 11.5 12 4l9 7.5" strokeLinecap="round" strokeLinejoin="round" />
                 <path d="M5 10.5V20h5v-4h4v4h5v-9.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-            </span>
-            <span>Home</span>
-          </button>
+              </span>
+              <span>Home</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => go('/feed')}
+              className={`flex flex-1 flex-col items-center gap-0.5 ${isActive('/feed') ? 'text-emerald-400' : ''}`}
+            >
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-800/90">
+                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" stroke="currentColor" fill="none" strokeWidth="2">
+                  <path d="M4 19h16" strokeLinecap="round" />
+                  <path d="M6 16v-6a4 4 0 0 1 8 0v6" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M10 16v-4" strokeLinecap="round" />
+                </svg>
+              </span>
+              <span>My Feed</span>
+            </button>
           <button
             type="button"
             onClick={() => go('/beats')}
@@ -291,18 +305,30 @@ function MobileMainMenuSheet({ onClose }) {
             >
               Admin
             </button>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => {
-                  onClose()
-                  navigate('/')
-                }}
-                className="block w-full rounded-lg px-2 py-2 text-left hover:bg-slate-900/90"
-              >
-                Home
-              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose()
+                    navigate('/')
+                  }}
+                  className="block w-full rounded-lg px-2 py-2 text-left hover:bg-slate-900/90"
+                >
+                  Home
+                </button>
+                {user && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose()
+                      navigate('/feed')
+                    }}
+                    className="block w-full rounded-lg px-2 py-2 text-left hover:bg-slate-900/90"
+                  >
+                    My Feed
+                  </button>
+                )}
               <button
                 type="button"
                 onClick={() => {
