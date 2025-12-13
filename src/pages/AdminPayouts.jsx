@@ -3,6 +3,7 @@ import BackButton from '../components/BackButton'
 import { useState, useEffect } from 'react'
 import { listAllPayouts, markPayoutCompleted } from '../services/payoutsRepository'
 import { getSubscription } from '../services/subscriptionService'
+import { addNotification } from '../services/notificationsRepository'
 
 export function AdminPayouts() {
   const { isAdmin, loading } = useAdminRole()
@@ -58,7 +59,20 @@ export function AdminPayouts() {
   }
 
   const complete = async (id) => {
-    await markPayoutCompleted(id)
+    const updated = await markPayoutCompleted(id)
+    if (updated && updated.userId) {
+      try {
+        await addNotification({
+          recipientId: updated.userId,
+          actorId: null,
+          type: 'payout-completed',
+          data: {
+            amount: Number(updated.amount) || 0,
+            currency: updated.currency || 'USD',
+          },
+        })
+      } catch {}
+    }
     setItems(await listAllPayouts())
   }
 
@@ -128,4 +142,3 @@ export function AdminPayouts() {
 }
 
 export default AdminPayouts
-

@@ -181,8 +181,22 @@ export function JobDelivery() {
                           amount: job.budget,
                           currency: 'USD',
                         }),
-                      }).catch(() => {})
-                      markJobPaid(jobId)
+                        }).catch(() => {})
+                        markJobPaid(jobId)
+                        try {
+                          if (job?.assignedProviderId) {
+                            await addNotification({
+                              recipientId: job.assignedProviderId,
+                              actorId: user?.id || null,
+                              type: 'job-paid',
+                              data: {
+                                title: job.title,
+                                amount: job.budget,
+                                currency: 'USD',
+                              },
+                            })
+                          }
+                        } catch {}
                       setFeedback('Payment completed. Funds are held by RiddimBase until you release them from My Jobs.')
                     } catch (e) {
                       setError(e.message || 'Payment recorded, but escrow update may have failed.')
@@ -290,5 +304,4 @@ export function JobDelivery() {
 }
 
 export default JobDelivery
-
 
