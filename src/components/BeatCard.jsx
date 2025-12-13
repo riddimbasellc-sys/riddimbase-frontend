@@ -24,6 +24,7 @@ export function BeatCard({
   userId,
   genre,
   bpm,
+  musicalKey,
   price,
   coverUrl,
   audioUrl,
@@ -185,6 +186,81 @@ export function BeatCard({
       }
 
   const sizeClasses = compact ? 'p-2' : 'p-3'
+
+  // Compact square variant (used for landing page trending carousel)
+  if (square && compact) {
+    const keyLabel = musicalKey || null
+    const priceLabel =
+      price?.toFixed ? price.toFixed(2) : Number(price || 0).toFixed(2)
+
+    return (
+      <Wrapper
+        {...wrapperProps}
+        className="group relative aspect-square overflow-hidden rounded-2xl border border-white/10 bg-slate-900/90 shadow-[0_18px_48px_rgba(0,0,0,0.9)] backdrop-blur transition hover:border-red-500/80 hover:shadow-[0_0_32px_rgba(248,113,113,0.45)]"
+      >
+        {coverUrl ? (
+          <img
+            src={coverUrl}
+            alt={title || 'Beat artwork'}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="h-full w-full bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950" />
+        )}
+
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
+
+        {/* Heart / like button */}
+        <button
+          type="button"
+          onClick={handleLike}
+          className={`absolute right-2.5 top-2.5 z-20 flex h-7 w-7 items-center justify-center rounded-full border text-[12px] backdrop-blur-sm ${
+            liked
+              ? 'border-pink-400/80 bg-pink-500/80 text-white'
+              : 'border-white/40 bg-black/70 text-white group-hover:border-pink-400/80'
+          }`}
+        >
+          ♥
+        </button>
+
+        {/* Bottom overlay: title, producer, key/BPM, mini player, cart/price */}
+        <div className="absolute inset-x-2.5 bottom-2.5 z-10 flex flex-col gap-1.5">
+          <div className="flex items-center justify-between gap-2 text-[9px] text-slate-100">
+            <div className="min-w-0">
+              <p className="truncate text-[11px] font-semibold">
+                {title || 'Untitled Beat'}
+              </p>
+              <p className="truncate text-[10px] text-slate-300">
+                {producer || 'Unknown'}
+                {keyLabel && <> • {keyLabel}</>}
+                {bpm && <> • {bpm} BPM</>}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-0.5">
+            <MiniWavePlayer
+              src={audioUrl || ''}
+              beatId={id}
+              producerId={userId}
+              height={24}
+            />
+          </div>
+
+          <div className="mt-1 flex items-center justify-between text-[10px] text-slate-100">
+            <button
+              type="button"
+              onClick={handleAdd}
+              className="inline-flex items-center gap-1 rounded-full bg-black/80 px-2.5 py-1 font-semibold text-slate-50 shadow-[0_0_18px_rgba(15,23,42,0.7)] hover:bg-black/90"
+            >
+              <span>🛒</span>
+              <span>${priceLabel}</span>
+            </button>
+          </div>
+        </div>
+      </Wrapper>
+    )
+  }
 
   // Square beat card: 1:1 artwork, waveform + like/cart (no center play)
   if (square) {

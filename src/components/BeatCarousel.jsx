@@ -122,12 +122,13 @@ export function BeatCarousel({ beats }) {
                   producer={beat.producer}
                   bpm={beat.bpm}
                   genre={beat.genre}
-                  musicalKey={beat.key}
+                  musicalKey={beat.musicalKey || beat.key}
                   price={beat.price}
                   coverUrl={beat.coverUrl}
                   audioUrl={beat.audioUrl}
                   userId={beat.userId}
                   square
+                  compact
                 />
               </div>
             </div>
