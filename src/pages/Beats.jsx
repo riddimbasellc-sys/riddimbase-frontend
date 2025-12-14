@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { BeatCard } from '../components/BeatCard'
+import { TrendingBeatCard } from '../components/BeatCarousel'
 import { useBeats } from '../hooks/useBeats'
 import BackButton from '../components/BackButton'
 import useSupabaseUser from '../hooks/useSupabaseUser'
@@ -203,42 +203,14 @@ export function Beats() {
                 </div>
                 <div className="mt-3 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
                   {boostedFilteredBeats.map((b) => (
-                    <BeatCard
-                      key={b.id}
-                      {...b}
-                      coverUrl={b.coverUrl || null}
-                      audioUrl={b.audioUrl}
-                      initialLikes={metrics.likeCounts[b.id] || 0}
-                      initialFavs={metrics.favoriteCounts[b.id] || 0}
-                      initialFollowers={
-                        b.userId ? metrics.followerCounts[b.userId] || 0 : 0
-                      }
-                      onShare={openShare}
-                      sponsored={true}
-                      square
-                    />
+                    <TrendingBeatCard key={b.id} beat={b} />
                   ))}
                 </div>
               </div>
             )}
             <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {!loading &&
-                filteredBeats.map((b) => (
-                  <BeatCard
-                    key={b.id}
-                    {...b}
-                    coverUrl={b.coverUrl || null}
-                    audioUrl={b.audioUrl}
-                    initialLikes={metrics.likeCounts[b.id] || 0}
-                    initialFavs={metrics.favoriteCounts[b.id] || 0}
-                    initialFollowers={
-                      b.userId ? metrics.followerCounts[b.userId] || 0 : 0
-                    }
-                    onShare={openShare}
-                    sponsored={boostedMap.has(b.id)}
-                    square
-                  />
-                ))}
+                filteredBeats.map((b) => <TrendingBeatCard key={b.id} beat={b} />)}
             </div>
             <ProfileShareModal
               open={!!shareTarget}
