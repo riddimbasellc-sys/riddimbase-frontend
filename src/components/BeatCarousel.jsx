@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { slugify } from '../utils/slugify'
+import useSupabaseUser from '../hooks/useSupabaseUser'
+import { toggleLike, likeCount, isLiked } from '../services/socialService'
 
 /**
  * @typedef {Object} Beat
@@ -17,10 +19,33 @@ import { slugify } from '../utils/slugify'
 
 function TrendingBeatCard({ beat, onAddedToCart }) {
   const { addBeat } = useCart() || {}
+  const { user } = useSupabaseUser()
+  const navigate = useNavigate()
   const slug = slugify(beat.title || '')
   const to = slug ? `/beat/${beat.id}-${slug}` : `/beat/${beat.id}`
   const price = typeof beat.price === 'number' ? beat.price : Number(beat.price || 0)
   const priceLabel = price.toFixed(2)
+  const [liked, setLiked] = useState(false)
+  const [likes, setLikes] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const c = await likeCount(beat.id)
+        if (!cancelled) setLikes(c)
+        if (user) {
+          const l = await isLiked({ userId: user.id, beatId: beat.id })
+          if (!cancelled) setLiked(l)
+        }
+      } catch {
+        // ignore social errors
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [beat.id, user])
 
   const handleAdd = (e) => {
     e.preventDefault()
@@ -33,30 +58,78 @@ function TrendingBeatCard({ beat, onAddedToCart }) {
     }
   }
 
+  const handleLikeClick = async (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!user) return
+    const optimistic = liked ? likes - 1 : likes + 1
+    setLiked(!liked)
+    setLikes(Math.max(0, optimistic))
+    try {
+      const res = await toggleLike({
+        userId: user.id,
+        beatId: beat.id,
+        producerId: beat.userId,
+      })
+      if (typeof res.liked === 'boolean' && res.liked !== !liked) {
+        setLiked(res.liked)
+        setLikes(await likeCount(beat.id))
+      }
+    } catch {
+      // fallback: reload count later
+    }
+  }
+
+  const handlePlayClick = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    navigate(to)
+  }
+
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-white/10 bg-black/70 p-2 text-xs text-slate-100 shadow-[0_18px_40px_rgba(0,0,0,0.9)]">
-      <Link to={to} className="block">
-        <div className="aspect-square w-full overflow-hidden rounded-xl bg-slate-900/80">
-          {beat.coverUrl ? (
-            <img
-              src={beat.coverUrl}
-              alt={beat.title || 'Beat artwork'}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="h-full w-full bg-gradient-to-br from-slate-800 via-slate-900 to-black" />
-          )}
-        </div>
-      </Link>
+    <Link
+      to={to}
+      className="group flex h-full flex-col rounded-2xl border border-white/10 bg-black/70 p-2 text-xs text-slate-100 shadow-[0_18px_40px_rgba(0,0,0,0.9)]"
+    >
+      <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-slate-900/80">
+        {beat.coverUrl ? (
+          <img
+            src={beat.coverUrl}
+            alt={beat.title || 'Beat artwork'}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="h-full w-full bg-gradient-to-br from-slate-800 via-slate-900 to-black" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+        {/* Play button */}
+        <button
+          type="button"
+          onClick={handlePlayClick}
+          className="absolute inset-0 m-auto flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-[14px] font-semibold text-slate-900 shadow-lg transition group-hover:scale-105"
+        >
+          ▶
+        </button>
+        {/* Heart / like */}
+        <button
+          type="button"
+          onClick={handleLikeClick}
+          className={`absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full border text-[11px] backdrop-blur-sm ${
+            liked
+              ? 'border-pink-400/80 bg-pink-500/80 text-white'
+              : 'border-white/40 bg-black/70 text-white group-hover:border-pink-400/80'
+          }`}
+        >
+          ♥
+        </button>
+      </div>
       <div className="mt-2 flex flex-1 flex-col">
-        <Link to={to} className="block">
-          <p className="line-clamp-1 text-[11px] font-semibold text-slate-50">
-            {beat.title || 'Untitled beat'}
-          </p>
-          <p className="mt-0.5 line-clamp-1 text-[10px] text-slate-400">
-            {beat.producer || 'Unknown producer'}
-          </p>
-        </Link>
+        <p className="line-clamp-1 text-[11px] font-semibold text-slate-50">
+          {beat.title || 'Untitled beat'}
+        </p>
+        <p className="mt-0.5 line-clamp-1 text-[10px] text-slate-400">
+          {beat.producer || 'Unknown producer'}
+        </p>
         <div className="mt-auto pt-2 flex items-center justify-between">
           <button
             type="button"
@@ -68,9 +141,10 @@ function TrendingBeatCard({ beat, onAddedToCart }) {
             </span>
             <span>${priceLabel}</span>
           </button>
+          <span className="ml-2 text-[10px] text-slate-400">{likes}</span>
         </div>
       </div>
-    </div>
+    </Link>
   )
 }
 
