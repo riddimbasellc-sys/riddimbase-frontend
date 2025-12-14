@@ -9,7 +9,16 @@ import { uploadArtwork, uploadBundle, uploadAudio, uploadBeatWithMetadata } from
 import useUserPlan from '../hooks/useUserPlan'
 import { BeatCard } from '../components/BeatCard'
 
-const GENRES = ['Dancehall','Reggae','Soca','Afrobeats','TrapHall','Dub']
+const GENRES = [
+  'Dancehall',
+  'Trap Dancehall',
+  'Reggae',
+  'Afrobeat',
+  'Soca',
+  'Trap',
+  'Hip Hop',
+  'Drill',
+]
 
 export function UploadBeat() {
   const [title, setTitle] = useState('')

@@ -26,6 +26,7 @@ export function Beats() {
   const { boosts: boostedBeatsRaw } = useBoostedBeats()
   const [viewMode, setViewMode] = useState('grid')
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
+  const [genreFilter, setGenreFilter] = useState('')
 
   const openShare = (beat) => setShareTarget(beat)
   const closeShare = () => setShareTarget(null)
@@ -52,15 +53,26 @@ export function Beats() {
   }, [boostedBeatsRaw])
 
   const normalizedSearch = search.trim().toLowerCase()
+  const normalizedGenre = genreFilter.trim().toLowerCase()
 
   const filteredBeats = useMemo(() => {
-    if (!normalizedSearch) return beats
+    if (!beats.length) return []
     return beats.filter((b) => {
       const title = (b.title || '').toLowerCase()
-      const producer = (b.producer || '').toLowerCase()
-      return title.includes(normalizedSearch) || producer.includes(normalizedSearch)
+      const producerName = (b.producer || '').toLowerCase()
+      const genre = (b.genre || '').toLowerCase()
+
+      const matchesSearch =
+        !normalizedSearch ||
+        title.includes(normalizedSearch) ||
+        producerName.includes(normalizedSearch)
+
+      const matchesGenre =
+        !normalizedGenre || genre === normalizedGenre
+
+      return matchesSearch && matchesGenre
     })
-  }, [beats, normalizedSearch])
+  }, [beats, normalizedSearch, normalizedGenre])
 
   const boostedBeats = useMemo(
     () => beats.filter((b) => boostedMap.has(b.id)),
@@ -163,15 +175,33 @@ export function Beats() {
                 Genres
               </h2>
               <div className="mt-2 flex flex-wrap gap-2 text-[10px]">
-                {['Dancehall', 'TrapHall', 'Reggae', 'Afrobeats', 'Soca', 'Drill'].map(
-                  (g) => (
-                    <button
-                      key={g}
-                      className="rounded-full border border-slate-700/70 px-2 py-1 text-[10px] text-slate-300 hover:border-rb-trop-cyan hover:text-rb-trop-cyan transition"
-                    >
-                      {g}
-                    </button>
-                  ),
+                {['Dancehall', 'Trap Dancehall', 'Reggae', 'Afrobeat', 'Soca', 'Trap', 'Hip Hop', 'Drill'].map(
+                  (g) => {
+                    const active = genreFilter === g
+                    return (
+                      <button
+                        key={g}
+                        type="button"
+                        onClick={() => setGenreFilter(active ? '' : g)}
+                        className={`rounded-full px-2 py-1 text-[10px] transition ${
+                          active
+                            ? 'border-rb-trop-cyan bg-slate-900 text-rb-trop-cyan'
+                            : 'border border-slate-700/70 text-slate-300 hover:border-rb-trop-cyan hover:text-rb-trop-cyan'
+                        }`}
+                      >
+                        {g}
+                      </button>
+                    )
+                  },
+                )}
+                {genreFilter && (
+                  <button
+                    type="button"
+                    onClick={() => setGenreFilter('')}
+                    className="ml-1 text-[10px] text-slate-400 underline underline-offset-2"
+                  >
+                    Clear
+                  </button>
                 )}
               </div>
             </div>
@@ -337,15 +367,33 @@ export function Beats() {
                   Genres
                 </h3>
                 <div className="mt-2 flex flex-wrap gap-2 text-[10px]">
-                  {['Dancehall', 'TrapHall', 'Reggae', 'Afrobeats', 'Soca', 'Drill'].map(
-                    (g) => (
-                      <button
-                        key={g}
-                        className="rounded-full border border-slate-700/70 px-2 py-1 text-[10px] text-slate-300 hover:border-rb-trop-cyan hover:text-rb-trop-cyan transition"
-                      >
-                        {g}
-                      </button>
-                    ),
+                  {['Dancehall', 'Trap Dancehall', 'Reggae', 'Afrobeat', 'Soca', 'Trap', 'Hip Hop', 'Drill'].map(
+                    (g) => {
+                      const active = genreFilter === g
+                      return (
+                        <button
+                          key={g}
+                          type="button"
+                          onClick={() => setGenreFilter(active ? '' : g)}
+                          className={`rounded-full px-2 py-1 text-[10px] transition ${
+                            active
+                              ? 'border-rb-trop-cyan bg-slate-900 text-rb-trop-cyan'
+                              : 'border border-slate-700/70 text-slate-300 hover:border-rb-trop-cyan hover:text-rb-trop-cyan'
+                          }`}
+                        >
+                          {g}
+                        </button>
+                      )
+                    },
+                  )}
+                  {genreFilter && (
+                    <button
+                      type="button"
+                      onClick={() => setGenreFilter('')}
+                      className="ml-1 text-[10px] text-slate-400 underline underline-offset-2"
+                    >
+                      Clear
+                    </button>
                   )}
                 </div>
               </div>
