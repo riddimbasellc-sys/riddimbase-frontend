@@ -127,7 +127,7 @@ export function Navbar({ onMobileMenuToggle = () => {} }) {
                 </NavLink>
                 <NavLink to="/soundkits" className={({ isActive }) => `hover:text-emerald-400 ${isActive ? 'text-emerald-400' : ''}`}>Soundkits</NavLink>
                 <NavLink to="/producers" className={({ isActive }) => `hover:text-emerald-400 ${isActive ? 'text-emerald-400' : ''}`}>Producers</NavLink>
-                <NavLink to="/services" className={({ isActive }) => `hover:text-emerald-400 ${isActive ? 'text-emerald-400' : ''}`}>Services</NavLink>
+                <NavLink to="/services" end className={({ isActive }) => `hover:text-emerald-400 ${isActive ? 'text-emerald-400' : ''}`}>Services</NavLink>
                 <NavLink to="/jobs" className={({ isActive }) => `hover:text-emerald-400 ${isActive ? 'text-emerald-400' : ''}`}>Jobs</NavLink>
                 <NavLink to="/pricing" className={({ isActive }) => `hover:text-emerald-400 ${isActive ? 'text-emerald-400' : ''}`}>Pricing</NavLink>
               </>
