@@ -1,8 +1,9 @@
 import BackButton from '../components/BackButton'
-import { listProviderProfiles } from '../services/supabaseProvidersRepository'
+import { listProviderProfiles, fetchCatalog } from '../services/supabaseProvidersRepository'
 import { Link } from 'react-router-dom'
 import SocialIconRow from '../components/SocialIconRow'
 import { useEffect, useState } from 'react'
+import { BeatPlayer } from '../components/BeatPlayer'
 
 export function Services() {
   const [providers, setProviders] = useState([])
@@ -11,7 +12,7 @@ export function Services() {
     let active = true
     async function load() {
       const rows = await listProviderProfiles()
-      const supaProviders = rows.map((row) => ({
+      const baseProviders = rows.map((row) => ({
         id: row.id,
         name: row.display_name || row.id,
         avatar: row.avatar_url || null,
@@ -32,8 +33,25 @@ export function Services() {
         services: Array.isArray(row.services) ? row.services : [],
         catalog: [],
       }))
+
+      const catalogs = await Promise.all(
+        baseProviders.map(async (p) => {
+          const items = await fetchCatalog(p.id)
+          return (items || []).map((c) => ({
+            id: c.id,
+            title: c.title,
+            audioUrl: c.audio_url,
+            coverUrl: c.cover_url,
+          }))
+        }),
+      )
+
       if (active) {
-        setProviders(supaProviders)
+        const enriched = baseProviders.map((p, idx) => ({
+          ...p,
+          catalog: catalogs[idx] || [],
+        }))
+        setProviders(enriched)
       }
     }
     load()
@@ -41,6 +59,7 @@ export function Services() {
       active = false
     }
   }, [])
+
   return (
     <section className="bg-slate-950/95">
       <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-10">
@@ -65,15 +84,36 @@ export function Services() {
                   </h2>
                   <p className="mt-1 text-[11px] text-slate-400">{p.location}</p>
                 </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-800/80 text-[10px] font-bold text-slate-300">
-                  {p.name
-                    .split(' ')
-                    .map((w) => w[0])
-                    .slice(0, 2)
-                    .join('')}
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-800/80 text-[10px] font-bold text-slate-300 overflow-hidden">
+                  {p.avatar ? (
+                    <img src={p.avatar} alt={p.name} className="h-full w-full object-cover" />
+                  ) : (
+                    p.name
+                      .split(' ')
+                      .map((w) => w[0])
+                      .slice(0, 2)
+                      .join('')
+                  )}
                 </div>
               </div>
               <p className="mt-3 line-clamp-3 text-[11px] text-slate-400">{p.bio}</p>
+              {p.services.length > 0 && (
+                <div className="mt-3 space-y-1 text-[11px] text-slate-300">
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                    Services &amp; pricing
+                  </div>
+                  {p.services.slice(0, 3).map((s) => (
+                    <div key={s.name} className="flex items-center justify-between">
+                      <span className="truncate">{s.name}</span>
+                      {s.price !== undefined && s.price !== null && s.price !== '' && (
+                        <span className="ml-2 font-semibold text-emerald-300">
+                          ${Number(s.price).toFixed(0)}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="mt-4 flex flex-wrap gap-1.5">
                 {p.tags.map((t) => (
                   <span
@@ -95,11 +135,19 @@ export function Services() {
                 />
               )}
               <div className="mt-4 flex items-center justify-between text-[10px] text-slate-400">
-                <span>{p.catalog.length} / 3 catalog beats</span>
+                <span>{p.catalog.length} / 3 catalog demos</span>
                 <span className="text-emerald-400 group-hover:translate-x-1 transition-transform">
-                  View �+'
+                  View profile
                 </span>
               </div>
+              {p.catalog[0] && (
+                <div className="mt-4 rounded-xl border border-slate-800/70 bg-slate-950/70 p-3">
+                  <p className="text-[10px] font-semibold text-slate-300">
+                    Sample: <span className="text-slate-100">{p.catalog[0].title}</span>
+                  </p>
+                  <BeatPlayer src={p.catalog[0].audioUrl} className="mt-2" />
+                </div>
+              )}
             </Link>
           ))}
         </div>
@@ -109,4 +157,3 @@ export function Services() {
 }
 
 export default Services
-
