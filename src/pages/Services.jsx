@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import SocialIconRow from '../components/SocialIconRow'
 import { useEffect, useState } from 'react'
 import { BeatPlayer } from '../components/BeatPlayer'
+import ScrollableGrid from '../components/ScrollableGrid'
 
 export function Services() {
   const [providers, setProviders] = useState([])
@@ -70,13 +71,14 @@ export function Services() {
         <p className="mt-1 max-w-2xl text-xs text-slate-300 sm:text-sm">
           Browse engineers and producers offering mix & master, custom beats, studio sessions and more.
         </p>
-        <div className="mt-6 grid gap-4 sm:mt-8 sm:grid-cols-2 lg:grid-cols-3">
-          {providers.map((p) => (
-            <Link
-              key={p.id}
-              to={`/services/${p.id}`}
-              className="group rounded-2xl border border-slate-800/70 bg-slate-900/70 p-5 hover:border-emerald-400/60 transition"
-            >
+        <div className="mt-6 sm:mt-8">
+          <ScrollableGrid gridClassName="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {providers.map((p) => (
+              <Link
+                key={p.id}
+                to={`/services/${p.id}`}
+                className="group rounded-2xl border border-slate-800/70 bg-slate-900/70 p-5 hover:border-emerald-400/60 transition"
+              >
               <div className="flex items-start justify-between">
                 <div>
                   <h2 className="text-sm font-semibold text-slate-100 group-hover:text-emerald-300 transition">
@@ -148,8 +150,9 @@ export function Services() {
                   <BeatPlayer src={p.catalog[0].audioUrl} className="mt-2" />
                 </div>
               )}
-            </Link>
-          ))}
+              </Link>
+            ))}
+          </ScrollableGrid>
         </div>
       </div>
     </section>

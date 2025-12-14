@@ -13,6 +13,7 @@ import { getProducerProfile } from '../services/producerProfileService'
 import ReportModal from '../components/ReportModal'
 import { isBeatBoosted } from '../services/boostsService'
 import { useAdminRole } from '../hooks/useAdminRole'
+import ScrollableGrid from '../components/ScrollableGrid'
 
 export function ProducerProfile() {
   const { producerId } = useParams()
@@ -315,18 +316,19 @@ export function ProducerProfile() {
           </div>
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-slate-100">Beat Catalog ({catalog.length})</h3>
-            <div className="grid gap-4 sm:grid-cols-3 md:grid-cols-4">
-              {catalog.map((b) => (
-                <BeatSquareCard
-                  key={b.id}
-                  beat={b}
-                  boosted={isBeatBoosted(b.id)}
-                />
-              ))}
-              {catalog.length === 0 && (
-                <p className="text-xs text-slate-500">No beats uploaded yet.</p>
-              )}
-            </div>
+            {catalog.length === 0 ? (
+              <p className="text-xs text-slate-500">No beats uploaded yet.</p>
+            ) : (
+              <ScrollableGrid gridClassName="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                {catalog.map((b) => (
+                  <BeatSquareCard
+                    key={b.id}
+                    beat={b}
+                    boosted={isBeatBoosted(b.id)}
+                  />
+                ))}
+              </ScrollableGrid>
+            )}
           </div>
         </div>
         <ProfileShareModal open={shareOpen} onClose={() => setShareOpen(false)} profileType="producer" profileId={producerId} displayName={displayName} />

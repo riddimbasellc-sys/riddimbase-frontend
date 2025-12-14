@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { TrendingBeatCard } from '../components/BeatCarousel'
+import ScrollableGrid from '../components/ScrollableGrid'
 import { useBeats } from '../hooks/useBeats'
 import BackButton from '../components/BackButton'
 import useSupabaseUser from '../hooks/useSupabaseUser'
@@ -201,17 +202,19 @@ export function Beats() {
                     {boostedBeats.length} active
                   </span>
                 </div>
-                <div className="mt-3 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                  {boostedFilteredBeats.map((b) => (
-                    <TrendingBeatCard key={b.id} beat={b} />
-                  ))}
+                <div className="mt-3">
+                  <ScrollableGrid gridClassName="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                    {boostedFilteredBeats.map((b) => (
+                      <TrendingBeatCard key={b.id} beat={b} />
+                    ))}
+                  </ScrollableGrid>
                 </div>
               </div>
             )}
-            <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            <ScrollableGrid gridClassName="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {!loading &&
                 filteredBeats.map((b) => <TrendingBeatCard key={b.id} beat={b} />)}
-            </div>
+            </ScrollableGrid>
             <ProfileShareModal
               open={!!shareTarget}
               onClose={closeShare}
