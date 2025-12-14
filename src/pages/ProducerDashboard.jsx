@@ -898,7 +898,7 @@ export function ProducerDashboard() {
               </p>
             )}
               {!beatsLoading && myBeats.length > 0 && (
-                <div className="mt-3 grid gap-3 md:grid-cols-4 sm:grid-cols-3">
+                <div className="mt-3 grid grid-cols-6 gap-2">
                   {myBeats.slice(0, 6).map((b) => (
                     <div key={b.id} className="space-y-2">
                       <BeatCard
@@ -916,7 +916,7 @@ export function ProducerDashboard() {
                         initialFavs={b.favs || 0}
                         initialFollowers={0}
                         square
-                        compact
+                        mini
                       />
                       <div className="flex flex-wrap items-center gap-2 text-[10px]">
                         <button
