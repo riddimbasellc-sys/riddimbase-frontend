@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { slugify } from '../utils/slugify'
 import useSupabaseUser from '../hooks/useSupabaseUser'
@@ -20,13 +20,14 @@ import { toggleLike, likeCount, isLiked } from '../services/socialService'
 function TrendingBeatCard({ beat, onAddedToCart }) {
   const { addBeat } = useCart() || {}
   const { user } = useSupabaseUser()
-  const navigate = useNavigate()
   const slug = slugify(beat.title || '')
   const to = slug ? `/beat/${beat.id}-${slug}` : `/beat/${beat.id}`
   const price = typeof beat.price === 'number' ? beat.price : Number(beat.price || 0)
   const priceLabel = price.toFixed(2)
   const [liked, setLiked] = useState(false)
   const [likes, setLikes] = useState(0)
+  const [playing, setPlaying] = useState(false)
+  const audioRef = useRef(null)
 
   useEffect(() => {
     let cancelled = false
@@ -83,8 +84,23 @@ function TrendingBeatCard({ beat, onAddedToCart }) {
   const handlePlayClick = (e) => {
     e.preventDefault()
     e.stopPropagation()
-    navigate(to)
+    if (!beat.audioUrl || !audioRef.current) return
+    setPlaying((prev) => !prev)
   }
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    if (playing) {
+      audio
+        .play()
+        .catch(() => {
+          setPlaying(false)
+        })
+    } else {
+      audio.pause()
+    }
+  }, [playing])
 
   return (
     <Link
@@ -108,7 +124,7 @@ function TrendingBeatCard({ beat, onAddedToCart }) {
           onClick={handlePlayClick}
           className="absolute inset-0 m-auto flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-[14px] font-semibold text-slate-900 shadow-lg transition group-hover:scale-105"
         >
-          ▶
+          {playing ? '❚❚' : '▶'}
         </button>
         {/* Heart / like */}
         <button
@@ -123,6 +139,7 @@ function TrendingBeatCard({ beat, onAddedToCart }) {
           ♥
         </button>
       </div>
+      <audio ref={audioRef} src={beat.audioUrl || ''} preload="none" className="hidden" />
       <div className="mt-2 flex flex-1 flex-col">
         <p className="line-clamp-1 text-[11px] font-semibold text-slate-50">
           {beat.title || 'Untitled beat'}
