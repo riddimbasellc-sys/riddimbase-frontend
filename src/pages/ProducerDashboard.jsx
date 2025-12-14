@@ -757,7 +757,7 @@ export function ProducerDashboard() {
                       payouts.
                     </p>
                     <a
-                      href="/producer/pro"
+                      href="/subscribe/pro?kind=producer"
                       className="inline-block rounded-full bg-rb-trop-sunrise px-4 py-2 text-[11px] font-semibold text-slate-950 shadow-rb-gloss-btn hover:brightness-110 transition"
                     >
                       View Pro Plans
