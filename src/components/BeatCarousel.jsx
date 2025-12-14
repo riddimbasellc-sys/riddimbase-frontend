@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
-import { BeatCard } from './BeatCard'
+import { Link } from 'react-router-dom'
+import { useCart } from '../context/CartContext'
+import { slugify } from '../utils/slugify'
 
 /**
  * @typedef {Object} Beat
@@ -12,6 +14,65 @@ import { BeatCard } from './BeatCard'
  * @property {string} [coverUrl]
  * @property {number} [price]
  */
+
+function TrendingBeatCard({ beat, onAddedToCart }) {
+  const { addBeat } = useCart() || {}
+  const slug = slugify(beat.title || '')
+  const to = slug ? `/beat/${beat.id}-${slug}` : `/beat/${beat.id}`
+  const price = typeof beat.price === 'number' ? beat.price : Number(beat.price || 0)
+  const priceLabel = price.toFixed(2)
+
+  const handleAdd = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (addBeat) {
+      addBeat(beat.id, 'Basic')
+    }
+    if (onAddedToCart) {
+      onAddedToCart(beat)
+    }
+  }
+
+  return (
+    <div className="flex h-full flex-col rounded-2xl border border-white/10 bg-black/70 p-2 text-xs text-slate-100 shadow-[0_18px_40px_rgba(0,0,0,0.9)]">
+      <Link to={to} className="block">
+        <div className="aspect-square w-full overflow-hidden rounded-xl bg-slate-900/80">
+          {beat.coverUrl ? (
+            <img
+              src={beat.coverUrl}
+              alt={beat.title || 'Beat artwork'}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="h-full w-full bg-gradient-to-br from-slate-800 via-slate-900 to-black" />
+          )}
+        </div>
+      </Link>
+      <div className="mt-2 flex flex-1 flex-col">
+        <Link to={to} className="block">
+          <p className="line-clamp-1 text-[11px] font-semibold text-slate-50">
+            {beat.title || 'Untitled beat'}
+          </p>
+          <p className="mt-0.5 line-clamp-1 text-[10px] text-slate-400">
+            {beat.producer || 'Unknown producer'}
+          </p>
+        </Link>
+        <div className="mt-auto pt-2 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={handleAdd}
+            className="inline-flex items-center gap-1 rounded-full bg-white/95 px-3 py-1 text-[11px] font-semibold text-slate-950 shadow-[0_0_20px_rgba(248,250,252,0.45)] hover:bg-white"
+          >
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-[11px]">
+              🛒
+            </span>
+            <span>${priceLabel}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 /**
  * @param {{ beats: Beat[], onAddedToCart?: (beat: Beat) => void }} props
@@ -116,20 +177,7 @@ export function BeatCarousel({ beats, onAddedToCart }) {
               className="min-w-0 px-1 py-1 shrink-0 grow-0 basis-[80%] sm:basis-[60%] md:basis-1/3 lg:basis-1/5"
             >
               <div className="h-full w-full sm:h-auto">
-                <BeatCard
-                  id={beat.id}
-                  title={beat.title}
-                  producer={beat.producer}
-                  bpm={beat.bpm}
-                  genre={beat.genre}
-                  musicalKey={beat.musicalKey || beat.key}
-                  price={beat.price}
-                  coverUrl={beat.coverUrl}
-                  audioUrl={beat.audioUrl}
-                  userId={beat.userId}
-                  square
-                  onAddedToCart={onAddedToCart}
-                />
+                <TrendingBeatCard beat={beat} onAddedToCart={onAddedToCart} />
               </div>
             </div>
           ))}
