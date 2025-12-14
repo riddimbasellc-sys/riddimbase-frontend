@@ -411,17 +411,19 @@ export function BeatCard({
         </div>
       </div>
 
-      {/* Artwork preview */}
+      {/* Artwork preview (auto scales with card width) */}
       <div className="mt-3 w-full overflow-hidden rounded-2xl border border-slate-800/70 bg-slate-900/70">
-        {coverUrl ? (
-          <img
-            src={coverUrl}
-            alt={title || 'Beat artwork'}
-            className={`${compact ? 'h-28' : 'h-32'} w-full object-cover`}
-          />
-        ) : (
-          <div className="h-32 w-full bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950" />
-        )}
+        <div className={compact ? 'aspect-square' : 'aspect-[4/3]'}>
+          {coverUrl ? (
+            <img
+              src={coverUrl}
+              alt={title || 'Beat artwork'}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="h-full w-full bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950" />
+          )}
+        </div>
       </div>
 
       {/* Center: title + mini WaveSurfer player */}
