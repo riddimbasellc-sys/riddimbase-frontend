@@ -60,7 +60,18 @@ export async function listProviderProfiles() {
     handleError('listProviderProfiles', error)
     return []
   }
-  return data || []
+  const rows = data || []
+  return rows.map((row) => {
+    let services = row.services
+    if (services && typeof services === 'string') {
+      try {
+        services = JSON.parse(services)
+      } catch {
+        services = []
+      }
+    }
+    return { ...row, services }
+  })
 }
 
 export async function fetchCatalog(userId) {
