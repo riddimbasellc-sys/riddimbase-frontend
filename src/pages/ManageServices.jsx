@@ -2,7 +2,7 @@ import BackButton from '../components/BackButton'
 import useSupabaseUser from '../hooks/useSupabaseUser'
 import useUserProfile from '../hooks/useUserProfile'
 import { useState, useEffect } from 'react'
-import { upsertUserProvider, updateUserProviderContacts, updateUserProviderServices, addProviderBeat, getProvider, removeProviderCatalogItem, userProviderCatalogRemaining } from '../services/serviceProvidersService'
+import { updateUserProviderContacts, updateUserProviderServices } from '../services/serviceProvidersService'
 import { fetchProviderProfile, upsertProviderProfile, fetchCatalog, addCatalogItem as addCatalogItemSupabase, removeCatalogItem as removeCatalogItemSupabase, reorderCatalog, updateProviderServices } from '../services/supabaseProvidersRepository'
 import { uploadAudio, uploadArtwork } from '../services/storageService'
 import { listProviderOrders, updateOrderStatus, computeProviderStats, getProviderAvailability, setProviderAvailability, queryOrders } from '../services/serviceOrdersService'
@@ -13,13 +13,13 @@ export function ManageServices() {
   const { profile } = useUserProfile()
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const provider = user ? getProvider(user.id) || upsertUserProvider(user, {}) : null
   const [catalog, setCatalog] = useState([])
   const [profileLoaded, setProfileLoaded] = useState(false)
+  const [remaining, setRemaining] = useState(3)
 
-  const [bio, setBio] = useState(provider?.bio || '')
-  const [location, setLocation] = useState(provider?.location || '')
-  const [tagsInput, setTagsInput] = useState(provider?.tags?.join(', ') || '')
+  const [bio, setBio] = useState('')
+  const [location, setLocation] = useState('')
+  const [tagsInput, setTagsInput] = useState('')
 
   // Predefined service categories
   const CATEGORY_KEYS = [
@@ -31,24 +31,22 @@ export function ManageServices() {
   ]
   // Initialize prices from existing provider services if present
   const initialPrices = CATEGORY_KEYS.reduce((acc, c) => {
-    const match = (provider?.services || []).find(s => s.name === c.key)
-    acc[c.id] = match ? String(match.price) : ''
+    acc[c.id] = ''
     return acc
   }, {})
   const [categoryPrices, setCategoryPrices] = useState(initialPrices)
-  const [services, setServices] = useState(provider?.services || [])
+  const [services, setServices] = useState([])
 
-  const [instagram, setInstagram] = useState(provider?.contact?.instagram || '')
-  const [whatsapp, setWhatsapp] = useState(provider?.contact?.whatsapp || '')
-  const [telegram, setTelegram] = useState(provider?.contact?.telegram || '')
-  const [phone, setPhone] = useState(provider?.contact?.phone || '')
-  const [email, setEmail] = useState(provider?.contact?.email || user?.email || '')
+  const [instagram, setInstagram] = useState('')
+  const [whatsapp, setWhatsapp] = useState('')
+  const [telegram, setTelegram] = useState('')
+  const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState(user?.email || '')
 
   const [catalogUploading, setCatalogUploading] = useState(false)
   const [catalogTitle, setCatalogTitle] = useState('')
   const [audioFile, setAudioFile] = useState(null)
   const [coverFile, setCoverFile] = useState(null)
-  const remaining = provider ? Math.max(0, 3 - catalog.length) : 0
 
   // Load profile & catalog from Supabase (effect, not state initializer)
   useEffect(() => {
@@ -72,10 +70,17 @@ export function ManageServices() {
             return copy
           })
         }
+        setInstagram(prof.instagram || '')
+        setWhatsapp(prof.whatsapp || '')
+        setTelegram(prof.telegram || '')
+        setPhone(prof.contact_phone || '')
+        setEmail(prof.contact_email || user?.email || '')
       }
       const cat = await fetchCatalog(user.id)
       if (!active) return
-      setCatalog(cat.map(c => ({ id: c.id, title: c.title, audioUrl: c.audio_url, coverUrl: c.cover_url, ord: c.ord })))
+      const mapped = cat.map(c => ({ id: c.id, title: c.title, audioUrl: c.audio_url, coverUrl: c.cover_url, ord: c.ord }))
+      setCatalog(mapped)
+      setRemaining(Math.max(0, 3 - mapped.length))
       setProfileLoaded(true)
     }
     load()
@@ -149,13 +154,6 @@ export function ManageServices() {
       if (urlErr) throw new Error(urlErr)
       const tagsArr = tagsInput.split(',').map(t=>t.trim()).filter(Boolean)
       // In-memory immediate update (name/avatar mirrored from profile for cards)
-      upsertUserProvider(user, {
-        name: profile?.displayName || user.email?.split('@')[0] || 'Unknown',
-        avatar: profile?.avatarUrl || null,
-        bio,
-        location,
-        tags: tagsArr
-      })
       const computed = computeServices()
       updateUserProviderServices(user, computed)
       updateUserProviderContacts(user, { instagram, whatsapp, telegram, phone, email })
@@ -192,13 +190,14 @@ export function ManageServices() {
         const { publicUrl } = await uploadArtwork(coverFile)
         coverUrl = publicUrl
       }
-      // In-memory
-      const res = addProviderBeat(user.id, { title: catalogTitle.trim(), audioUrl, coverUrl })
-      if (res.error) setError(res.error)
       // Supabase persistence
       const sup = await addCatalogItemSupabase(user.id, { title: catalogTitle.trim(), audioUrl, coverUrl })
       if (sup) {
-        setCatalog(prev => [...prev, { id: sup.id, title: sup.title, audioUrl: sup.audio_url, coverUrl: sup.cover_url, ord: sup.ord }])
+        setCatalog(prev => {
+          const next = [...prev, { id: sup.id, title: sup.title, audioUrl: sup.audio_url, coverUrl: sup.cover_url, ord: sup.ord }]
+          setRemaining(Math.max(0, 3 - next.length))
+          return next
+        })
       }
       setCatalogTitle('')
       setAudioFile(null)
@@ -211,13 +210,16 @@ export function ManageServices() {
   }
 
   const removeItem = async (itemId) => {
-    removeProviderCatalogItem(user.id, itemId)
     await removeCatalogItemSupabase(itemId)
-    setCatalog(prev => prev.filter(c => c.id !== itemId).map((c,i)=> ({...c, ord:i})))
-    await reorderCatalog(user.id, catalog.filter(c=>c.id!==itemId).map(c=>c.id))
+    setCatalog(prev => {
+      const filtered = prev.filter(c => c.id !== itemId)
+      const reord = filtered.map((c,i)=> ({...c, ord:i}))
+      setRemaining(Math.max(0, 3 - reord.length))
+      // Persist new order
+      reorderCatalog(user.id, reord.map(c=>c.id))
+      return reord
+    })
   }
-
-  const refreshedProvider = getProvider(user.id)
 
   const moveItem = async (index, dir) => {
     setCatalog(prev => {
