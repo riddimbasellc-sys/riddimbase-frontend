@@ -24,7 +24,7 @@ export function Beats() {
   const [search, setSearch] = useState(initialSearch)
   const [suggestions, setSuggestions] = useState([])
   const { boosts: boostedBeatsRaw } = useBoostedBeats()
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [viewMode, setViewMode] = useState('grid')
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
   const openShare = (beat) => setShareTarget(beat)
@@ -35,7 +35,7 @@ export function Beats() {
       if (!beats.length) return
       const ids = beats.map((b) => b.id)
       const { likeCounts, favoriteCounts } = await fetchCountsForBeats(ids)
-      const followerCounts: Record<string, number> = {}
+      const followerCounts = {}
       for (const b of beats) {
         if (b.userId) followerCounts[b.userId] = await followerCount(b.userId)
       }
@@ -380,4 +380,3 @@ export function Beats() {
 }
 
 export default Beats
-
