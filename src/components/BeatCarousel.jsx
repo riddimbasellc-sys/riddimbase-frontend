@@ -17,7 +17,7 @@ import { toggleLike, likeCount, isLiked } from '../services/socialService'
  * @property {number} [price]
  */
 
-function TrendingBeatCard({ beat, onAddedToCart }) {
+export function TrendingBeatCard({ beat, onAddedToCart }) {
   const { addBeat } = useCart() || {}
   const { user } = useSupabaseUser()
   const slug = slugify(beat.title || '')
