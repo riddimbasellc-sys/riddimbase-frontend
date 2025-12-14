@@ -256,7 +256,7 @@ export function BeatCarousel({ beats, onAddedToCart }) {
       {/* Embla viewport */}
       <div
         ref={emblaRef}
-        className="overflow-hidden"
+        className="overflow-hidden touch-pan-y overscroll-x-contain"
         tabIndex={0}
         onKeyDown={handleKeyDown}
         aria-label="Trending beats carousel"
