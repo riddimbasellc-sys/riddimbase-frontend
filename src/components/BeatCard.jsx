@@ -39,6 +39,7 @@ export function BeatCard({
   sponsored = false,
   compact = false,
   square = false,
+  mini = false,
   onAddedToCart,
 }) {
   const { addBeat } = useCart() || {}
@@ -192,6 +193,32 @@ export function BeatCard({
       }
 
   const sizeClasses = compact ? 'p-2' : 'p-3'
+
+  // Tiny square variant for dashboard catalog (very small "key" tiles)
+  if (square && mini) {
+    return (
+      <Wrapper
+        {...wrapperProps}
+        className="group relative h-12 w-12 sm:h-14 sm:w-14 overflow-hidden rounded-xl border border-white/15 bg-slate-900/90 shadow-[0_10px_30px_rgba(0,0,0,0.9)] hover:border-red-500/70 transition"
+      >
+        {coverUrl ? (
+          <img
+            src={coverUrl}
+            alt={title || 'Beat artwork'}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="h-full w-full bg-gradient-to-br from-slate-800 via-slate-900 to-black" />
+        )}
+        <div className="absolute inset-0 bg-black/50" />
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="flex h-6 w-6 items-center justify-center rounded-full border border-white/70 bg-black/80 text-[10px] text-white shadow-[0_0_12px_rgba(0,0,0,0.8)] group-hover:border-red-400 group-hover:text-red-300">
+            ▶
+          </div>
+        </div>
+      </Wrapper>
+    )
+  }
 
   // Compact square variant (used for landing page trending carousel)
   if (square && compact) {
