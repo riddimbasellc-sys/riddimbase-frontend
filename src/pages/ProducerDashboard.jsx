@@ -898,9 +898,9 @@ export function ProducerDashboard() {
               </p>
             )}
               {!beatsLoading && myBeats.length > 0 && (
-                <div className="mt-3 grid grid-cols-6 gap-2">
-                  {myBeats.slice(0, 6).map((b) => (
-                    <div key={b.id} className="space-y-2">
+                <div className="mt-3 flex gap-3 overflow-x-auto pb-2">
+                  {myBeats.map((b) => (
+                    <div key={b.id} className="space-y-2 flex-shrink-0">
                       <BeatCard
                         id={b.id}
                         title={b.title}
