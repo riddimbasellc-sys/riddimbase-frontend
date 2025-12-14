@@ -69,8 +69,36 @@ export function Navbar({ onMobileMenuToggle = () => {} }) {
               RiddimBase
             </div>
           </Link>
-          <div className="flex h-9 w-9 items-center justify-center">
-            <NotificationsBell />
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center">
+              <NotificationsBell />
+            </div>
+            {!isAdmin && count > 0 && !user && (
+              <button
+                type="button"
+                onClick={() => setCartOpen((o) => !o)}
+                className="relative flex h-9 w-9 items-center justify-center rounded-full border border-slate-700/70 bg-slate-900/80 text-slate-200 hover:border-emerald-400/70 hover:text-emerald-300 transition"
+                aria-label="Cart"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  className="h-4 w-4"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 8l2-4h8l2 4" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 8h18l-1.5 11a2 2 0 01-2 1.8H6.5a2 2 0 01-2-1.8L3 8z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12v2m6-2v2" />
+                </svg>
+                {count > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-bold text-slate-950">
+                    {count}
+                  </span>
+                )}
+              </button>
+            )}
           </div>
         </div>
 
