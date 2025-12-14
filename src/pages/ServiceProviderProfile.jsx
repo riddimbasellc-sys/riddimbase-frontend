@@ -1,40 +1,22 @@
 import BackButton from '../components/BackButton'
 import { useParams } from 'react-router-dom'
-import { getProvider } from '../services/serviceProvidersService'
 import { useEffect, useState } from 'react'
 import ProfileShareModal from '../components/ProfileShareModal'
 import { fetchProviderProfile, fetchCatalog } from '../services/supabaseProvidersRepository'
 import { BeatPlayer } from '../components/BeatPlayer'
-import { useMemo } from 'react'
 import PayPalButtonsGroup from '../components/payments/PayPalButtonsGroup'
 import { createServiceOrder } from '../services/serviceOrdersService'
 import ProviderReviews from '../components/ProviderReviews'
 
 export function ServiceProviderProfile() {
   const { id } = useParams()
-  const baseProvider = getProvider(id)
-  const [profile, setProfile] = useState(null)
-  const [catalog, setCatalog] = useState([])
+  const [provider, setProvider] = useState(null)
   const [shareOpen, setShareOpen] = useState(false)
   const [bookOpen, setBookOpen] = useState(false)
   const [selectedService, setSelectedService] = useState(null)
   const [buyerName, setBuyerName] = useState('')
   const [buyerEmail, setBuyerEmail] = useState('')
   const [result, setResult] = useState(null)
-  const provider = profile ? {
-    ...baseProvider,
-    bio: profile.bio || baseProvider?.bio || '',
-    location: profile.location || baseProvider?.location || '',
-    tags: (profile.tags ? profile.tags.split(',').filter(Boolean) : baseProvider?.tags) || [],
-    contact: {
-      email: profile.contact_email || baseProvider?.contact?.email,
-      phone: profile.contact_phone || baseProvider?.contact?.phone || '',
-      instagram: profile.instagram || '',
-      whatsapp: profile.whatsapp || '',
-      telegram: profile.telegram || ''
-    },
-    catalog: catalog.length ? catalog : baseProvider?.catalog || []
-  } : baseProvider
 
   useEffect(() => {
     let active = true
@@ -42,8 +24,49 @@ export function ServiceProviderProfile() {
       const prof = await fetchProviderProfile(id)
       const cat = await fetchCatalog(id)
       if (!active) return
-      if (prof) setProfile(prof)
-      if (cat?.length) setCatalog(cat.map(c => ({ id: c.id, title: c.title, audioUrl: c.audio_url, coverUrl: c.cover_url })))
+      if (!prof) {
+        setProvider(null)
+        return
+      }
+      const tags =
+        (prof.tags || '')
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean) || []
+      let services = []
+      if (Array.isArray(prof.services)) {
+        services = prof.services
+      } else if (typeof prof.services === 'string') {
+        try {
+          services = JSON.parse(prof.services) || []
+        } catch {
+          services = []
+        }
+      }
+      const catalog =
+        cat?.map((c) => ({
+          id: c.id,
+          title: c.title,
+          audioUrl: c.audio_url,
+          coverUrl: c.cover_url,
+        })) || []
+
+      setProvider({
+        id,
+        name: prof.display_name || 'Service provider',
+        bio: prof.bio || '',
+        location: prof.location || '',
+        tags,
+        services,
+        contact: {
+          email: prof.contact_email || '',
+          phone: prof.contact_phone || '',
+          instagram: prof.instagram || '',
+          whatsapp: prof.whatsapp || '',
+          telegram: prof.telegram || '',
+        },
+        catalog,
+      })
     }
     load()
     return () => { active = false }
@@ -69,7 +92,7 @@ export function ServiceProviderProfile() {
         </div>
         <p className="mt-1 text-sm text-slate-300">{provider.location}</p>
         <div className="mt-4 flex flex-wrap gap-2">
-          {provider.tags.map(t => (
+          {provider.tags?.map(t => (
             <span key={t} className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-300">{t}</span>
           ))}
         </div>
@@ -80,13 +103,13 @@ export function ServiceProviderProfile() {
             <h2 className="text-sm font-semibold text-slate-100">Services</h2>
             <div className="flex items-center gap-2">
               <button onClick={() => setShareOpen(true)} className="rounded-full bg-slate-800/70 border border-slate-700/60 px-3 py-1.5 text-[10px] text-slate-200 hover:border-emerald-400/60 hover:text-emerald-300 transition">Share Profile</button>
-              {provider.services.length>0 && (
+              {provider.services && provider.services.length>0 && (
                 <button onClick={() => { setBookOpen(true); setSelectedService(provider.services[0]) }} className="rounded-full bg-emerald-500 px-3 py-1.5 text-[10px] font-semibold text-slate-950 hover:bg-emerald-400 transition">Request Service</button>
               )}
             </div>
           </div>
           <ul className="mt-3 divide-y divide-slate-800/60">
-            {provider.services.map(s => (
+            {provider.services?.map(s => (
               <li key={s.name} className="flex items-center justify-between py-2 text-[12px] text-slate-300">
                 <span>{s.name}</span>
                 <div className="flex items-center gap-3">
