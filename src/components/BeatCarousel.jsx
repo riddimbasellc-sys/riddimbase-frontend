@@ -128,7 +128,6 @@ export function BeatCarousel({ beats, onAddedToCart }) {
                   audioUrl={beat.audioUrl}
                   userId={beat.userId}
                   square
-                  compact
                   onAddedToCart={onAddedToCart}
                 />
               </div>
