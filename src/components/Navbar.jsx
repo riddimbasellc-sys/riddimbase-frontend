@@ -222,8 +222,8 @@ export function Navbar({ onMobileMenuToggle = () => {} }) {
               </>
             )}
           </div>
-          {cartOpen && <CartPanel onClose={()=>setCartOpen(false)} />}
         </div>
+        {cartOpen && <CartPanel onClose={()=>setCartOpen(false)} />}
       </div>
     </header>
   )
