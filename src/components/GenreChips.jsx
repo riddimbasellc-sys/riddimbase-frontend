@@ -1,11 +1,12 @@
 const GENRES = [
   'Dancehall',
+  'Trap Dancehall',
   'Reggae',
+  'Afrobeat',
   'Soca',
-  'Afrobeats',
-  'TrapHall',
-  'Lovers Rock',
-  'Dub',
+  'Trap',
+  'Hip Hop',
+  'Drill',
 ]
 
 export function GenreChips() {
