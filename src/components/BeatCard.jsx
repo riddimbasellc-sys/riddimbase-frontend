@@ -199,7 +199,7 @@ export function BeatCard({
     return (
       <Wrapper
         {...wrapperProps}
-        className="group relative h-12 w-12 sm:h-14 sm:w-14 overflow-hidden rounded-xl border border-white/15 bg-slate-900/90 shadow-[0_10px_30px_rgba(0,0,0,0.9)] hover:border-red-500/70 transition"
+        className="group relative h-10 w-10 sm:h-12 sm:w-12 overflow-hidden rounded-xl border border-white/15 bg-slate-900/90 shadow-[0_10px_30px_rgba(0,0,0,0.9)] hover:border-red-500/70 transition"
       >
         {coverUrl ? (
           <img
