@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 // PayPal Subscriptions buttons for plan billing.
 // Uses PayPal JS SDK with intent=subscription and vault=true.
@@ -14,7 +14,7 @@ export default function PayPalSubscriptionButtons({
   onError,
 }) {
   const [ready, setReady] = useState(false)
-  const containerId = useId()
+  const containerRef = useRef(null)
   const clientId = (import.meta.env.VITE_PAYPAL_CLIENT_ID || '').trim()
 
   const sdkUrl = useMemo(() => {
@@ -46,16 +46,17 @@ export default function PayPalSubscriptionButtons({
   }, [sdkUrl, onError])
 
   useEffect(() => {
-    if (!ready || !window.paypal || !paypalPlanId) return
-    const container = document.getElementById(containerId)
-    if (!container) return
-    container.innerHTML = ''
+    if (!ready || !window.paypal || !paypalPlanId || !containerRef.current) return
+
+    // Clear the container before each render
+    containerRef.current.innerHTML = ''
+
     try {
       window.paypal
         .Buttons({
           style: { layout: 'vertical', height: 42, ...(style || {}) },
-          createSubscription: (data, actions) => {
-            return actions.subscription.create({
+          createSubscription: (data, actions) =>
+            actions.subscription.create({
               plan_id: paypalPlanId,
               custom_id:
                 userId && planId
@@ -63,12 +64,9 @@ export default function PayPalSubscriptionButtons({
                   : undefined,
               application_context:
                 payerEmail || payerName
-                  ? {
-                      user_action: 'SUBSCRIBE_NOW',
-                    }
+                  ? { user_action: 'SUBSCRIBE_NOW' }
                   : undefined,
-            })
-          },
+            }),
           onApprove: async (data) => {
             try {
               onSuccess && onSuccess({ subscriptionId: data.subscriptionID, data })
@@ -80,11 +78,11 @@ export default function PayPalSubscriptionButtons({
             onError && onError(err)
           },
         })
-        .render('#' + containerId)
+        .render(containerRef.current)
     } catch (e) {
       onError && onError(e)
     }
-  }, [ready, paypalPlanId, planId, userId, payerEmail, payerName, style, onSuccess, onError, containerId])
+  }, [ready, paypalPlanId, planId, userId, payerEmail, payerName, style, onSuccess, onError])
 
   if (!clientId) {
     return (
@@ -114,7 +112,7 @@ export default function PayPalSubscriptionButtons({
           <p className="text-[11px] text-slate-400">Loading PayPal subscriptions…</p>
         </div>
       )}
-      <div id={containerId} className="rounded-lg border border-slate-800/70 p-3" />
+      <div ref={containerRef} className="rounded-lg border border-slate-800/70 p-3" />
     </div>
   )
 }
