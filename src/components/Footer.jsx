@@ -39,10 +39,10 @@ export function Footer() {
                       href={s.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-900/80 border border-slate-700/70 hover:border-rb-sun-gold hover:bg-slate-900 shadow-rb-gloss-btn transition"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-900/80 border border-slate-700/70 hover:border-red-500 hover:bg-slate-900 shadow-rb-gloss-btn transition"
                       aria-label={s.network}
                     >
-                      <FooterSocialIcon network={s.network} className="h-4 w-4 text-rb-sun-gold" />
+                      <FooterSocialIcon network={s.network} className="h-4 w-4 text-red-400" />
                     </a>
                   ))}
                 </div>
