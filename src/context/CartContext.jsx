@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { getBeat } from '../services/beatsService'
 import { computeBeatQuote } from '../services/paymentsService'
 import { useBeats } from '../hooks/useBeats'
 
@@ -37,10 +36,7 @@ export function CartProvider({ children }) {
   const enriched = useMemo(
     () =>
       items.map((it) => {
-        const localBeat = getBeat(it.beatId)
-        const remoteBeat =
-          remoteBeats.find((b) => b.id === it.beatId) || null
-        const beat = localBeat || remoteBeat || null
+        const beat = remoteBeats.find((b) => b.id === it.beatId) || null
         const quote = computeBeatQuote({ beat, license: it.license })
         return { ...it, beat, quote }
       }),
