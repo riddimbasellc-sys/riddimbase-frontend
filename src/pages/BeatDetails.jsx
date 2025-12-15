@@ -64,6 +64,16 @@ export function BeatDetails() {
   const [comments, setComments] = useState([])
   const [commentText, setCommentText] = useState('')
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false)
+  const [plays, setPlays] = useState(0)
+  const formatCount = (n) => {
+    const num = Number(n || 0)
+    if (!Number.isFinite(num)) return '0'
+    if (num < 1000) return String(Math.floor(num))
+    if (num < 1_000_000) return `${(num / 1000).toFixed(num < 10_000 ? 1 : 0)}k`.replace('.0k', 'k')
+    if (num < 1_000_000_000) return `${(num / 1_000_000).toFixed(num < 10_000_000 ? 1 : 0)}M`.replace('.0M', 'M')
+    return `${(num / 1_000_000_000).toFixed(1)}B`.replace('.0B', 'B')
+  }
+  const playsLabel = useMemo(() => formatCount(plays), [plays])
 
   // If someone lands on /beat/<slug-only>, resolve it to the underlying beat ID without changing the URL.
   useEffect(() => {
@@ -85,6 +95,7 @@ export function BeatDetails() {
     setReposts(await repostCount(id))
     setFavs(await favoriteCount(id))
     if (producerId) setFollowers(await followerCount(producerId))
+    setPlays(getPlayCount(id))
     if (user) {
       setLiked(await isLiked({ userId: user.id, beatId: id }))
       setReposted(await isReposted({ userId: user.id, beatId: id }))
@@ -296,7 +307,7 @@ export function BeatDetails() {
                 {beat?.title || 'Beat'}
               </h1>
               <p className="mt-1 text-[13px] text-slate-300">
-                by {beat?.producer || 'Producer'} · {beat?.genre || 'Genre'} · {beat?.bpm || 0} BPM
+                by {beat?.producer || 'Producer'} · {beat?.genre || 'Genre'} · {beat?.bpm || 0} BPM · {playsLabel} plays
               </p>
 
               <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
