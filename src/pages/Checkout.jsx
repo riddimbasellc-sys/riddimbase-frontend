@@ -69,6 +69,7 @@ export function Checkout() {
     postalCode: '',
     country: '',
   })
+  const [showServiceFeeInfo, setShowServiceFeeInfo] = useState(false)
 
   if (!beat) {
     return (
@@ -381,6 +382,34 @@ export function Checkout() {
                     <span>Coupon {(quote.discountRate * 100).toFixed(0)}%</span>
                     <span>
                       -{quote.currency} {quote.discountAmount.toFixed(2)}
+                    </span>
+                  </p>
+                )}
+                {quote.serviceFee > 0 && (
+                  <p className="flex justify-between">
+                    <span className="relative inline-flex items-center gap-1">
+                      Service Fee
+                      <button
+                        type="button"
+                        className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-slate-500 text-[9px] text-slate-200"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          setShowServiceFeeInfo((v) => !v)
+                        }}
+                        onMouseEnter={() => setShowServiceFeeInfo(true)}
+                        onMouseLeave={() => setShowServiceFeeInfo(false)}
+                      >
+                        i
+                      </button>
+                      {showServiceFeeInfo && (
+                        <span className="absolute left-0 top-5 z-20 w-64 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-[10px] text-slate-100 shadow-lg">
+                          These fees contribute to maintaining and enhancing the platform, ensuring a seamless and secure experience for all users.
+                        </span>
+                      )}
+                    </span>
+                    <span>
+                      {quote.currency} {quote.serviceFee.toFixed(2)}
                     </span>
                   </p>
                 )}
