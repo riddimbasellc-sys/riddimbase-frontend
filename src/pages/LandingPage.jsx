@@ -129,9 +129,6 @@ export default function LandingPage() {
 
   const activeBanner =
     heroBanners.find((b) => b.active) || heroBanners[0] || null
-  const heroSubtitle =
-    activeBanner?.subtitle ||
-    'Discover, sell and license Dancehall, Reggae, Trap Dancehall, Afro-Caribbean and more on a platform built for Caribbean creators, with global reach.'
   const heroFallbackColor = heroSettings.backgroundColor || '#050505'
 
   return (
@@ -187,7 +184,8 @@ export default function LandingPage() {
                   The <span className="text-red-500">Home of Caribbean</span> Beats.
                 </h1>
                 <p className="mt-3 max-w-2xl mx-auto text-sm text-slate-300 sm:text-[15px]">
-                  {heroSubtitle}
+                  Discover, sell and license Dancehall, Reggae, Trap Dancehall, Afro-Caribbean and more on a
+                  platform built for Caribbean creators, with global reach.
                 </p>
 
                 {/* Hero search bar with live suggestions */}
