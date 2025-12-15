@@ -16,6 +16,9 @@ import {
   toggleFollow,
   isFollowing,
   followerCount,
+  toggleRepost,
+  isReposted,
+  repostCount,
   listBeatComments,
   addBeatComment,
   subscribeBeatComments,
@@ -51,6 +54,8 @@ export function BeatDetails() {
   const [liked, setLiked] = useState(false)
   const [favorited, setFavorited] = useState(false)
   const [likes, setLikes] = useState(0)
+  const [reposted, setReposted] = useState(false)
+  const [reposts, setReposts] = useState(0)
   const [favs, setFavs] = useState(0)
   const [following, setFollowing] = useState(false)
   const [followers, setFollowers] = useState(0)
@@ -77,10 +82,12 @@ export function BeatDetails() {
   useEffect(()=> { (async () => {
     if (!id) return
     setLikes(await likeCount(id))
+    setReposts(await repostCount(id))
     setFavs(await favoriteCount(id))
     if (producerId) setFollowers(await followerCount(producerId))
     if (user) {
       setLiked(await isLiked({ userId: user.id, beatId: id }))
+      setReposted(await isReposted({ userId: user.id, beatId: id }))
       setFavorited(await isFavorited({ userId: user.id, beatId: id }))
       if (producerId) setFollowing(await isFollowing({ followerId: user.id, producerId }))
     }
@@ -136,6 +143,17 @@ export function BeatDetails() {
       setFavs(await favoriteCount(id))
     }
   }
+  const handleRepost = async () => {
+    if (!user) return
+    const optimistic = reposted ? reposts - 1 : reposts + 1
+    setReposted(!reposted)
+    setReposts(Math.max(0, optimistic))
+    const res = await toggleRepost({ userId: user.id, beatId: id, producerId })
+    if (res.reposted !== !reposted) {
+      setReposted(res.reposted)
+      setReposts(await repostCount(id))
+    }
+  }
   const handleFollow = async () => {
     if (!user || !producerId) return
     const optimistic = following ? followers - 1 : followers + 1
@@ -150,6 +168,32 @@ export function BeatDetails() {
   const handleAddToCart = () => {
     if (!beat || !selected || !addBeat) return
     addBeat(beat.id, selected)
+  }
+
+  const handleShare = () => {
+    const url = typeof window !== 'undefined' ? window.location.href : ''
+    const title = beat?.title || 'Beat'
+    if (!url) return
+    if (navigator.share) {
+      navigator
+        .share({
+          title,
+          text: `Check out "${title}" on RiddimBase`,
+          url,
+        })
+        .catch(() => {})
+    } else if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard
+        .writeText(url)
+        .then(() => {
+          // eslint-disable-next-line no-alert
+          alert('Link copied to clipboard')
+        })
+        .catch(() => {
+          // eslint-disable-next-line no-alert
+          alert('Could not copy link')
+        })
+    }
   }
 
   // Comments: load + realtime subscription
