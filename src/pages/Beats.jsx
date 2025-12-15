@@ -175,7 +175,7 @@ export function Beats() {
               <input
                 value={search}
                 onChange={handleSearchChange}
-                className="mt-2 w-full rounded-lg border border-slate-700/80 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100 placeholder:text-slate-500 focus:border-rb-trop-cyan focus:outline-none"
+                className="mt-2 w-full rounded-lg border border-slate-700/80 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100 placeholder:text-slate-500 focus:border-red-500 focus:outline-none"
                 placeholder="Keywords or producer"
               />
               {suggestions.length > 0 && (
@@ -405,7 +405,7 @@ export function Beats() {
                 <input
                   value={search}
                   onChange={handleSearchChange}
-                  className="mt-2 w-full rounded-lg border border-slate-700/80 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100 placeholder:text-slate-500 focus:border-rb-trop-cyan focus:outline-none"
+                  className="mt-2 w-full rounded-lg border border-slate-700/80 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100 placeholder:text-slate-500 focus:border-red-500 focus:outline-none"
                   placeholder="Keywords or producer"
                 />
               </div>
