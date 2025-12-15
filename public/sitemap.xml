@@ -2,86 +2,86 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <!-- Core marketing pages -->
   <url>
-    <loc>https://riddimbase.com/</loc>
+    <loc>https://riddimbase.app/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://riddimbase.com/home</loc>
+    <loc>https://riddimbase.app/home</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://riddimbase.com/beats</loc>
+    <loc>https://riddimbase.app/beats</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://riddimbase.com/feed</loc>
+    <loc>https://riddimbase.app/feed</loc>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://riddimbase.com/services</loc>
+    <loc>https://riddimbase.app/services</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://riddimbase.com/producers</loc>
+    <loc>https://riddimbase.app/producers</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://riddimbase.com/soundkits</loc>
+    <loc>https://riddimbase.app/soundkits</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
 
   <!-- Discovery and monetization pages (good for “sell beats online”, “upload beats and earn”) -->
   <url>
-    <loc>https://riddimbase.com/producer/pro</loc>
+    <loc>https://riddimbase.app/producer/pro</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://riddimbase.com/producer/upload</loc>
+    <loc>https://riddimbase.app/producer/upload</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://riddimbase.com/jobs</loc>
+    <loc>https://riddimbase.app/jobs</loc>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
 
   <!-- Pricing / trust / info pages -->
   <url>
-    <loc>https://riddimbase.com/pricing</loc>
+    <loc>https://riddimbase.app/pricing</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://riddimbase.com/about</loc>
+    <loc>https://riddimbase.app/about</loc>
     <changefreq>yearly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://riddimbase.com/faq</loc>
+    <loc>https://riddimbase.app/faq</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://riddimbase.com/support</loc>
+    <loc>https://riddimbase.app/support</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://riddimbase.com/terms</loc>
+    <loc>https://riddimbase.app/terms</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://riddimbase.com/privacy</loc>
+    <loc>https://riddimbase.app/privacy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
