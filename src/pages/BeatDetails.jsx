@@ -292,33 +292,78 @@ export function BeatDetails() {
               </div>
                   
 
-              <h1 className="mt-1 font-display text-2xl font-semibold text-slate-50 leading-tight">{beat?.title || 'Beat'}</h1>
-              <p className="mt-1 text-[13px] text-slate-300">by {beat?.producer || 'Producer'} • {beat?.genre || 'Genre'} • {beat?.bpm || 0} BPM</p>
+              <h1 className="mt-1 font-display text-2xl font-semibold text-slate-50 leading-tight">
+                {beat?.title || 'Beat'}
+              </h1>
+              <p className="mt-1 text-[13px] text-slate-300">
+                by {beat?.producer || 'Producer'} · {beat?.genre || 'Genre'} · {beat?.bpm || 0} BPM
+              </p>
+
               <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
                 <button
                   onClick={handleLike}
-                  className={`rounded-full px-3 py-1 text-[10px] font-semibold border ${liked ? 'border-pink-400/70 bg-pink-500/10 text-pink-200' : 'border-slate-700/70 text-slate-400 hover:border-pink-400/60 hover:text-pink-200'}`}
+                  className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-semibold border ${
+                    liked
+                      ? 'border-pink-400/70 bg-pink-500/10 text-pink-200'
+                      : 'border-slate-700/70 text-slate-400 hover:border-pink-400/60 hover:text-pink-200'
+                  }`}
                 >
-                  Like ƒ?› {likes}
+                  <span>👍</span>
+                  <span>{likes}</span>
                 </button>
+
                 <button
                   onClick={handleRepost}
-                  className={`rounded-full px-3 py-1 text-[10px] font-semibold border ${reposted ? 'border-emerald-400/80 bg-emerald-500/10 text-emerald-300' : 'border-slate-700/70 text-slate-400 hover:border-emerald-400/70 hover:text-emerald-300'}`}
+                  className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-semibold border ${
+                    reposted
+                      ? 'border-emerald-400/80 bg-emerald-500/10 text-emerald-300'
+                      : 'border-slate-700/70 text-slate-400 hover:border-emerald-400/70 hover:text-emerald-300'
+                  }`}
                 >
-                  Repost ƒ?› {reposts}
+                  <span>🔁</span>
+                  <span>{reposts}</span>
                 </button>
+
                 <button
                   type="button"
                   onClick={handleShare}
-                  className="rounded-full px-3 py-1 text-[10px] font-semibold border border-slate-700/70 text-slate-400 hover:border-sky-400/70 hover:text-sky-200"
+                  className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-semibold border border-slate-700/70 text-slate-400 hover:border-sky-400/70 hover:text-sky-200"
                 >
-                  Share
+                  <span>📤</span>
+                  <span>Share</span>
                 </button>
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
-                <button onClick={handleFav} className={`rounded-full px-3 py-1 text-[10px] font-semibold border ${favorited ? 'border-amber-400/70 bg-amber-500/10 text-amber-300' : 'border-slate-700/70 text-slate-400 hover:border-amber-400/60 hover:text-amber-300'}`}>★ {favs}</button>
-                {producerId && <button onClick={handleFollow} className={`rounded-full px-3 py-1 text-[10px] font-semibold border ${following ? 'border-emerald-400/80 bg-emerald-500/10 text-emerald-300' : 'border-slate-700/70 text-slate-400 hover:border-emerald-400/70 hover:text-emerald-300'}`}>{following ? 'Following' : 'Follow'} • {followers}</button>}
-                <button onClick={()=>setReportOpen(true)} className="rounded-full px-3 py-1 text-[10px] font-semibold border border-slate-700/70 text-slate-400 hover:border-rose-400/60 hover:text-rose-300">Report</button>
+
+                <button
+                  onClick={handleFav}
+                  className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-semibold border ${
+                    favorited
+                      ? 'border-amber-400/70 bg-amber-500/10 text-amber-300'
+                      : 'border-slate-700/70 text-slate-400 hover:border-amber-400/60 hover:text-amber-300'
+                  }`}
+                >
+                  <span>★</span>
+                  <span>{favs}</span>
+                </button>
+
+                {producerId && (
+                  <button
+                    onClick={handleFollow}
+                    className={`rounded-full px-3 py-1 text-[10px] font-semibold border ${
+                      following
+                        ? 'border-emerald-400/80 bg-emerald-500/10 text-emerald-300'
+                        : 'border-slate-700/70 text-slate-400 hover:border-emerald-400/70 hover:text-emerald-300'
+                    }`}
+                  >
+                    {following ? 'Following' : 'Follow'} · {followers}
+                  </button>
+                )}
+
+                <button
+                  onClick={() => setReportOpen(true)}
+                  className="rounded-full px-3 py-1 text-[10px] font-semibold border border-slate-700/70 text-slate-400 hover:border-rose-400/60 hover:text-rose-300"
+                >
+                  Report
+                </button>
               </div>
               <div className="mt-4">
                 <BeatPlayer
