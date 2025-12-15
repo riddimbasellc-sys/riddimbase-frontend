@@ -194,7 +194,7 @@ export async function followerCount(producerId) {
 }
 
 // Reposts (share beats into follower feeds)
-export async function toggleRepost({ userId, beatId }) {
+export async function toggleRepost({ userId, beatId, producerId }) {
   if (!userId || !beatId) return { success: false }
   const existing = await supabase
     .from('reposts')
@@ -207,6 +207,39 @@ export async function toggleRepost({ userId, beatId }) {
     return { reposted: false }
   } else {
     await supabase.from('reposts').insert({ user_id: userId, beat_id: beatId })
+
+    // Notify producer that their beat was reposted
+    if (producerId && producerId !== userId) {
+      try {
+        const [{ data: profile }, { data: beat }] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('display_name,email')
+            .eq('id', userId)
+            .maybeSingle(),
+          supabase
+            .from('beats')
+            .select('title')
+            .eq('id', beatId)
+            .maybeSingle(),
+        ])
+        const actorName =
+          profile?.display_name || profile?.email || 'User'
+        await addNotification({
+          recipientId: producerId,
+          actorId: userId,
+          type: 'repost',
+          data: {
+            user: actorName,
+            beatTitle: beat?.title || null,
+            beatId,
+          },
+        })
+      } catch {
+        // ignore notification failure
+      }
+    }
+
     return { reposted: true }
   }
 }
@@ -559,7 +592,7 @@ export async function fetchProfilesByIds(ids = []) {
   return data || []
 }
 
-// Beats reposted by people the user follows (for feed sections)
+// Beats reposted by people the user follows (and by the user themselves) for feed sections
 export async function fetchRepostedBeatIdsForUser(userId, { limit = 24 } = {}) {
   if (!userId) return []
   // Get producers this user follows
@@ -567,13 +600,14 @@ export async function fetchRepostedBeatIdsForUser(userId, { limit = 24 } = {}) {
     .from('follows')
     .select('producer_id')
     .eq('follower_id', userId)
-  const producerIds = (followRows || []).map((r) => r.producer_id)
-  if (!producerIds.length) return []
+  const producerIds = (followRows || []).map((r) => r.producer_id).filter(Boolean)
+  const userIds = Array.from(new Set([...producerIds, userId]))
+  if (!userIds.length) return []
 
   const { data: repostRows } = await supabase
     .from('reposts')
     .select('beat_id, user_id, created_at')
-    .in('user_id', producerIds)
+    .in('user_id', userIds)
     .order('created_at', { ascending: false })
     .limit(limit)
 
