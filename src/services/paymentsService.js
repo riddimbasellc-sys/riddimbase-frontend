@@ -35,9 +35,9 @@ export function computeBeatQuote({ beat, license, currency = 'USD', coupon }) {
   // We treat all amounts as already expressed in the selected currency.
   // PayPal handles any real FX conversion at checkout.
   const fx = (v) => v
-  const serviceFeeRate = 0
-  const serviceFeeUSD = 0
-  const grandUSD = totalUSD
+  const serviceFeeRate = 0.12
+  const serviceFeeUSD = totalUSD * serviceFeeRate
+  const grandUSD = totalUSD + serviceFeeUSD
   return {
     base: baseUSD,
     multiplier: m,
@@ -70,9 +70,9 @@ export function computeCartQuote({ items = [], currency = 'USD', coupon }) {
   const subtotalUSD = perItem.reduce((sum, p) => sum + p.subtotalUSD, 0)
   const couponDiscountUSD = subtotalUSD * discountRate
   const totalUSD = subtotalUSD - couponDiscountUSD
-  const serviceFeeRate = 0
-  const serviceFeeUSD = 0
-  const grandUSD = totalUSD
+  const serviceFeeRate = 0.12
+  const serviceFeeUSD = totalUSD * serviceFeeRate
+  const grandUSD = totalUSD + serviceFeeUSD
 
   // No FX conversion: values are already in the display currency.
   const fx = v => v
