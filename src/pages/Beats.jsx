@@ -7,7 +7,9 @@ import useSupabaseUser from '../hooks/useSupabaseUser'
 import ProfileShareModal from '../components/ProfileShareModal'
 import { fetchCountsForBeats, followerCount } from '../services/socialService'
 import { useBoostedBeats } from '../hooks/useBoostedBeats'
-import { useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
+import { useCart } from '../context/CartContext'
+import { slugify } from '../utils/slugify'
 
 export function Beats() {
   const { beats, loading } = useBeats()
@@ -300,19 +302,35 @@ export function Beats() {
                   </span>
                 </div>
                 <div className="mt-3">
-                  <ScrollableGrid gridClassName="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                    {boostedFilteredBeats.map((b) => (
-                      <TrendingBeatCard key={b.id} beat={b} />
-                    ))}
-                  </ScrollableGrid>
+                  {viewMode === 'grid' ? (
+                    <ScrollableGrid gridClassName="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                      {boostedFilteredBeats.map((b) => (
+                        <TrendingBeatCard key={b.id} beat={b} />
+                      ))}
+                    </ScrollableGrid>
+                  ) : (
+                    <ScrollableGrid gridClassName="space-y-2">
+                      {boostedFilteredBeats.map((b) => (
+                        <BeatListRow key={b.id} beat={b} />
+                      ))}
+                    </ScrollableGrid>
+                  )}
                 </div>
               </div>
             )}
 
-            <ScrollableGrid gridClassName={mainGridClasses}>
-              {!loading &&
-                filteredBeats.map((b) => <TrendingBeatCard key={b.id} beat={b} />)}
-            </ScrollableGrid>
+            {viewMode === 'grid' ? (
+              <ScrollableGrid gridClassName={mainGridClasses}>
+                {!loading &&
+                  filteredBeats.map((b) => (
+                    <TrendingBeatCard key={b.id} beat={b} />
+                  ))}
+              </ScrollableGrid>
+            ) : (
+              <ScrollableGrid gridClassName="space-y-2">
+                {!loading && filteredBeats.map((b) => <BeatListRow key={b.id} beat={b} />)}
+              </ScrollableGrid>
+            )}
 
             <ProfileShareModal
               open={!!shareTarget}
@@ -428,3 +446,70 @@ export function Beats() {
 }
 
 export default Beats
+
+function BeatListRow({ beat }) {
+  const { addBeat } = useCart() || {}
+  const slug = slugify(beat?.title || '')
+  const to = slug ? `/beat/${beat.id}-${slug}` : `/beat/${beat.id}`
+
+  const coverUrl = beat?.coverUrl || beat?.cover_url || null
+  const title = beat?.title || 'Untitled Beat'
+  const producer = beat?.producer || 'Unknown'
+  const free = !!beat?.freeDownload
+  const price =
+    typeof beat?.price === 'number' ? beat.price : Number(beat?.price || 0)
+
+  const handleAdd = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (addBeat) addBeat(beat.id, 'Basic')
+  }
+
+  return (
+    <Link
+      to={to}
+      state={{ beat }}
+      className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-900/60 px-3 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.55)] backdrop-blur transition hover:border-red-500/60 hover:bg-slate-900/80"
+    >
+      <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl bg-slate-800">
+        {coverUrl ? (
+          <img
+            src={coverUrl}
+            alt={title}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="h-full w-full bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950" />
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <p className="min-w-0 truncate text-[12px] font-semibold text-slate-50">
+            {title}
+          </p>
+          {free ? (
+            <span className="flex-shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-200">
+              FREE
+            </span>
+          ) : (
+            <span className="flex-shrink-0 rounded-full bg-slate-950/60 px-2 py-0.5 text-[10px] font-semibold text-slate-200">
+              ${Number.isFinite(price) ? price.toFixed(2) : '0.00'}
+            </span>
+          )}
+        </div>
+        <p className="mt-0.5 truncate text-[11px] text-slate-400">{producer}</p>
+      </div>
+
+      <button
+        type="button"
+        onClick={handleAdd}
+        className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-sky-500/90 text-[14px] text-white shadow-[0_0_24px_rgba(56,189,248,0.35)] transition hover:bg-sky-400"
+        aria-label="Add to cart"
+        title="Add to cart"
+      >
+        🛍
+      </button>
+    </Link>
+  )
+}
