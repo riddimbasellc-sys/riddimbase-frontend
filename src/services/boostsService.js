@@ -1,52 +1,38 @@
-// Lightweight boost service (localStorage-based prototype).
-// Later can be wired to Supabase `boosted_beats` table.
+// Supabase-backed boosts helpers (via backend HTTP APIs).
+// All live boost data comes from the server, which in turn uses the
+// `boosted_beats` table. No localStorage or in-memory prototypes.
 
-const LS_KEY = 'rb_boosts_v2'
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
 
-function readBoosts() {
-  try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]') } catch { return [] }
+function baseUrl(path) {
+  return API_BASE ? `${API_BASE}${path}` : path
 }
 
-function writeBoosts(arr) {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(arr)) } catch {}
-}
-
-export function createLocalBoost({ beatId, producerId, tier }) {
-  const tiers = { 1: 3, 2: 7, 3: 30 }
-  const days = tiers[tier] || 3
-  const now = Date.now()
-  const expiresAt = now + days * 24 * 60 * 60 * 1000
-  const priorityScore = (tier || 1) * 100
-
-  const boosts = readBoosts().filter(b => !(b.beatId === beatId && b.producerId === producerId))
-  const record = {
-    id: 'local_' + beatId,
-    beatId,
-    producerId,
-    tier,
-    priorityScore,
-    startsAt: now,
-    expiresAt,
+export async function listActiveBoosts() {
+  try {
+    const res = await fetch(baseUrl('/api/boosted'), {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    if (!res.ok) return []
+    const data = await res.json().catch(() => [])
+    return Array.isArray(data) ? data : []
+  } catch {
+    return []
   }
-  boosts.push(record)
-  writeBoosts(boosts)
-  return record
 }
 
-export function listActiveBoosts() {
-  const now = Date.now()
-  return readBoosts()
-    .filter(b => b.expiresAt > now)
-    .sort((a, b) => b.priorityScore - a.priorityScore || b.startsAt - a.startsAt)
+export async function isBeatBoosted(beatId) {
+  if (!beatId) return false
+  const boosts = await listActiveBoosts()
+  return boosts.some((b) => b.beat_id === beatId || b.beatId === beatId)
 }
 
-export function isBeatBoosted(beatId) {
-  const now = Date.now()
-  return readBoosts().some(b => b.beatId === beatId && b.expiresAt > now)
-}
-
-export function getBoostForBeat(beatId) {
-  const now = Date.now()
-  return readBoosts().find(b => b.beatId === beatId && b.expiresAt > now) || null
+export async function getBoostForBeat(beatId) {
+  if (!beatId) return null
+  const boosts = await listActiveBoosts()
+  return (
+    boosts.find((b) => b.beat_id === beatId || b.beatId === beatId) || null
+  )
 }
 
