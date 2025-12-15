@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import ProducerLayout from '../components/ProducerLayout'
 import ProfileShareModal from '../components/ProfileShareModal'
@@ -6,6 +6,7 @@ import { BeatCard } from '../components/BeatCard'
 import useSupabaseUser from '../hooks/useSupabaseUser'
 import useUserProfile from '../hooks/useUserProfile'
 import BackButton from '../components/BackButton'
+import { slugify } from '../utils/slugify'
 import {
   totalEarnings,
   monthlySalesCount,
@@ -956,51 +957,19 @@ export function ProducerDashboard() {
               </p>
             )}
               {!beatsLoading && myBeats.length > 0 && (
-                <div className="mt-3 flex gap-3 overflow-x-auto pb-2">
-                  {myBeats.map((b) => (
-                    <div key={b.id} className="space-y-2 flex-shrink-0">
-                      <BeatCard
-                        id={b.id}
-                        title={b.title}
-                        producer={b.producer || displayName}
-                        userId={b.userId || user.id}
-                        genre={b.genre}
-                        bpm={b.bpm}
-                        price={Number(b.price) || 0}
-                        coverUrl={b.coverUrl}
-                        audioUrl={b.audioUrl}
-                        freeDownload={b.freeDownload}
-                        initialLikes={b.likes || 0}
-                        initialFavs={b.favs || 0}
-                        initialFollowers={0}
-                        square
-                        mini
+                <div className="mt-3 max-h-[520px] overflow-y-auto overscroll-y-contain pr-1">
+                  <div className="space-y-2">
+                    {myBeats.map((b) => (
+                      <BeatCatalogRow
+                        key={b.id}
+                        beat={b}
+                        fallbackProducer={displayName}
+                        onBoost={() => boostBeat(b.id)}
+                        onEdit={() => setEditingBeat(b)}
+                        onDelete={() => removeBeat(b.id)}
                       />
-                      <div className="flex flex-wrap items-center gap-2 text-[10px]">
-                        <button
-                          type="button"
-                          onClick={() => boostBeat(b.id)}
-                          className="rounded-full bg-red-500 px-3 py-1 text-[10px] font-semibold text-slate-50 hover:bg-red-400"
-                        >
-                          Boost beat
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditingBeat(b)}
-                          className="rounded-full border border-slate-700/80 px-3 py-1 text-[10px] font-medium text-slate-200 hover:border-emerald-400/70 hover:text-emerald-200"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removeBeat(b.id)}
-                          className="rounded-full border border-slate-700/80 px-3 py-1 text-[10px] font-medium text-slate-300 hover:border-red-400/70 hover:text-red-200"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               )}
           </div>
@@ -1548,6 +1517,74 @@ function EditBeatModal({ beat, onClose, onSave }) {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  )
+}
+
+function BeatCatalogRow({ beat, fallbackProducer, onBoost, onEdit, onDelete }) {
+  const title = beat?.title || 'Untitled Beat'
+  const producer = beat?.producer || fallbackProducer || 'Producer'
+  const coverUrl = beat?.coverUrl || beat?.cover_url || null
+  const slug = slugify(title || '')
+  const to = slug ? `/beat/${beat.id}-${slug}` : `/beat/${beat.id}`
+
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-slate-800/80 bg-slate-950/40 px-3 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.55)]">
+      <Link to={to} state={{ beat }} className="flex min-w-0 flex-1 items-center gap-3">
+        <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl bg-slate-800">
+          {coverUrl ? (
+            <img src={coverUrl} alt={title} className="h-full w-full object-cover" />
+          ) : (
+            <div className="h-full w-full bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950" />
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[12px] font-semibold text-slate-50">{title}</p>
+          <p className="mt-0.5 truncate text-[11px] text-slate-400">{producer}</p>
+          <div className="mt-1 flex flex-wrap gap-2 text-[10px] text-slate-500">
+            {beat?.bpm ? <span>{beat.bpm} BPM</span> : null}
+            {beat?.musicalKey ? <span>{beat.musicalKey}</span> : null}
+            {beat?.genre ? <span className="truncate">{beat.genre}</span> : null}
+          </div>
+        </div>
+      </Link>
+
+      <div className="flex flex-shrink-0 items-center gap-2 text-[10px]">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onBoost?.()
+          }}
+          className="rounded-full bg-red-500 px-3 py-1 font-semibold text-slate-50 hover:bg-red-400"
+        >
+          Boost
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onEdit?.()
+          }}
+          className="rounded-full border border-slate-700/80 px-3 py-1 font-medium text-slate-200 hover:border-emerald-400/70 hover:text-emerald-200"
+        >
+          Edit
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onDelete?.()
+          }}
+          className="rounded-full border border-slate-700/80 px-3 py-1 font-medium text-slate-300 hover:border-red-400/70 hover:text-red-200"
+        >
+          Delete
+        </button>
       </div>
     </div>
   )
