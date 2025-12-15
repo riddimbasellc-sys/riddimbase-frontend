@@ -3,18 +3,38 @@ export function About() {
   return (
     <section className="mx-auto max-w-4xl px-4 py-12">
       <BackButton />
-      <h1 className="mt-2 font-display text-2xl font-semibold text-slate-50">About RiddimBase</h1>
-      <p className="mt-4 text-sm leading-relaxed text-slate-300">RiddimBase is a dedicated marketplace and creative hub for Caribbean-influenced production: dancehall, reggae, soca, afrobeats crossover and emerging hybrid sounds. We help producers showcase catalogues, connect with artists and offer transparent licensing tiers.</p>
-      <h2 className="mt-8 text-sm font-semibold text-slate-200">Mission</h2>
-      <p className="mt-2 text-sm text-slate-400">Empower authentic Caribbean music creation globally with fair pricing, modern tooling and community-driven discovery.</p>
-      <h2 className="mt-8 text-sm font-semibold text-slate-200">What We Provide</h2>
-      <ul className="mt-2 space-y-2 text-sm text-slate-400 list-disc list-inside">
-        <li>Streamlined beat licensing across clear tiers</li>
-        <li>Producer profile pages with media & social presence</li>
-        <li>Real-time engagement metrics for transparency</li>
-        <li>Anonymous reporting & moderation for trust & safety</li>
-        <li>Upcoming collaboration & stems marketplace features</li>
+      <h1 className="mt-2 font-display text-2xl font-semibold text-slate-50">
+        About RiddimBase
+      </h1>
+      <p className="mt-4 text-sm leading-relaxed text-slate-300">
+        RiddimBase is a modern marketplace built to empower Caribbean producers
+        and beat makers around the world.
+      </p>
+      <p className="mt-3 text-sm leading-relaxed text-slate-300">
+        Our mission is simple: give producers the tools, visibility, and freedom
+        to monetize their sound—without the barriers of traditional platforms.
+      </p>
+      <p className="mt-3 text-sm leading-relaxed text-slate-300">
+        From dancehall and reggae to afrobeats, soca, and Caribbean-influenced
+        trap, RiddimBase is designed to showcase authentic sounds while making
+        it easy for artists to license, sell, and promote their beats.
+      </p>
+
+      <h2 className="mt-8 text-sm font-semibold text-slate-200">
+        What We Offer
+      </h2>
+      <ul className="mt-2 space-y-2 text-sm text-slate-300 list-disc list-inside">
+        <li>A dedicated marketplace for Caribbean beats</li>
+        <li>Secure licensing and instant file delivery</li>
+        <li>Producer dashboards with performance insights</li>
+        <li>Real-time sales and activity notifications</li>
+        <li>A growing community of creators and artists</li>
       </ul>
+
+      <p className="mt-8 text-sm leading-relaxed text-slate-300">
+        RiddimBase is more than a platform — it’s a home for producers building
+        global careers from their sound.
+      </p>
     </section>
   )
 }
