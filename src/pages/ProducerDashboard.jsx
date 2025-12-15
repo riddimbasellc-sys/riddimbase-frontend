@@ -450,34 +450,33 @@ export function ProducerDashboard() {
         license_prices: licensePrices,
         free_download: !!updated.freeDownload,
       }
-      const saved = await createBeat(payload)
 
-      if (saved && saved.id) {
-        setManagedBeats((prev) =>
-          prev.map((b) =>
-            b.id === saved.id
-              ? {
-                  ...b,
-                  title: saved.title ?? b.title,
-                  description: saved.description || '',
-                  genre: saved.genre || b.genre,
-                  bpm: saved.bpm || b.bpm,
-                  price: saved.price || b.price,
-                  musicalKey: saved.musical_key || b.musicalKey,
-                  coverUrl: saved.cover_url || b.coverUrl,
-                  bundleUrl: saved.bundle_url || b.bundleUrl,
-                  bundleName: saved.bundle_name || b.bundleName,
-                  collaborator: saved.collaborator || b.collaborator,
-                  licensePrices: saved.license_prices || b.licensePrices,
-                  freeDownload:
-                    typeof saved.free_download === 'boolean'
-                      ? saved.free_download
-                      : b.freeDownload,
-                }
-              : b,
-          ),
-        )
-      }
+      // Persist to Supabase (upsert), but update UI state from the
+      // merged view-model so changes are always reflected immediately.
+      const saved = await createBeat(payload)
+      const targetId = saved && saved.id ? saved.id : updated.id
+
+      setManagedBeats((prev) =>
+        prev.map((b) =>
+          b.id === targetId
+            ? {
+                ...b,
+                title: updated.title || b.title,
+                description: updated.description || '',
+                genre: updated.genre || b.genre,
+                bpm: updated.bpm ? Number(updated.bpm) : b.bpm,
+                price: updated.price ? Number(updated.price) : b.price,
+                musicalKey: updated.musicalKey || b.musicalKey,
+                coverUrl: coverUrl || b.coverUrl,
+                bundleUrl: bundleUrl || b.bundleUrl,
+                bundleName: bundleName || b.bundleName,
+                collaborator: updated.collaborator || b.collaborator,
+                licensePrices: licensePrices || b.licensePrices,
+                freeDownload: !!updated.freeDownload,
+              }
+            : b,
+        ),
+      )
     } finally {
       setEditingBeat(null)
     }
