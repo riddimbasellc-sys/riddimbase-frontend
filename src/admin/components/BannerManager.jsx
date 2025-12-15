@@ -113,7 +113,7 @@ export function BannerManager({
                   <div>
                     <FilePickerButton
                       label="Background image / video"
-                      accept="image/,video/"
+                      accept="image/*,video/*"
                       onSelect={(file) => handleBackgroundSelect(index, file)}
                       progress={0}
                       file={null}
