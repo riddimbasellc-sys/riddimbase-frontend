@@ -16,6 +16,7 @@ export function useBeats() {
             data.map((b) => ({
               id: b.id,
               title: b.title,
+              createdAt: b.created_at || null,
               producer: b.producer || 'Unknown',
               collaborator: b.collaborator || null,
               musicalKey: b.musical_key || null,
