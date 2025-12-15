@@ -19,6 +19,7 @@ export function JobsBoard() {
   const [genre, setGenre] = useState('all')
   const [minBudget] = useState('')
   const [maxBudget] = useState('')
+  const [viewMode, setViewMode] = useState('grid')
 
   useEffect(() => {
     load()
@@ -83,10 +84,82 @@ export function JobsBoard() {
   return (
     <div className="mx-auto max-w-7xl px-3 py-6 sm:px-4 sm:py-8">
       <div className="mb-5 flex flex-col gap-3 md:mb-6 md:flex-row md:items-center md:justify-between">
-        <h1 className="text-xl font-semibold tracking-tight text-slate-100 sm:text-2xl">
-          Job Requests
-        </h1>
-        <div className="flex gap-3">
+        <div className="flex items-center justify-between gap-3 md:justify-start">
+          <h1 className="text-xl font-semibold tracking-tight text-slate-100 sm:text-2xl">
+            Job Requests
+          </h1>
+          <div className="flex items-center gap-2 md:hidden">
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              className={`flex h-8 w-8 items-center justify-center rounded-full border text-[12px] ${
+                viewMode === 'list'
+                  ? 'border-emerald-400 bg-slate-900 text-emerald-300'
+                  : 'border-slate-700 bg-slate-900 text-slate-300'
+              }`}
+              aria-label="List view"
+            >
+              <span className="flex flex-col gap-[2px]">
+                <span className="h-[2px] w-4 rounded bg-current" />
+                <span className="h-[2px] w-4 rounded bg-current" />
+                <span className="h-[2px] w-4 rounded bg-current" />
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('grid')}
+              className={`flex h-8 w-8 items-center justify-center rounded-full border text-[12px] ${
+                viewMode === 'grid'
+                  ? 'border-emerald-400 bg-slate-900 text-emerald-300'
+                  : 'border-slate-700 bg-slate-900 text-slate-300'
+              }`}
+              aria-label="Grid view"
+            >
+              <span className="grid h-3 w-3 grid-cols-2 gap-[2px]">
+                <span className="rounded bg-current" />
+                <span className="rounded bg-current" />
+                <span className="rounded bg-current" />
+                <span className="rounded bg-current" />
+              </span>
+            </button>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              className={`flex h-8 w-8 items-center justify-center rounded-full border text-[12px] ${
+                viewMode === 'list'
+                  ? 'border-emerald-400 bg-slate-900 text-emerald-300'
+                  : 'border-slate-700 bg-slate-900 text-slate-300'
+              }`}
+              aria-label="List view"
+            >
+              <span className="flex flex-col gap-[2px]">
+                <span className="h-[2px] w-4 rounded bg-current" />
+                <span className="h-[2px] w-4 rounded bg-current" />
+                <span className="h-[2px] w-4 rounded bg-current" />
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('grid')}
+              className={`flex h-8 w-8 items-center justify-center rounded-full border text-[12px] ${
+                viewMode === 'grid'
+                  ? 'border-emerald-400 bg-slate-900 text-emerald-300'
+                  : 'border-slate-700 bg-slate-900 text-slate-300'
+              }`}
+              aria-label="Grid view"
+            >
+              <span className="grid h-3 w-3 grid-cols-2 gap-[2px]">
+                <span className="rounded bg-current" />
+                <span className="rounded bg-current" />
+                <span className="rounded bg-current" />
+                <span className="rounded bg-current" />
+              </span>
+            </button>
+          </div>
           <button
             onClick={() => navigate('/jobs/post')}
             className="rounded-full bg-rb-trop-sunrise px-5 py-2 text-sm font-semibold text-slate-950 shadow-rb-gloss-btn hover:brightness-110 transition"
@@ -196,7 +269,13 @@ export function JobsBoard() {
             No jobs found.
           </div>
         )}
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div
+          className={
+            viewMode === 'grid'
+              ? 'grid gap-5 sm:grid-cols-2 lg:grid-cols-3'
+              : 'grid gap-5 grid-cols-1'
+          }
+        >
           {jobs.map((j) => (
             <JobCard key={j.id} job={j} />
           ))}

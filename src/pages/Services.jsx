@@ -8,6 +8,7 @@ import ScrollableGrid from '../components/ScrollableGrid'
 
 export function Services() {
   const [providers, setProviders] = useState([])
+  const [viewMode, setViewMode] = useState('grid')
 
   useEffect(() => {
     let active = true
@@ -64,15 +65,98 @@ export function Services() {
   return (
     <section className="bg-slate-950/95">
       <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-10">
-        <div className="flex items-center gap-3">
-          <BackButton />
-          <h1 className="font-display text-xl font-semibold text-slate-50 sm:text-2xl">Production Services</h1>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <BackButton />
+            <div>
+              <h1 className="font-display text-xl font-semibold text-slate-50 sm:text-2xl">
+                Production Services
+              </h1>
+              <p className="mt-1 max-w-2xl text-xs text-slate-300 sm:text-sm">
+                Browse engineers and producers offering mix &amp; master, custom beats, studio
+                sessions and more.
+              </p>
+            </div>
+          </div>
+          <div className="hidden md:flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              className={`flex h-8 w-8 items-center justify-center rounded-full border text-[12px] ${
+                viewMode === 'list'
+                  ? 'border-emerald-400 bg-slate-900 text-emerald-300'
+                  : 'border-slate-700 bg-slate-900 text-slate-300'
+              }`}
+              aria-label="List view"
+            >
+              <span className="flex flex-col gap-[2px]">
+                <span className="h-[2px] w-4 rounded bg-current" />
+                <span className="h-[2px] w-4 rounded bg-current" />
+                <span className="h-[2px] w-4 rounded bg-current" />
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('grid')}
+              className={`flex h-8 w-8 items-center justify-center rounded-full border text-[12px] ${
+                viewMode === 'grid'
+                  ? 'border-emerald-400 bg-slate-900 text-emerald-300'
+                  : 'border-slate-700 bg-slate-900 text-slate-300'
+              }`}
+              aria-label="Grid view"
+            >
+              <span className="grid h-3 w-3 grid-cols-2 gap-[2px]">
+                <span className="rounded bg-current" />
+                <span className="rounded bg-current" />
+                <span className="rounded bg-current" />
+                <span className="rounded bg-current" />
+              </span>
+            </button>
+          </div>
         </div>
-        <p className="mt-1 max-w-2xl text-xs text-slate-300 sm:text-sm">
-          Browse engineers and producers offering mix & master, custom beats, studio sessions and more.
-        </p>
+        <div className="mt-4 flex items-center justify-end gap-2 md:hidden">
+          <button
+            type="button"
+            onClick={() => setViewMode('list')}
+            className={`flex h-8 w-8 items-center justify-center rounded-full border text-[12px] ${
+              viewMode === 'list'
+                ? 'border-emerald-400 bg-slate-900 text-emerald-300'
+                : 'border-slate-700 bg-slate-900 text-slate-300'
+            }`}
+            aria-label="List view"
+          >
+            <span className="flex flex-col gap-[2px]">
+              <span className="h-[2px] w-4 rounded bg-current" />
+              <span className="h-[2px] w-4 rounded bg-current" />
+              <span className="h-[2px] w-4 rounded bg-current" />
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('grid')}
+            className={`flex h-8 w-8 items-center justify-center rounded-full border text-[12px] ${
+              viewMode === 'grid'
+                ? 'border-emerald-400 bg-slate-900 text-emerald-300'
+                : 'border-slate-700 bg-slate-900 text-slate-300'
+            }`}
+            aria-label="Grid view"
+          >
+            <span className="grid h-3 w-3 grid-cols-2 gap-[2px]">
+              <span className="rounded bg-current" />
+              <span className="rounded bg-current" />
+              <span className="rounded bg-current" />
+              <span className="rounded bg-current" />
+            </span>
+          </button>
+        </div>
         <div className="mt-6 sm:mt-8">
-          <ScrollableGrid gridClassName="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ScrollableGrid
+            gridClassName={
+              viewMode === 'grid'
+                ? 'grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-3'
+                : 'space-y-3'
+            }
+          >
             {providers.map((p) => (
               <Link
                 key={p.id}

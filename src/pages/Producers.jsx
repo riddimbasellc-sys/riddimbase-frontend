@@ -10,6 +10,7 @@ export function Producers() {
   const { beats } = useBeats()
   const [profiles, setProfiles] = useState({})
   const [proMap, setProMap] = useState({})
+  const [viewMode, setViewMode] = useState('grid')
   const map = {}
   for (const b of beats) {
     if (!b.userId) continue
@@ -63,12 +64,94 @@ export function Producers() {
   return (
     <section className="bg-slate-950/95">
       <div className="mx-auto max-w-6xl px-4 py-10">
-        <div className="flex items-center gap-3">
-          <BackButton />
-          <h1 className="font-display text-2xl font-semibold text-slate-50">Producers</h1>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <BackButton />
+            <div>
+              <h1 className="font-display text-2xl font-semibold text-slate-50">Producers</h1>
+              <p className="mt-1 text-sm text-slate-300">
+                Browse active producers and explore their catalogs.
+              </p>
+            </div>
+          </div>
+          <div className="hidden md:flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              className={`flex h-8 w-8 items-center justify-center rounded-full border text-[12px] ${
+                viewMode === 'list'
+                  ? 'border-emerald-400 bg-slate-900 text-emerald-300'
+                  : 'border-slate-700 bg-slate-900 text-slate-300'
+              }`}
+              aria-label="List view"
+            >
+              <span className="flex flex-col gap-[2px]">
+                <span className="h-[2px] w-4 rounded bg-current" />
+                <span className="h-[2px] w-4 rounded bg-current" />
+                <span className="h-[2px] w-4 rounded bg-current" />
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('grid')}
+              className={`flex h-8 w-8 items-center justify-center rounded-full border text-[12px] ${
+                viewMode === 'grid'
+                  ? 'border-emerald-400 bg-slate-900 text-emerald-300'
+                  : 'border-slate-700 bg-slate-900 text-slate-300'
+              }`}
+              aria-label="Grid view"
+            >
+              <span className="grid h-3 w-3 grid-cols-2 gap-[2px]">
+                <span className="rounded bg-current" />
+                <span className="rounded bg-current" />
+                <span className="rounded bg-current" />
+                <span className="rounded bg-current" />
+              </span>
+            </button>
+          </div>
         </div>
-        <p className="mt-1 text-sm text-slate-300">Browse active producers and explore their catalogs.</p>
-        <ScrollableGrid gridClassName="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="mt-4 flex items-center justify-end gap-2 md:hidden">
+          <button
+            type="button"
+            onClick={() => setViewMode('list')}
+            className={`flex h-8 w-8 items-center justify-center rounded-full border text-[12px] ${
+              viewMode === 'list'
+                ? 'border-emerald-400 bg-slate-900 text-emerald-300'
+                : 'border-slate-700 bg-slate-900 text-slate-300'
+            }`}
+            aria-label="List view"
+          >
+            <span className="flex flex-col gap-[2px]">
+              <span className="h-[2px] w-4 rounded bg-current" />
+              <span className="h-[2px] w-4 rounded bg-current" />
+              <span className="h-[2px] w-4 rounded bg-current" />
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('grid')}
+            className={`flex h-8 w-8 items-center justify-center rounded-full border text-[12px] ${
+              viewMode === 'grid'
+                ? 'border-emerald-400 bg-slate-900 text-emerald-300'
+                : 'border-slate-700 bg-slate-900 text-slate-300'
+            }`}
+            aria-label="Grid view"
+          >
+            <span className="grid h-3 w-3 grid-cols-2 gap-[2px]">
+              <span className="rounded bg-current" />
+              <span className="rounded bg-current" />
+              <span className="rounded bg-current" />
+              <span className="rounded bg-current" />
+            </span>
+          </button>
+        </div>
+        <ScrollableGrid
+          gridClassName={
+            viewMode === 'grid'
+              ? 'mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4'
+              : 'mt-6 space-y-3'
+          }
+        >
           {list.map(([pid,count]) => {
             const prof = profiles[pid]
             // Fallback to beat producer name (usually display name or email) if profile missing
