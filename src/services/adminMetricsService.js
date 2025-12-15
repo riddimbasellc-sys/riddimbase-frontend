@@ -13,16 +13,17 @@ let users = [
 let payouts = [ { id: 'p1', userId: 'u3', amount: 120, currency: 'USD', status: 'pending', requestedAt: Date.now() - 86400000 } ]
 
 export async function metrics() {
-  const beats = listBeats({ includeHidden: true })
+  const beats = await listBeats({ includeHidden: true })
   const sales = await listSalesAsync()
-  const totalRev = totalEarnings() // still using local for now
-  const monthRev = monthlyRevenue()
+  const totalRev = await totalEarnings()
+  const monthRev = await monthlyRevenue()
+  const monthSales = await monthlySalesCount()
   return {
     totalBeats: beats.length,
     totalUsers: users.length,
     totalSales: sales.length,
     monthlyRevenue: monthRev,
-    monthlySales: monthlySalesCount(),
+    monthlySales: monthSales,
   }
 }
 

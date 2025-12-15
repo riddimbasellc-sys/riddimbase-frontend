@@ -1,123 +1,67 @@
-import { fetchSales, createSale } from './salesRepository'
+import { fetchSales, createSale, computeMonthlyMetrics } from './salesRepository'
 import { sendSaleEmail } from './notificationService'
 import { addNotification } from './notificationsRepository'
+import { fetchBeat as fetchBeatRemote } from './beatsRepository'
+import { supabase } from '../lib/supabaseClient'
 
-// For prototypes without real producer auth linking, we optionally map producer names
-// to stable pseudo IDs; when Supabase beats carry a user_id column we use that instead.
-const pseudoId = (name) =>
-  'pseudo-' +
-  name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
+// ---------------------------------------------------------------------------
+// Beat helpers (thin Supabase-backed utilities)
+// ---------------------------------------------------------------------------
 
-const LOCAL_BEATS_KEY = 'rb_user_beats_v1'
-
-function loadUserBeatsFromStorage() {
-  if (typeof window === 'undefined') return []
-  try {
-    const raw = window.localStorage.getItem(LOCAL_BEATS_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
+export async function listBeats({ includeHidden = false } = {}) {
+  const query = supabase
+    .from('beats')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (!includeHidden) {
+    query.eq('hidden', false)
+  }
+  const { data, error } = await query
+  if (error) {
+    console.warn('[beatsService] listBeats error', error.message)
     return []
   }
+  return data || []
 }
 
-function persistUserBeats(beats) {
-  if (typeof window === 'undefined') return
-  try {
-    // Only persist real user beats, never any placeholders.
-    const userBeats = beats.filter((b) => !b.isPlaceholder)
-    window.localStorage.setItem(LOCAL_BEATS_KEY, JSON.stringify(userBeats))
-  } catch {
-    // ignore persistence errors
-  }
-}
-
-// Bootstrap in‑memory beats with any user-created beats from localStorage.
-// We intentionally do not ship hard‑coded demo beats; all content should come
-// from Supabase or real user uploads so production data always matches reality.
-let beats = [...loadUserBeatsFromStorage()]
-
-// ---------------------------------------------------------------------------
-// Sales state (local/in-memory; Supabase-backed sales are layered in via
-// salesRepository when available). Starts empty so dashboards only ever show
-// real sales, not seeded demo data.
-// ---------------------------------------------------------------------------
-let sales = []
-
-// ---------------------------------------------------------------------------
-// Beat helpers (used across dashboard, homepage, etc.)
-// ---------------------------------------------------------------------------
-
-export function listBeats({ includeHidden = false } = {}) {
-  return includeHidden ? beats : beats.filter((b) => !b.hidden)
-}
-
-export function getBeat(id) {
-  return beats.find((b) => b.id === id) || null
-}
-
-export function addBeat(data) {
-  const id = data.id || String(Date.now())
-  const userId = data.userId || (data.producer ? pseudoId(data.producer) : null)
-  const newBeat = {
-    id,
-    hidden: false,
-    flagged: false,
-    userId,
-    isPlaceholder: false,
-    ...data,
-  }
-  beats.unshift(newBeat)
-  persistUserBeats(beats)
-  return newBeat
+export async function getBeat(id) {
+  if (!id) return null
+  return fetchBeatRemote(id)
 }
 
 // ---------------------------------------------------------------------------
-// Sales helpers
+// Sales helpers (Supabase only)
 // ---------------------------------------------------------------------------
 
-export function listSales() {
-  return sales
+export async function listSales() {
+  // Kept for backwards compatibility; same shape as listSalesAsync
+  return listSalesAsync()
 }
 
 export async function listSalesAsync() {
   try {
-    const remote = await fetchSales()
-    if (remote.length) {
-      return remote.map((r) => ({
-        beatId: r.beat_id,
-        license: r.license,
-        buyer: r.buyer,
-        amount: r.amount,
-        createdAt: r.created_at,
-      }))
-    }
-    // No remote sales yet; return an empty list instead of any seeded data.
-    return []
-  } catch {
-    // On error, also fall back to an empty list so only real sales created
-    // during this session (via recordSale) are shown.
+    const rows = await fetchSales()
+    return (rows || []).map((r) => ({
+      beatId: r.beat_id,
+      license: r.license,
+      buyer: r.buyer,
+      amount: r.amount,
+      createdAt: r.created_at,
+    }))
+  } catch (e) {
+    console.warn('[beatsService] listSalesAsync error', e?.message)
     return []
   }
 }
 
-export function totalEarnings() {
-  return sales.reduce((sum, s) => sum + s.amount, 0)
+export async function totalEarnings() {
+  const sales = await listSalesAsync()
+  return sales.reduce((sum, s) => sum + (s.amount || 0), 0)
 }
 
 export async function recordSale({ beatId, license, buyer, amount, beatTitle }) {
-  const createdAt = new Date().toISOString()
-  const sale = { beatId, license, buyer, amount, createdAt }
-  sales.unshift(sale)
-  try {
-    await createSale({ beatId, license, buyer, amount })
-  } catch {
-    // ignore remote failure, keep local sale
-  }
+  const saleRow = await createSale({ beatId, license, buyer, amount })
+
   if (import.meta.env.VITE_NOTIFICATIONS_ENABLED === 'true') {
     try {
       await sendSaleEmail({
@@ -126,14 +70,15 @@ export async function recordSale({ beatId, license, buyer, amount, beatTitle }) 
         buyerEmail: buyer,
         amount,
       })
-    } catch {
-      // ignore email errors
+    } catch (e) {
+      console.warn('[beatsService] sendSaleEmail failed', e?.message)
     }
   }
+
   // Fire producer sale notification (if beat + producer known)
   try {
-    const beat = beats.find((b) => b.id === beatId)
-    const producerId = beat?.userId
+    const beat = await fetchBeatRemote(beatId)
+    const producerId = beat?.user_id || beat?.userId || null
     if (producerId) {
       await addNotification({
         recipientId: producerId,
@@ -146,68 +91,102 @@ export async function recordSale({ beatId, license, buyer, amount, beatTitle }) 
         },
       })
     }
-  } catch {
-    // ignore notification failure
+  } catch (e) {
+    console.warn('[beatsService] addNotification failed', e?.message)
   }
-  return sale
+
+  return saleRow
 }
 
-export function monthlySalesCount() {
-  const now = new Date()
-  return sales.filter((s) => {
-    if (!s.createdAt) return false
-    const d = new Date(s.createdAt)
-    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
-  }).length
+export async function monthlySalesCount() {
+  const sales = await fetchSales()
+  const { monthSalesCount } = computeMonthlyMetrics(sales || [])
+  return monthSalesCount
 }
 
-export function monthlyRevenue() {
-  const now = new Date()
-  return sales.reduce((sum, s) => {
-    if (!s.createdAt) return sum
-    const d = new Date(s.createdAt)
-    if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) {
-      return sum + s.amount
-    }
-    return sum
-  }, 0)
+export async function monthlyRevenue() {
+  const sales = await fetchSales()
+  const { monthlyRevenue } = computeMonthlyMetrics(sales || [])
+  return monthlyRevenue
 }
 
 // Compute gross earnings for a producer by userId or displayName
-export function computeProducerEarnings({ userId, displayName }) {
-  return sales.reduce((sum, s) => {
-    const beat = beats.find((b) => b.id === s.beatId)
-    if (!beat) return sum
-    if (
-      (userId && beat.userId === userId) ||
-      (displayName && beat.producer === displayName)
-    ) {
-      return sum + s.amount
+export async function computeProducerEarnings({ userId, displayName }) {
+  if (!userId && !displayName) return 0
+  try {
+    const sales = await fetchSales()
+    if (!sales || !sales.length) return 0
+
+    const beatIds = Array.from(new Set(sales.map((s) => s.beat_id).filter(Boolean)))
+    if (!beatIds.length) return 0
+
+    const { data: beats, error } = await supabase
+      .from('beats')
+      .select('id, user_id, producer')
+      .in('id', beatIds)
+
+    if (error) {
+      console.warn('[beatsService] computeProducerEarnings beats error', error.message)
+      return 0
     }
-    return sum
-  }, 0)
+
+    const byId = new Map((beats || []).map((b) => [b.id, b]))
+
+    return sales.reduce((sum, s) => {
+      const beat = byId.get(s.beat_id)
+      if (!beat) return sum
+      if (userId && beat.user_id === userId) return sum + (s.amount || 0)
+      if (displayName && beat.producer === displayName) return sum + (s.amount || 0)
+      return sum
+    }, 0)
+  } catch (e) {
+    console.warn('[beatsService] computeProducerEarnings unexpected error', e?.message)
+    return 0
+  }
 }
 
 // ---------------------------------------------------------------------------
 // Moderation helpers
 // ---------------------------------------------------------------------------
 
-export function hideBeat(id) {
-  const b = beats.find((b) => b.id === id)
-  if (b) b.hidden = true
-  persistUserBeats(beats)
-  return b
+export async function hideBeat(id) {
+  if (!id) return null
+  const { data, error } = await supabase
+    .from('beats')
+    .update({ hidden: true })
+    .eq('id', id)
+    .select()
+    .maybeSingle()
+  if (error) {
+    console.warn('[beatsService] hideBeat error', error.message)
+    return null
+  }
+  return data
 }
 
-export function deleteBeat(id) {
-  const before = beats.length
-  beats = beats.filter((b) => b.id !== id)
-  persistUserBeats(beats)
-  return beats.length < before
+export async function deleteBeat(id) {
+  if (!id) return false
+  const { error } = await supabase.from('beats').delete().eq('id', id)
+  if (error) {
+    console.warn('[beatsService] deleteBeat error', error.message)
+    return false
+  }
+  return true
 }
 
-export function flagProducer(id) {
-  const b = beats.find((b) => b.id === id)
-  if (b) b.flagged = true
-  return b
+export async function flagProducer(id) {
+  // Placeholder: if you want a "flagged" status on beats, update the beat row
+  // or create a dedicated moderation table. For now, mark beat as flagged.
+  if (!id) return null
+  const { data, error } = await supabase
+    .from('beats')
+    .update({ flagged: true })
+    .eq('id', id)
+    .select()
+    .maybeSingle()
+  if (error) {
+    console.warn('[beatsService] flagProducer error', error.message)
+    return null
+  }
+  return data
 }
