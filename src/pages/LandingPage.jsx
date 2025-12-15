@@ -19,9 +19,10 @@ export default function LandingPage() {
   const { settings } = useSiteSettings()
   const heroSettings = settings?.hero || {}
   const heroBanners = heroSettings.banners || []
+  // Support both backgroundUrl (new) and background_url (older data)
   const heroBackgrounds = heroBanners
-    .filter((b) => b.backgroundUrl)
-    .map((b) => b.backgroundUrl)
+    .map((b) => (b.backgroundUrl || b.background_url || '').trim())
+    .filter(Boolean)
   const [heroBgIndex, setHeroBgIndex] = useState(0)
   const [cartToast, setCartToast] = useState('')
   const cartToastTimeoutRef = useRef(null)
