@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { computeBeatQuote } from '../services/paymentsService'
+import { computeBeatQuote, computeCartQuote } from '../services/paymentsService'
 import { useBeats } from '../hooks/useBeats'
 
 const CartContext = createContext(null)
@@ -45,13 +45,17 @@ export function CartProvider({ children }) {
 
   const count = items.length
   const totals = useMemo(() => {
-    const subtotal = enriched.reduce(
-      (sum, it) => sum + (it.quote?.total || 0),
-      0,
-    )
-    const serviceFeeRate = 0
-    const serviceFee = 0
-    return { subtotal, serviceFee, grand: subtotal, serviceFeeRate }
+    const quote = computeCartQuote({
+      items: enriched.map((it) => ({
+        beat: it.beat,
+        license: it.license,
+      })),
+    })
+    const subtotal = quote?.subtotal || 0
+    const serviceFee = quote?.serviceFee || 0
+    const grand = quote?.grand || subtotal
+    const serviceFeeRate = quote?.serviceFeeRate || 0
+    return { subtotal, serviceFee, grand, serviceFeeRate }
   }, [enriched])
 
   return (
