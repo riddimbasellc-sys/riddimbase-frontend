@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { listSalesAsync, listSales } from '../services/beatsService'
+import { listSalesAsync } from '../services/beatsService'
 
 export function useSales() {
   const [sales, setSales] = useState([])
@@ -7,22 +7,17 @@ export function useSales() {
 
   useEffect(() => {
     let active = true
-    listSalesAsync().then(data => {
-      if (!active) return
-      // normalize structure to common shape
-      const normalized = data.map(s => ({
-        beatId: s.beatId,
-        license: s.license,
-        buyer: s.buyer,
-        amount: s.amount,
-        createdAt: s.createdAt,
-      }))
-      setSales(normalized)
-      setLoading(false)
-    }).catch(() => {
-      setSales(listSales())
-      setLoading(false)
-    })
+    listSalesAsync()
+      .then(data => {
+        if (!active) return
+        // data is already normalized by beatsService
+        setSales(data)
+        setLoading(false)
+      })
+      .catch(() => {
+        setSales([])
+        setLoading(false)
+      })
     return () => { active = false }
   }, [])
 
