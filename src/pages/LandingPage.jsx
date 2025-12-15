@@ -129,8 +129,6 @@ export default function LandingPage() {
 
   const activeBanner =
     heroBanners.find((b) => b.active) || heroBanners[0] || null
-  const heroTitle =
-    activeBanner?.title || 'The Home of Caribbean Beats.'
   const heroSubtitle =
     activeBanner?.subtitle ||
     'Discover, sell and license Dancehall, Reggae, Trap Dancehall, Afro-Caribbean and more on a platform built for Caribbean creators, with global reach.'
@@ -186,7 +184,7 @@ export default function LandingPage() {
             <div className="flex w-full flex-col items-center justify-center space-y-6">
               <div>
                 <h1 className="text-balance text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-[2.9rem]">
-                  {heroTitle}
+                  The <span className="text-red-500">Home of Caribbean</span> Beats.
                 </h1>
                 <p className="mt-3 max-w-2xl mx-auto text-sm text-slate-300 sm:text-[15px]">
                   {heroSubtitle}
