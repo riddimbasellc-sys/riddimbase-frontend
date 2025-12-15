@@ -64,7 +64,7 @@ function HelpBubble() {
   const whatsappHref = 'https://wa.me/18762797956'
 
   return (
-    <div className="pointer-events-none fixed bottom-32 right-4 z-40 md:bottom-5 md:right-5">
+    <div className="pointer-events-none fixed bottom-40 right-4 z-40 md:bottom-5 md:right-5">
       {open && (
         <div className="pointer-events-auto mb-3 w-56 rounded-2xl border border-slate-800/80 bg-slate-950/95 p-3 shadow-rb-gloss-panel">
           <p className="text-[11px] font-semibold text-slate-100 mb-2">Need a hand?</p>
@@ -108,7 +108,7 @@ function HelpBubble() {
 
 function TawkBubble() {
   return (
-    <div className="pointer-events-none fixed bottom-32 right-4 z-40 md:bottom-5 md:right-5">
+    <div className="pointer-events-none fixed bottom-40 right-4 z-40 md:bottom-5 md:right-5">
       <button
         type="button"
         onClick={() => openTawk()}
