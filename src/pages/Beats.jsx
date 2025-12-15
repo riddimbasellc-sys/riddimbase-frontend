@@ -169,8 +169,8 @@ export function Beats() {
           {/* Desktop filters sidebar */}
           <aside className="order-0 hidden space-y-6 rounded-2xl border border-slate-800/80 bg-slate-950/90 bg-rb-gloss-stripes bg-blend-soft-light p-4 shadow-rb-gloss-panel md:order-none md:block md:h-fit">
             <div className="relative">
-              <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-rb-sun-gold">
-                Search
+                <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-red-400">
+                  Search
               </h2>
               <input
                 value={search}
@@ -199,7 +199,7 @@ export function Beats() {
               )}
             </div>
             <div>
-              <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-rb-sun-gold">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-red-400">
                 Sort
               </h2>
               <select
@@ -212,8 +212,8 @@ export function Beats() {
                 <option>Price: High → Low</option>
               </select>
             </div>
-            <div>
-              <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-rb-sun-gold">
+              <div>
+              <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-red-400">
                 Genres
               </h2>
               <div className="mt-2 flex flex-wrap gap-2 text-[10px]">
@@ -247,8 +247,8 @@ export function Beats() {
                 )}
               </div>
             </div>
-            <div>
-              <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-rb-sun-gold">
+              <div>
+              <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-red-400">
                 License Tier
               </h2>
               <div className="mt-2 flex flex-wrap gap-2 text-[10px]">
@@ -397,9 +397,9 @@ export function Beats() {
                 Close
               </button>
             </div>
-            <div className="space-y-4 overflow-y-auto text-[12px]">
-              <div>
-                <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-rb-sun-gold">
+              <div className="space-y-4 overflow-y-auto text-[12px]">
+                <div>
+                  <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-red-400">
                   Search
                 </h3>
                 <input
@@ -409,8 +409,8 @@ export function Beats() {
                   placeholder="Keywords or producer"
                 />
               </div>
-              <div>
-                <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-rb-sun-gold">
+                <div>
+                  <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-red-400">
                   Sort
                 </h3>
                   <select
@@ -423,8 +423,8 @@ export function Beats() {
                   <option>Price: High → Low</option>
                 </select>
               </div>
-              <div>
-                <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-rb-sun-gold">
+                <div>
+                  <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-red-400">
                   Genres
                 </h3>
                   <div className="mt-2 flex flex-wrap gap-2 text-[10px]">
@@ -458,8 +458,8 @@ export function Beats() {
                   )}
                 </div>
               </div>
-              <div>
-                <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-rb-sun-gold">
+                <div>
+                  <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-red-400">
                   License Tier
                 </h3>
                 <div className="mt-2 flex flex-wrap gap-2 text-[10px]">
