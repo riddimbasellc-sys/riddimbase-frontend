@@ -1,16 +1,9 @@
 import { listBeats, listSalesAsync, totalEarnings, monthlyRevenue, monthlySalesCount } from './beatsService'
-import { sendPayoutEmail } from './notificationService'
 import { listAllPayouts, createPayout as repoCreatePayout, markPayoutCompleted } from './payoutsRepository'
-
-// Mock users & payouts until real persistence.
-let users = [
-  { id: 'u1', email: 'owner@example.com', producer: true, banned: false },
-  { id: 'u2', email: 'artist1@example.com', producer: false, banned: false },
-  { id: 'u3', email: 'producer1@example.com', producer: true, banned: false },
-]
+import { supabase } from '../lib/supabaseClient'
 
 // Legacy local payouts retained for fallback but primary source is Supabase via payoutsRepository.
-let payouts = [ { id: 'p1', userId: 'u3', amount: 120, currency: 'USD', status: 'pending', requestedAt: Date.now() - 86400000 } ]
+let payouts = []
 
 export async function metrics() {
   const beats = await listBeats({ includeHidden: true })
@@ -18,19 +11,25 @@ export async function metrics() {
   const totalRev = await totalEarnings()
   const monthRev = await monthlyRevenue()
   const monthSales = await monthlySalesCount()
+  let totalUsers = 0
+  try {
+    const { count, error } = await supabase
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+    if (!error && typeof count === 'number') {
+      totalUsers = count
+    }
+  } catch {
+    totalUsers = 0
+  }
   return {
     totalBeats: beats.length,
-    totalUsers: users.length,
+    totalUsers,
     totalSales: sales.length,
     monthlyRevenue: monthRev,
     monthlySales: monthSales,
   }
 }
-
-export function listUsers() { return users }
-export function banUser(id) { const u = users.find(u=>u.id===id); if(u) u.banned=true; return u }
-export function approveProducer(id) { const u = users.find(u=>u.id===id); if(u) u.producer=true; return u }
-export function resetPassword(id) { return { success: true, id } }
 
 export function listPayouts() { return payouts }
 export async function refreshPayouts() {
@@ -40,12 +39,7 @@ export async function refreshPayouts() {
 export async function markPayoutComplete(id) {
   let updated = null
   try { updated = await markPayoutCompleted(id) } catch {}
-  if (updated) {
-    const producer = users.find(u => u.id === updated.userId)
-    if (producer && import.meta.env.VITE_NOTIFICATIONS_ENABLED === 'true') {
-      await sendPayoutEmail({ producerEmail: producer.email, amount: updated.amount, currency: updated.currency })
-    }
-  } else {
+  if (!updated) {
     const p = payouts.find(p=>p.id===id)
     if (p) p.status='completed'
     updated = p
