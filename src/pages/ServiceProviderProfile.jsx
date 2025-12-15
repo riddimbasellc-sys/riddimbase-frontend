@@ -19,6 +19,7 @@ export function ServiceProviderProfile() {
   const [buyerName, setBuyerName] = useState('')
   const [buyerEmail, setBuyerEmail] = useState('')
   const [result, setResult] = useState(null)
+  const [showServiceFeeInfo, setShowServiceFeeInfo] = useState(false)
 
   // Resolve slug-style URLs (/services/:slug) back to a provider ID.
   useEffect(() => {
@@ -189,7 +190,16 @@ export function ServiceProviderProfile() {
           <div className="w-full max-w-lg rounded-2xl border border-slate-800/80 bg-slate-900/90 p-5 shadow-xl space-y-5">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold text-slate-100">Request {selectedService.name}</h2>
-              <button onClick={()=>{ setBookOpen(false); setResult(null) }} className="rounded-full bg-slate-800/70 px-3 py-1 text-[11px] text-slate-300 hover:bg-slate-700/70">Close</button>
+              <button
+                onClick={() => {
+                  setBookOpen(false)
+                  setResult(null)
+                  setShowServiceFeeInfo(false)
+                }}
+                className="rounded-full bg-slate-800/70 px-3 py-1 text-[11px] text-slate-300 hover:bg-slate-700/70"
+              >
+                Close
+              </button>
             </div>
             <div className="text-[12px] text-slate-300">
               <p className="font-medium text-slate-200">Provider: {provider.name}</p>
@@ -207,31 +217,98 @@ export function ServiceProviderProfile() {
             </div>
             <div>
               <p className="text-[10px] font-semibold text-slate-400">How will you pay?</p>
-              <div className="mt-2">
+              <div className="mt-2 space-y-3">
+                <div className="space-y-1 text-[11px] text-slate-300">
+                  <p className="flex justify-between">
+                    <span>Service Price</span>
+                    <span>${Number(selectedService.price || 0).toFixed(2)}</span>
+                  </p>
+                  {Number(selectedService.price || 0) > 0 && (
+                    <p className="flex justify-between">
+                      <span className="relative inline-flex items-center gap-1">
+                        Service Fee
+                        <button
+                          type="button"
+                          className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-slate-500 text-[9px] text-slate-200"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            setShowServiceFeeInfo((v) => !v)
+                          }}
+                          onMouseEnter={() => setShowServiceFeeInfo(true)}
+                          onMouseLeave={() => setShowServiceFeeInfo(false)}
+                        >
+                          i
+                        </button>
+                        {showServiceFeeInfo && (
+                          <span className="absolute left-0 top-5 z-20 w-64 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-[10px] text-slate-100 shadow-lg">
+                            These fees contribute to maintaining and enhancing the platform, ensuring a seamless and secure experience for all users.
+                          </span>
+                        )}
+                      </span>
+                      <span>
+                        ${((Number(selectedService.price || 0) * 0.12) || 0).toFixed(2)}
+                      </span>
+                    </p>
+                  )}
+                  <p className="mt-1 flex justify-between font-semibold text-slate-50">
+                    <span>Total</span>
+                    <span>
+                      $
+                      {(
+                        Number(selectedService.price || 0) * 1.12
+                      ).toFixed(2)}
+                    </span>
+                  </p>
+                </div>
                 <PayPalButtonsGroup
-                  amount={selectedService.price}
+                  amount={(Number(selectedService.price || 0) * 1.12) || 0}
                   currency="USD"
                   description={`${selectedService.name} with ${provider.name}`}
                   payerName={buyerName}
                   payerEmail={buyerEmail}
                   onSuccess={async () => {
                     try {
-                      const res = await createServiceOrder({ providerId: providerId, serviceName: selectedService.name, price: selectedService.price, buyerName, buyerEmail })
+                      const res = await createServiceOrder({
+                        providerId: providerId,
+                        serviceName: selectedService.name,
+                        price: selectedService.price,
+                        buyerName,
+                        buyerEmail,
+                      })
                       if (res.error) {
-                        setResult({ success:false, error: res.error })
+                        setResult({ success: false, error: res.error })
                       } else {
-                        setResult({ success:true, order: res.order })
+                        setResult({ success: true, order: res.order })
                         // Notify client order posted
-                        fetch('/api/notify', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ kind:'service-order', event:'posted', payload:{ orderId: res.order.id, buyerEmail } }) }).catch(()=>{})
+                        fetch('/api/notify', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            kind: 'service-order',
+                            event: 'posted',
+                            payload: { orderId: res.order.id, buyerEmail },
+                          }),
+                        }).catch(() => {})
                       }
                     } catch (e) {
-                      setResult({ success:false, error: e.message || 'Order creation failed' })
+                      setResult({
+                        success: false,
+                        error: e.message || 'Order creation failed',
+                      })
                     }
                   }}
-                  onError={(err) => setResult({ success:false, error: err?.message || 'PayPal error' })}
+                  onError={(err) =>
+                    setResult({
+                      success: false,
+                      error: err?.message || 'PayPal error',
+                    })
+                  }
                 />
               </div>
-              <p className="mt-2 text-[10px] text-slate-500">Provider will contact you at the provided email after payment.</p>
+              <p className="mt-2 text-[10px] text-slate-500">
+                Provider will contact you at the provided email after payment.
+              </p>
             </div>
             {result && (
               <div className="rounded-xl border border-slate-800/70 bg-slate-950/70 p-3 text-[11px] text-slate-300 space-y-1">
