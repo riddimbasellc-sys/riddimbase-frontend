@@ -20,7 +20,6 @@ import {
   addBeatComment,
   subscribeBeatComments,
 } from '../services/socialService'
-import { getBeat } from '../services/beatsService'
 import { fetchBeat as fetchBeatRemote } from '../services/beatsRepository'
 import { useCart } from '../context/CartContext'
 import ReportModal from '../components/ReportModal'
@@ -46,9 +45,8 @@ export function BeatDetails() {
   const [selected, setSelected] = useState(null)
   const { user } = useSupabaseUser()
   const { beats: allBeats } = useBeats()
-  const localBeat = locationBeat || (id ? getBeat(id) : null)
-  const [remoteBeat, setRemoteBeat] = useState(null)
-  const beat = localBeat || remoteBeat
+  const [remoteBeat, setRemoteBeat] = useState(locationBeat || null)
+  const beat = remoteBeat
   const producerId = beat?.userId || beat?.user_id || null
   const [liked, setLiked] = useState(false)
   const [favorited, setFavorited] = useState(false)
@@ -89,7 +87,7 @@ export function BeatDetails() {
   })() }, [id, user, producerId])
   // Fallback to Supabase if not in local cache
   useEffect(()=> { (async () => {
-    if (localBeat || !id) return
+    if (locationBeat || !id) return
     const data = await fetchBeatRemote(id)
     if (data) {
       setRemoteBeat({
@@ -111,7 +109,7 @@ export function BeatDetails() {
         freeDownload: !!data.free_download,
       })
     }
-  })() }, [id, localBeat])
+  })() }, [id, locationBeat])
   const handleLike = async () => {
     if (!user) return
     const optimistic = liked ? likes - 1 : likes + 1

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAdminRole } from '../hooks/useAdminRole'
 import BackButton from '../components/BackButton'
-import { listBeats } from '../services/beatsService'
 import { fetchBeats } from '../services/beatsRepository'
 import {
   adminHideBeat,
@@ -41,11 +40,11 @@ export function AdminBeats() {
             })),
           )
         } else {
-          setItems(listBeats({ includeHidden: true }))
+          setItems([])
         }
       } catch (e) {
-        setError(e.message || 'Failed to load beats. Showing local test data.')
-        setItems(listBeats({ includeHidden: true }))
+        setError(e.message || 'Failed to load beats.')
+        setItems([])
       } finally {
         if (active) setDataLoading(false)
       }
@@ -95,7 +94,7 @@ export function AdminBeats() {
           })),
         )
       } else {
-        setItems(listBeats({ includeHidden: true }))
+        setItems([])
       }
     } catch (e) {
       setError(e.message || 'Failed to refresh beats.')

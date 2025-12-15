@@ -1,6 +1,5 @@
 import BackButton from '../components/BackButton'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { getBeat } from '../services/beatsService'
 import { useEffect, useState } from 'react'
 import { computeBeatQuote, processPayment, generateLicense } from '../services/paymentsService'
 import { sendFreeDownloadEmail } from '../services/notificationService'
@@ -15,14 +14,13 @@ export function Checkout() {
   const navigate = useNavigate()
 
   const locationBeat = (location.state && location.state.beat) || null
-  const localBeat = getBeat(id)
   const [remoteBeat, setRemoteBeat] = useState(null)
-  const beat = locationBeat || localBeat || remoteBeat
+  const beat = locationBeat || remoteBeat
 
   useEffect(() => {
     let active = true
     ;(async () => {
-      if (locationBeat || localBeat || !id) return
+      if (locationBeat || !id) return
       try {
         const data = await fetchBeatRemote(id)
         if (!data || !active) return

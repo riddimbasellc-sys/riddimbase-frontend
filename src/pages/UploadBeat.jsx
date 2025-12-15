@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import FilePickerButton from '../components/FilePickerButton'
 import BackButton from '../components/BackButton'
-import { addBeat, listBeats } from '../services/beatsService'
 import { createBeat, countBeatsForUser } from '../services/beatsRepository'
 import ShareBeatModal from '../components/ShareBeatModal'
 import { useNavigate } from 'react-router-dom'
@@ -183,24 +182,6 @@ export function UploadBeat() {
       Unlimited: unlimitedPrice,
       Exclusive: exclusivePrice,
     }
-    addBeat({
-      id: createdBeat?.id,
-      title,
-      description,
-      genre,
-      bpm: Number(bpm),
-      price: Number(price),
-      producer: producerName,
-      collaborator: collaboratorString || null,
-      userId: user?.id || null,
-      audioUrl: localAudioUrl,
-      untaggedUrl: localUntaggedUrl,
-      coverUrl: localCoverUrl,
-      bundleUrl: localBundleUrl,
-      bundleName: bundleFile?.name || null,
-      licensePrices,
-      freeDownload,
-    })
 
     // 3) Optionally patch Supabase row with extra URLs (untagged / artwork / bundle)
     try {

@@ -1,10 +1,29 @@
 import BackButton from '../components/BackButton'
-import { getBeat } from '../services/beatsService'
 import { useSales } from '../hooks/useSales'
+import { fetchBeat as fetchBeatRemote } from '../services/beatsRepository'
 
 export function ArtistDashboard() {
   const { sales, loading } = useSales()
-  const purchases = sales.map(s => ({ ...s, beat: getBeat(s.beatId) }))
+  const [beatsById, setBeatsById] = useState({})
+
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      const ids = Array.from(new Set(sales.map((s) => s.beatId).filter(Boolean)))
+      if (!ids.length) return
+      const map = {}
+      for (const id of ids) {
+        const b = await fetchBeatRemote(id)
+        if (b) map[id] = b
+      }
+      if (active) setBeatsById(map)
+    })()
+    return () => {
+      active = false
+    }
+  }, [sales])
+
+  const purchases = sales.map(s => ({ ...s, beat: beatsById[s.beatId] || null }))
   const timeAgoHours = (s) => {
     if (s.createdAt) {
       const diffMs = Date.now() - new Date(s.createdAt).getTime()

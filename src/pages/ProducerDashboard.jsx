@@ -7,11 +7,7 @@ import useSupabaseUser from '../hooks/useSupabaseUser'
 import useUserProfile from '../hooks/useUserProfile'
 import BackButton from '../components/BackButton'
 import { slugify } from '../utils/slugify'
-import {
-  totalEarnings,
-  monthlySalesCount,
-  computeProducerEarnings,
-} from '../services/beatsService'
+import { computeProducerEarnings } from '../services/beatsService'
 import {
   loadPlayCountsForBeats,
 } from '../services/analyticsService'
@@ -247,6 +243,26 @@ export function ProducerDashboard() {
     loadMetrics()
   }, [user, metricKind, rangeKey, customFrom, customTo])
 
+  const [earnings, setEarnings] = useState(0)
+
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      if (!user) {
+        if (active) setEarnings(0)
+        return
+      }
+      const gross = await computeProducerEarnings({
+        userId: user.id,
+        displayName: user.email,
+      })
+      if (active) setEarnings(gross || 0)
+    })()
+    return () => {
+      active = false
+    }
+  }, [user])
+
   if (loading) {
     return (
       <section className="bg-slate-950/95 min-h-screen flex items-center justify-center">
@@ -262,10 +278,7 @@ export function ProducerDashboard() {
     )
   }
 
-  const earnings = totalEarnings()
-  const grossProducer = user
-    ? computeProducerEarnings({ userId: user.id, displayName: user.email })
-    : 0
+  const grossProducer = earnings
   const myBeats = managedBeats
   const beatIds = myBeats.map((b) => b.id)
   const totalPlays = beatIds.reduce(
@@ -286,11 +299,16 @@ export function ProducerDashboard() {
   const completedTotal = payouts
     .filter((p) => p.status === 'completed')
     .reduce((sum, p) => sum + p.amount, 0)
-    const pendingTotal = payouts
-      .filter((p) => p.status === 'pending')
-      .reduce((sum, p) => sum + p.amount, 0)
-    const availableBalance = Math.max(0, grossProducer - completedTotal - pendingTotal)
-  const monthSales = monthlySalesCount()
+  const pendingTotal = payouts
+    .filter((p) => p.status === 'pending')
+    .reduce((sum, p) => sum + p.amount, 0)
+  const availableBalance = Math.max(0, grossProducer - completedTotal - pendingTotal)
+  const monthSales = sales.filter((s) => {
+    if (!s.createdAt) return false
+    const d = new Date(s.createdAt)
+    const now = new Date()
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
+  }).length
 
   const subExpiresAt = subscription?.expiresAt
     ? new Date(subscription.expiresAt)
@@ -300,7 +318,7 @@ export function ProducerDashboard() {
         (subExpiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
       )
     : null
-    const planLabel =
+  const planLabel =
       subscription?.planId === 'starter'
         ? 'Starter'
         : subscription?.planId === 'pro'

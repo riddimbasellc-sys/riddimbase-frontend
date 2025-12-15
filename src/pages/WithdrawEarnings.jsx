@@ -53,6 +53,19 @@ export function WithdrawEarnings() {
     })()
   }, [user?.id])
 
+  const [gross, setGross] = useState(0)
+
+  useEffect(() => {
+    if (!user?.id) return
+    ;(async () => {
+      const total = await computeProducerEarnings({
+        userId: user.id,
+        displayName: user.email,
+      })
+      setGross(total || 0)
+    })()
+  }, [user])
+
   if (loading) {
     return (
       <section className="min-h-screen flex items-center justify-center bg-slate-950/95">
@@ -61,8 +74,6 @@ export function WithdrawEarnings() {
     )
   }
   if (!user) return null
-
-  const gross = computeProducerEarnings({ userId: user.id, displayName: user.email })
   const completedTotal = payouts.filter(p => p.status === 'completed').reduce((sum, p) => sum + p.amount, 0)
   const pendingTotal = payouts.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0)
   const available = Math.max(0, gross - completedTotal - pendingTotal)
