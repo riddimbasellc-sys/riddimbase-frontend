@@ -2,7 +2,12 @@ import React from 'react'
 import { FilePickerButton } from '../../components/FilePickerButton'
 import { uploadHeroBackground } from '../../services/storageService'
 
-export function BannerManager({ banners, onChange }) {
+export function BannerManager({
+  banners,
+  heroBackgroundColor = '#050505',
+  onBackgroundColorChange,
+  onChange,
+}) {
   const handleUpdate = (index, patch) => {
     const next = banners.map((b, i) => (i === index ? { ...b, ...patch } : b))
     onChange(next)
@@ -174,6 +179,23 @@ export function BannerManager({ banners, onChange }) {
             of your homepage.
           </p>
         )}
+
+        <div className="mt-4 border-t border-slate-800/80 pt-3">
+          <label className="text-[10px] font-medium text-slate-400">
+            Fallback hero background color
+          </label>
+          <p className="mt-1 text-[10px] text-slate-500">
+            Used when no hero image or video is set. This controls the solid color behind your hero text.
+          </p>
+          <input
+            type="color"
+            value={heroBackgroundColor}
+            onChange={(e) =>
+              onBackgroundColorChange && onBackgroundColorChange(e.target.value)
+            }
+            className="mt-2 h-9 w-24 cursor-pointer rounded-md border border-slate-700/80 bg-slate-950/80"
+          />
+        </div>
       </div>
     </div>
   )
