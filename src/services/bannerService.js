@@ -1,34 +1,14 @@
 // Banner service for homepage hero/banner replacement.
-// Uses Supabase-backed API with localStorage cache fallback.
+// Supabase-backed API only; no localStorage cache.
 // Banner: { id, dataUrl, active, createdAt, kind?: 'image'|'video', contentType?: string }
 
 import { uploadArtwork } from './storageService'
 
-const STORAGE_KEY = 'rb_banners_v2'
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
-
-function readLocal() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return []
-    const arr = JSON.parse(raw)
-    return Array.isArray(arr) ? arr : []
-  } catch {
-    return []
-  }
-}
-
-function writeLocal(list) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
-  } catch {
-    // ignore
-  }
-}
 
 export async function listBanners() {
   if (!API_BASE) {
-    return readLocal()
+    return []
   }
   try {
     const res = await fetch(`${API_BASE}/api/site/banners`, {
@@ -36,16 +16,12 @@ export async function listBanners() {
       headers: { 'Content-Type': 'application/json' },
     })
     if (!res.ok) {
-      return readLocal()
+      return []
     }
     const data = await res.json().catch(() => [])
-    if (Array.isArray(data)) {
-      writeLocal(data)
-      return data
-    }
-    return readLocal()
+    return Array.isArray(data) ? data : []
   } catch {
-    return readLocal()
+    return []
   }
 }
 
@@ -65,20 +41,7 @@ export async function uploadBanner(file) {
   const kind = mime.startsWith('video') ? 'video' : 'image'
 
   if (!API_BASE) {
-    // Fallback: store in localStorage only
-    const list = readLocal()
-    const id = 'b_' + Date.now()
-    const banner = {
-      id,
-      dataUrl: publicUrl,
-      active: false,
-      createdAt: Date.now(),
-      kind,
-      contentType: mime,
-    }
-    const next = [...list, banner]
-    writeLocal(next)
-    return banner
+    throw new Error('Banner API is not configured')
   }
 
   const res = await fetch(`${API_BASE}/api/site/banners`, {
@@ -93,22 +56,13 @@ export async function uploadBanner(file) {
   }
 
   const banner = await res.json().catch(() => null)
-  if (banner) {
-    const list = readLocal()
-    writeLocal([...list, banner])
-  }
   return banner
 }
 
 export async function setActiveBanner(id) {
   if (!id) return []
   if (!API_BASE) {
-    const list = readLocal().map((b) => ({
-      ...b,
-      active: b.id === id,
-    }))
-    writeLocal(list)
-    return list
+    return []
   }
   try {
     const res = await fetch(`${API_BASE}/api/site/banners/${id}/active`, {
@@ -116,25 +70,19 @@ export async function setActiveBanner(id) {
       headers: { 'Content-Type': 'application/json' },
     })
     if (!res.ok) {
-      return readLocal()
+      return []
     }
     const data = await res.json().catch(() => [])
-    if (Array.isArray(data)) {
-      writeLocal(data)
-      return data
-    }
-    return readLocal()
+    return Array.isArray(data) ? data : []
   } catch {
-    return readLocal()
+    return []
   }
 }
 
 export async function deleteBanner(id) {
   if (!id) return []
   if (!API_BASE) {
-    const filtered = readLocal().filter((b) => b.id !== id)
-    writeLocal(filtered)
-    return filtered
+    return []
   }
   try {
     const res = await fetch(`${API_BASE}/api/site/banners/${id}`, {
@@ -142,16 +90,12 @@ export async function deleteBanner(id) {
       headers: { 'Content-Type': 'application/json' },
     })
     if (!res.ok) {
-      return readLocal()
+      return []
     }
     const data = await res.json().catch(() => [])
-    if (Array.isArray(data)) {
-      writeLocal(data)
-      return data
-    }
-    return readLocal()
+    return Array.isArray(data) ? data : []
   } catch {
-    return readLocal()
+    return []
   }
 }
 

@@ -1,4 +1,3 @@
-const STORAGE_KEY = 'rb_footer_links_v2'
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
 
 function defaultLinks() {
@@ -11,37 +10,9 @@ function defaultLinks() {
   ]
 }
 
-function readLocal() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) {
-      const d = defaultLinks()
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(d))
-      return d
-    }
-    const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      const d = defaultLinks()
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(d))
-      return d
-    }
-    return parsed
-  } catch {
-    return defaultLinks()
-  }
-}
-
-function writeLocal(list) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
-  } catch {
-    // ignore
-  }
-}
-
 export async function getFooterLinks() {
   if (!API_BASE) {
-    return readLocal()
+    return defaultLinks()
   }
   try {
     const res = await fetch(`${API_BASE}/api/site/footer-links`, {
@@ -49,26 +20,23 @@ export async function getFooterLinks() {
       headers: { 'Content-Type': 'application/json' },
     })
     if (!res.ok) {
-      return readLocal()
+      return defaultLinks()
     }
     const data = await res.json().catch(() => defaultLinks())
     if (Array.isArray(data) && data.length) {
-      const mapped = data.map((row) => ({
+      return data.map((row) => ({
         id: row.id,
         label: row.label,
         to: row.path || row.to || '/',
       }))
-      writeLocal(mapped)
-      return mapped
     }
-    return readLocal()
+    return defaultLinks()
   } catch {
-    return readLocal()
+    return defaultLinks()
   }
 }
 
 async function saveRemote(list) {
-  writeLocal(list)
   if (!API_BASE) return list
   try {
     const payload = list.map((l, index) => ({
@@ -87,13 +55,11 @@ async function saveRemote(list) {
     }
     const data = await res.json().catch(() => [])
     if (Array.isArray(data) && data.length) {
-      const mapped = data.map((row) => ({
+      return data.map((row) => ({
         id: row.id,
         label: row.label,
         to: row.path,
       }))
-      writeLocal(mapped)
-      return mapped
     }
     return list
   } catch {

@@ -1,4 +1,3 @@
-const STORAGE_KEY = 'rb_social_links_v1'
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
 
 const DEFAULT_SOCIALS = [
@@ -11,35 +10,9 @@ const DEFAULT_SOCIALS = [
   { id: 'spotify', network: 'spotify', url: '' },
 ]
 
-function readLocal() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_SOCIALS))
-      return DEFAULT_SOCIALS
-    }
-    const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_SOCIALS))
-      return DEFAULT_SOCIALS
-    }
-    return parsed
-  } catch {
-    return DEFAULT_SOCIALS
-  }
-}
-
-function writeLocal(list) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
-  } catch {
-    // ignore
-  }
-}
-
 export async function getSocialLinks() {
   if (!API_BASE) {
-    return readLocal()
+    return DEFAULT_SOCIALS
   }
   try {
     const res = await fetch(`${API_BASE}/api/site/social-links`, {
@@ -47,21 +20,19 @@ export async function getSocialLinks() {
       headers: { 'Content-Type': 'application/json' },
     })
     if (!res.ok) {
-      return readLocal()
+      return DEFAULT_SOCIALS
     }
     const data = await res.json().catch(() => DEFAULT_SOCIALS)
     if (Array.isArray(data) && data.length) {
-      writeLocal(data)
       return data
     }
-    return readLocal()
+    return DEFAULT_SOCIALS
   } catch {
-    return readLocal()
+    return DEFAULT_SOCIALS
   }
 }
 
 export async function saveSocialLinks(list) {
-  writeLocal(list)
   if (!API_BASE) return list
   try {
     const res = await fetch(`${API_BASE}/api/site/social-links`, {
@@ -74,7 +45,6 @@ export async function saveSocialLinks(list) {
     }
     const data = await res.json().catch(() => list)
     if (Array.isArray(data) && data.length) {
-      writeLocal(data)
       return data
     }
     return list
@@ -92,7 +62,6 @@ export async function updateSocialLink(id, patch) {
 }
 
 export async function resetSocialLinks() {
-  writeLocal(DEFAULT_SOCIALS)
   if (!API_BASE) return DEFAULT_SOCIALS
   try {
     const res = await fetch(`${API_BASE}/api/site/social-links`, {
@@ -102,8 +71,10 @@ export async function resetSocialLinks() {
     })
     if (!res.ok) return DEFAULT_SOCIALS
     const data = await res.json().catch(() => DEFAULT_SOCIALS)
-    writeLocal(data)
-    return data
+    if (Array.isArray(data) && data.length) {
+      return data
+    }
+    return DEFAULT_SOCIALS
   } catch {
     return DEFAULT_SOCIALS
   }
