@@ -47,7 +47,7 @@ export function Checkout() {
     return () => {
       active = false
     }
-  }, [id, locationBeat, localBeat])
+  }, [id, locationBeat])
 
   const queryLicense = new URLSearchParams(location.search).get('license')
   const mode = new URLSearchParams(location.search).get('mode')
