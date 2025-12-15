@@ -5,6 +5,7 @@ import BackButton from '../components/BackButton'
 import { BeatPlayer } from '../components/BeatPlayer'
 import { BeatCard } from '../components/BeatCard'
 import useSupabaseUser from '../hooks/useSupabaseUser'
+import { slugify } from '../utils/slugify'
 import {
   toggleLike,
   toggleFavorite,
@@ -33,18 +34,19 @@ export function BeatDetails() {
   const locationBeat = location.state && location.state.beat ? location.state.beat : null
 
   const raw = params.id || params.idSlug
-  const id = (() => {
+  const uuidRegex =
+    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+  const [id, setId] = useState(() => {
     if (!raw) return null
     const trimmed = String(raw)
     const uuidCandidate = trimmed.substring(0, 36)
-    const uuidRegex =
-      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
     if (uuidRegex.test(uuidCandidate)) return uuidCandidate
-    return trimmed.split('-')[0]
-  })()
+    return null
+  })
   const [selected, setSelected] = useState(null)
   const { user } = useSupabaseUser()
-  const localBeat = locationBeat || getBeat(id)
+  const { beats: allBeats } = useBeats()
+  const localBeat = locationBeat || (id ? getBeat(id) : null)
   const [remoteBeat, setRemoteBeat] = useState(null)
   const beat = localBeat || remoteBeat
   const producerId = beat?.userId || beat?.user_id || null
@@ -55,12 +57,27 @@ export function BeatDetails() {
   const [following, setFollowing] = useState(false)
   const [followers, setFollowers] = useState(0)
   const [reportOpen, setReportOpen] = useState(false)
-  const { beats: allBeats } = useBeats()
   const { addBeat } = useCart() || {}
   const [comments, setComments] = useState([])
   const [commentText, setCommentText] = useState('')
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false)
+
+  // If someone lands on /beat/<slug-only>, resolve it to the underlying beat ID without changing the URL.
+  useEffect(() => {
+    if (id) return
+    if (!raw) return
+    if (!allBeats || allBeats.length === 0) return
+    const rawSlug = String(raw)
+    const match = allBeats.find(
+      (b) => slugify(b.title || '') === rawSlug,
+    )
+    if (match?.id && uuidRegex.test(String(match.id))) {
+      setId(String(match.id))
+    }
+  }, [id, raw, allBeats])
+
   useEffect(()=> { (async () => {
+    if (!id) return
     setLikes(await likeCount(id))
     setFavs(await favoriteCount(id))
     if (producerId) setFollowers(await followerCount(producerId))
@@ -232,7 +249,7 @@ export function BeatDetails() {
                 <button onClick={handleLike} className={`absolute right-3 top-3 h-8 w-8 flex items-center justify-center rounded-full border text-[11px] backdrop-blur-sm ${liked? 'border-pink-400/70 bg-pink-500/20 text-pink-300':'border-slate-700/70 bg-slate-900/40 text-slate-300 hover:border-pink-400/60 hover:text-pink-300'}`}>❤</button>
               </div>
                   
-              <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-300">Beat #{id}</p>
+
               <h1 className="mt-1 font-display text-2xl font-semibold text-slate-50 leading-tight">{beat?.title || 'Beat'}</h1>
               <p className="mt-1 text-[13px] text-slate-300">by {beat?.producer || 'Producer'} • {beat?.genre || 'Genre'} • {beat?.bpm || 0} BPM</p>
               <div className="mt-3 flex flex-wrap gap-2 text-[11px]">

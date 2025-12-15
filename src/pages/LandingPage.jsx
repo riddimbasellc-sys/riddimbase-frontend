@@ -7,6 +7,7 @@ import { BeatCard } from '../components/BeatCard'
 import { useSiteSettings } from '../context/SiteSettingsContext'
 import { supabase } from '../lib/supabaseClient'
 import BeatCarousel from '../components/BeatCarousel'
+import { slugify } from '../utils/slugify'
 
 export default function LandingPage() {
   const { beats } = useBeats()
@@ -193,7 +194,8 @@ export default function LandingPage() {
                           key={b.id}
                           type="button"
                           onClick={() => {
-                            navigate(`/beat/${b.id}`)
+                            const s = slugify(b.title || '')
+                            navigate(`/beat/${s || b.id}`)
                             setSearchOpen(false)
                           }}
                           className="flex w-full items-center justify-between px-3 py-2 text-left text-slate-100 hover:bg-slate-900/90"

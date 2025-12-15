@@ -1527,7 +1527,7 @@ function BeatCatalogRow({ beat, fallbackProducer, onBoost, onEdit, onDelete }) {
   const producer = beat?.producer || fallbackProducer || 'Producer'
   const coverUrl = beat?.coverUrl || beat?.cover_url || null
   const slug = slugify(title || '')
-  const to = slug ? `/beat/${beat.id}-${slug}` : `/beat/${beat.id}`
+  const to = slug ? `/beat/${slug}` : `/beat/${beat.id}`
 
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-slate-800/80 bg-slate-950/40 px-3 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.55)]">

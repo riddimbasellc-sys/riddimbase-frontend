@@ -14,9 +14,18 @@ import ReportModal from '../components/ReportModal'
 import { isBeatBoosted } from '../services/boostsService'
 import { useAdminRole } from '../hooks/useAdminRole'
 import ScrollableGrid from '../components/ScrollableGrid'
+import { slugify } from '../utils/slugify'
+import { supabase } from '../lib/supabaseClient'
 
 export function ProducerProfile() {
-  const { producerId } = useParams()
+  const { producerId: producerIdParam } = useParams()
+  const uuidRegex =
+    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+  const [producerId, setProducerId] = useState(() => {
+    const raw = producerIdParam ? String(producerIdParam) : ''
+    const candidate = raw.substring(0, 36)
+    return uuidRegex.test(candidate) ? candidate : null
+  })
   const { beats } = useBeats()
   const catalog = beats.filter(b => b.userId === producerId)
   const [followers, setFollowers] = useState(0)
@@ -28,6 +37,38 @@ export function ProducerProfile() {
   const [following, setFollowing] = useState(false)
   const [authPrompt, setAuthPrompt] = useState('')
   const { isAdmin } = useAdminRole()
+
+  // If the route param looks like a slug (no UUID), try to resolve it to a producer ID.
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      if (producerId || !producerIdParam) return
+      const raw = String(producerIdParam)
+      const candidate = raw.substring(0, 36)
+      if (uuidRegex.test(candidate)) {
+        if (active) setProducerId(candidate)
+        return
+      }
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, display_name')
+        if (error || !data) return
+        const targetSlug = slugify(raw || '')
+        const match = data.find((row) =>
+          slugify(row.display_name || row.id) === targetSlug,
+        )
+        if (match && active) {
+          setProducerId(match.id)
+        }
+      } catch {
+        // ignore resolution errors
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [producerId, producerIdParam])
 
   useEffect(()=> {
     (async ()=> {
@@ -125,7 +166,8 @@ export function ProducerProfile() {
     profile?.displayName ||
     authFallbackName ||
     sampleBeat?.producer ||
-    producerId
+    producerId ||
+    producerIdParam
   const bioText =
     profile?.bio?.trim()?.length
       ? profile.bio
@@ -361,7 +403,7 @@ function BeatSquareCard({ beat, boosted }) {
 
   return (
     <Link
-      to={`/beat/${beat.id}`}
+      to={`/beat/${slugify(beat.title || '') || beat.id}`}
       className="group relative aspect-square w-full overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/80 shadow-[0_14px_40px_rgba(0,0,0,0.75)] transition hover:border-red-500/70 hover:bg-slate-900"
     >
       {beat.coverUrl ? (

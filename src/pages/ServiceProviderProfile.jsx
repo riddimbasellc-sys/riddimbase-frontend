@@ -2,14 +2,16 @@ import BackButton from '../components/BackButton'
 import { useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import ProfileShareModal from '../components/ProfileShareModal'
-import { fetchProviderProfile, fetchCatalog } from '../services/supabaseProvidersRepository'
+import { fetchProviderProfile, fetchCatalog, listProviderProfiles } from '../services/supabaseProvidersRepository'
+import { slugify } from '../utils/slugify'
 import { BeatPlayer } from '../components/BeatPlayer'
 import PayPalButtonsGroup from '../components/payments/PayPalButtonsGroup'
 import { createServiceOrder } from '../services/serviceOrdersService'
 import ProviderReviews from '../components/ProviderReviews'
 
 export function ServiceProviderProfile() {
-  const { id } = useParams()
+  const { id: idParam } = useParams()
+  const [providerId, setProviderId] = useState(null)
   const [provider, setProvider] = useState(null)
   const [shareOpen, setShareOpen] = useState(false)
   const [bookOpen, setBookOpen] = useState(false)
@@ -18,11 +20,43 @@ export function ServiceProviderProfile() {
   const [buyerEmail, setBuyerEmail] = useState('')
   const [result, setResult] = useState(null)
 
+  // Resolve slug-style URLs (/services/:slug) back to a provider ID.
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      if (!idParam) return
+      const raw = String(idParam)
+      const uuidRegex =
+        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+      const candidate = raw.substring(0, 36)
+      if (uuidRegex.test(candidate)) {
+        if (active) setProviderId(candidate)
+        return
+      }
+      try {
+        const rows = await listProviderProfiles()
+        const targetSlug = slugify(raw || '')
+        const match = rows.find((row) =>
+          slugify(row.display_name || row.id) === targetSlug,
+        )
+        if (match && active) {
+          setProviderId(match.id)
+        }
+      } catch {
+        // ignore resolution errors
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [idParam])
+
   useEffect(() => {
     let active = true
     async function load() {
-      const prof = await fetchProviderProfile(id)
-      const cat = await fetchCatalog(id)
+      if (!providerId) return
+      const prof = await fetchProviderProfile(providerId)
+      const cat = await fetchCatalog(providerId)
       if (!active) return
       if (!prof) {
         setProvider(null)
@@ -52,7 +86,7 @@ export function ServiceProviderProfile() {
         })) || []
 
       setProvider({
-        id,
+        id: providerId,
         name: prof.display_name || 'Service provider',
         bio: prof.bio || '',
         location: prof.location || '',
@@ -97,7 +131,7 @@ export function ServiceProviderProfile() {
           ))}
         </div>
         <p className="mt-5 max-w-2xl text-[13px] leading-relaxed text-slate-300">{provider.bio}</p>
-        <ProviderReviews providerId={id} />
+        <ProviderReviews providerId={providerId} />
         <div className="mt-8 rounded-2xl border border-slate-800/70 bg-slate-900/70 p-5">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-100">Services</h2>
@@ -147,8 +181,8 @@ export function ServiceProviderProfile() {
         open={shareOpen}
         onClose={() => setShareOpen(false)}
         profileType="service"
-        profileId={id}
-        displayName={provider?.name || profile?.display_name || id}
+        profileId={providerId}
+        displayName={provider?.name || idParam}
       />
       {bookOpen && selectedService && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/80 p-4">
@@ -182,7 +216,7 @@ export function ServiceProviderProfile() {
                   payerEmail={buyerEmail}
                   onSuccess={async () => {
                     try {
-                      const res = await createServiceOrder({ providerId: id, serviceName: selectedService.name, price: selectedService.price, buyerName, buyerEmail })
+                      const res = await createServiceOrder({ providerId: providerId, serviceName: selectedService.name, price: selectedService.price, buyerName, buyerEmail })
                       if (res.error) {
                         setResult({ success:false, error: res.error })
                       } else {

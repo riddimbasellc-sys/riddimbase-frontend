@@ -450,7 +450,7 @@ export default Beats
 function BeatListRow({ beat }) {
   const { addBeat } = useCart() || {}
   const slug = slugify(beat?.title || '')
-  const to = slug ? `/beat/${beat.id}-${slug}` : `/beat/${beat.id}`
+  const to = slug ? `/beat/${slug}` : `/beat/${beat.id}`
 
   const coverUrl = beat?.coverUrl || beat?.cover_url || null
   const title = beat?.title || 'Untitled Beat'
