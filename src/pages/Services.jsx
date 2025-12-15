@@ -5,10 +5,12 @@ import SocialIconRow from '../components/SocialIconRow'
 import { useEffect, useState } from 'react'
 import { BeatPlayer } from '../components/BeatPlayer'
 import ScrollableGrid from '../components/ScrollableGrid'
+import { supabase } from '../lib/supabaseClient'
 
 export function Services() {
   const [providers, setProviders] = useState([])
   const [viewMode, setViewMode] = useState('grid')
+  const [proMap, setProMap] = useState({})
 
   useEffect(() => {
     let active = true
@@ -48,12 +50,31 @@ export function Services() {
         }),
       )
 
-      if (active) {
-        const enriched = baseProviders.map((p, idx) => ({
-          ...p,
-          catalog: catalogs[idx] || [],
-        }))
-        setProviders(enriched)
+      if (!active) return
+
+      const enriched = baseProviders.map((p, idx) => ({
+        ...p,
+        catalog: catalogs[idx] || [],
+      }))
+      setProviders(enriched)
+
+      // Map which providers are producer pro accounts (same plan as producers page)
+      try {
+        const ids = baseProviders.map((p) => p.id)
+        const { data: subs } = await supabase
+          .from('subscriptions')
+          .select('user_id, plan_id, status')
+          .in('user_id', ids)
+          .in('status', ['active', 'trialing', 'past_due'])
+        const pro = {}
+        ;(subs || []).forEach((row) => {
+          if (row.plan_id === 'producer-pro') {
+            pro[row.user_id] = true
+          }
+        })
+        if (active) setProMap(pro)
+      } catch {
+        if (active) setProMap({})
       }
     }
     load()
@@ -157,85 +178,139 @@ export function Services() {
                 : 'space-y-3'
             }
           >
-            {providers.map((p) => (
-              <Link
-                key={p.id}
-                to={`/services/${p.id}`}
-                className="group rounded-2xl border border-slate-800/70 bg-slate-900/70 p-5 hover:border-emerald-400/60 transition"
-              >
-              <div className="flex items-start justify-between">
-                <div>
-                  <h2 className="text-sm font-semibold text-slate-100 group-hover:text-emerald-300 transition">
-                    {p.name}
-                  </h2>
-                  <p className="mt-1 text-[11px] text-slate-400">{p.location}</p>
-                </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-800/80 text-[10px] font-bold text-slate-300 overflow-hidden">
-                  {p.avatar ? (
-                    <img src={p.avatar} alt={p.name} className="h-full w-full object-cover" />
-                  ) : (
-                    p.name
-                      .split(' ')
-                      .map((w) => w[0])
-                      .slice(0, 2)
-                      .join('')
-                  )}
-                </div>
-              </div>
-              <p className="mt-3 line-clamp-3 text-[11px] text-slate-400">{p.bio}</p>
-              {p.services.length > 0 && (
-                <div className="mt-3 space-y-1 text-[11px] text-slate-300">
-                  <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                    Services &amp; pricing
-                  </div>
-                  {p.services.slice(0, 3).map((s) => (
-                    <div key={s.name} className="flex items-center justify-between">
-                      <span className="truncate">{s.name}</span>
-                      {s.price !== undefined && s.price !== null && s.price !== '' && (
-                        <span className="ml-2 font-semibold text-emerald-300">
-                          ${Number(s.price).toFixed(0)}
+            {providers.map((p) => {
+              const isPro = !!proMap[p.id]
+
+              if (viewMode === 'list') {
+                return (
+                  <Link
+                    key={p.id}
+                    to={`/services/${p.id}`}
+                    className="flex items-center justify-between gap-4 rounded-2xl border border-slate-800/70 bg-slate-900/70 px-4 py-3 hover:border-emerald-400/60 transition"
+                  >
+                    <div className="min-w-0">
+                      <h2 className="text-sm font-semibold text-slate-100 truncate">
+                        {p.name}
+                      </h2>
+                      <p className="mt-1 text-[11px] text-slate-400 truncate">
+                        {p.location || p.bio}
+                      </p>
+                    </div>
+                    <div className="flex flex-shrink-0 items-center gap-3">
+                      {isPro && (
+                        <span className="hidden sm:inline-flex items-center gap-1 rounded-full border border-sky-400/70 bg-sky-500/15 px-2 py-[1px] text-[9px] font-semibold text-sky-200">
+                          <span>✓</span>
+                          <span>Verified Pro</span>
                         </span>
                       )}
+                      {p.contact && (
+                        <div className="hidden md:block">
+                          <SocialIconRow
+                            website={p.contact.website}
+                            instagram={p.contact.instagram}
+                            twitterX={p.contact.twitterX}
+                            whatsapp={p.contact.whatsapp}
+                            telegram={p.contact.telegram}
+                            size="xs"
+                          />
+                        </div>
+                      )}
+                      <span className="inline-block rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-medium text-emerald-300">
+                        View profile
+                      </span>
                     </div>
-                  ))}
-                </div>
-              )}
-              <div className="mt-4 flex flex-wrap gap-1.5">
-                {p.tags.map((t) => (
-                  <span
-                    key={t}
-                    className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-300"
-                  >
-                    {t}
-                  </span>
-                ))}
-              </div>
-              {p.contact && (
-                <SocialIconRow
-                  website={p.contact.website}
-                  instagram={p.contact.instagram}
-                  twitterX={p.contact.twitterX}
-                  whatsapp={p.contact.whatsapp}
-                  telegram={p.contact.telegram}
-                  size="xs"
-                />
-              )}
-              <div className="mt-4 flex items-center justify-between text-[10px] text-slate-400">
-                <span>{p.catalog.length} / 3 catalog demos</span>
-                <span className="text-emerald-400 group-hover:translate-x-1 transition-transform">
-                  View profile
-                </span>
-              </div>
-              {p.catalog[0] && (
-                <div className="mt-4 rounded-xl border border-slate-800/70 bg-slate-950/70 p-3">
-                  <p className="text-[10px] font-semibold text-slate-300">
-                    Sample: <span className="text-slate-100">{p.catalog[0].title}</span>
-                  </p>
-                  <BeatPlayer src={p.catalog[0].audioUrl} className="mt-2" />
-                </div>
-              )}
-              </Link>
-            ))}
+                  </Link>
+                )
+              }
+
+              return (
+                <Link
+                  key={p.id}
+                  to={`/services/${p.id}`}
+                  className="group rounded-2xl border border-slate-800/70 bg-slate-900/70 p-5 hover:border-emerald-400/60 transition"
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h2 className="text-sm font-semibold text-slate-100 group-hover:text-emerald-300 transition">
+                        {p.name}
+                      </h2>
+                      <p className="mt-1 text-[11px] text-slate-400">{p.location}</p>
+                    </div>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-800/80 text-[10px] font-bold text-slate-300 overflow-hidden">
+                      {p.avatar ? (
+                        <img src={p.avatar} alt={p.name} className="h-full w-full object-cover" />
+                      ) : (
+                        p.name
+                          .split(' ')
+                          .map((w) => w[0])
+                          .slice(0, 2)
+                          .join('')
+                      )}
+                    </div>
+                  </div>
+                  {isPro && (
+                    <div className="mt-2">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-sky-400/70 bg-sky-500/15 px-2 py-[1px] text-[9px] font-semibold text-sky-200">
+                        <span>✓</span>
+                        <span>Verified Pro</span>
+                      </span>
+                    </div>
+                  )}
+                  <p className="mt-3 line-clamp-3 text-[11px] text-slate-400">{p.bio}</p>
+                  {p.services.length > 0 && (
+                    <div className="mt-3 space-y-1 text-[11px] text-slate-300">
+                      <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                        Services &amp; pricing
+                      </div>
+                      {p.services.slice(0, 3).map((s) => (
+                        <div key={s.name} className="flex items-center justify-between">
+                          <span className="truncate">{s.name}</span>
+                          {s.price !== undefined && s.price !== null && s.price !== '' && (
+                            <span className="ml-2 font-semibold text-emerald-300">
+                              ${Number(s.price).toFixed(0)}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="mt-4 flex flex-wrap gap-1.5">
+                    {p.tags.map((t) => (
+                      <span
+                        key={t}
+                        className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-300"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                  {p.contact && (
+                    <SocialIconRow
+                      website={p.contact.website}
+                      instagram={p.contact.instagram}
+                      twitterX={p.contact.twitterX}
+                      whatsapp={p.contact.whatsapp}
+                      telegram={p.contact.telegram}
+                      size="xs"
+                    />
+                  )}
+                  <div className="mt-4 flex items-center justify-between text-[10px] text-slate-400">
+                    <span>{p.catalog.length} / 3 catalog demos</span>
+                    <span className="text-emerald-400 group-hover:translate-x-1 transition-transform">
+                      View profile
+                    </span>
+                  </div>
+                  {p.catalog[0] && (
+                    <div className="mt-4 rounded-xl border border-slate-800/70 bg-slate-950/70 p-3">
+                      <p className="text-[10px] font-semibold text-slate-300">
+                        Sample: <span className="text-slate-100">{p.catalog[0].title}</span>
+                      </p>
+                      <BeatPlayer src={p.catalog[0].audioUrl} className="mt-2" />
+                    </div>
+                  )}
+                </Link>
+              )
+            })}
           </ScrollableGrid>
         </div>
       </div>

@@ -11,12 +11,13 @@ export function Producers() {
   const [profiles, setProfiles] = useState({})
   const [proMap, setProMap] = useState({})
   const [viewMode, setViewMode] = useState('grid')
+
   const map = {}
   for (const b of beats) {
     if (!b.userId) continue
     map[b.userId] = (map[b.userId] || 0) + 1
   }
-  const list = Object.entries(map).sort((a,b)=>b[1]-a[1])
+  const list = Object.entries(map).sort((a, b) => b[1] - a[1])
 
   useEffect(() => {
     if (!list.length) return
@@ -50,7 +51,7 @@ export function Producers() {
           .in('user_id', ids)
           .in('status', ['active', 'trialing', 'past_due'])
         const pro = {}
-        ;(subs || []).forEach(row => {
+        ;(subs || []).forEach((row) => {
           if (row.plan_id === 'producer-pro') {
             pro[row.user_id] = true
           }
@@ -61,6 +62,7 @@ export function Producers() {
       }
     })()
   }, [beats.length])
+
   return (
     <section className="bg-slate-950/95">
       <div className="mx-auto max-w-6xl px-4 py-10">
@@ -152,38 +154,94 @@ export function Producers() {
               : 'mt-6 space-y-3'
           }
         >
-          {list.map(([pid,count]) => {
+          {list.map(([pid, count]) => {
             const prof = profiles[pid]
             // Fallback to beat producer name (usually display name or email) if profile missing
-            const beatSample = beats.find(b => b.userId === pid)
+            const beatSample = beats.find((b) => b.userId === pid)
             const fallbackName = beatSample?.producer || pid
             const displayName = prof?.displayName || fallbackName
+            const isPro = !!proMap[pid]
+
+            if (viewMode === 'list') {
+              return (
+                <Link
+                  key={pid}
+                  to={`/producer/${pid}`}
+                  className="flex items-center justify-between gap-4 rounded-2xl border border-slate-800/80 bg-slate-900/70 px-4 py-3 hover:border-emerald-400/70 transition"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-100 truncate">
+                      {displayName}
+                    </p>
+                    <p className="mt-1 text-[11px] text-slate-400">
+                      {count} beat{count !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                  <div className="flex flex-shrink-0 items-center gap-3">
+                    {isPro && (
+                      <span className="hidden sm:inline-flex items-center gap-1 rounded-full border border-sky-400/70 bg-sky-500/15 px-2 py-[1px] text-[9px] font-semibold text-sky-200">
+                        <span>✓</span>
+                        <span>Verified Pro</span>
+                      </span>
+                    )}
+                    {prof && (
+                      <div className="hidden md:block">
+                        <SocialIconRow
+                          website={prof.website}
+                          instagram={prof.instagram}
+                          twitterX={prof.twitterX}
+                          youtube={prof.youtube}
+                          size="xs"
+                        />
+                      </div>
+                    )}
+                    <span className="inline-block rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-medium text-emerald-300">
+                      View profile
+                    </span>
+                  </div>
+                </Link>
+              )
+            }
+
             return (
-            <Link key={pid} to={`/producer/${pid}`} className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-4 hover:border-emerald-400/70 transition">
-              <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-emerald-500 via-emerald-400 to-orange-500 mb-3" />
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold text-slate-100 truncate">{displayName}</p>
-                {proMap[pid] && (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/70 bg-amber-500/10 px-2 py-[1px] text-[9px] font-semibold text-amber-300">
-                    <span>★</span>
-                    <span>Verified</span>
-                  </span>
+              <Link
+                key={pid}
+                to={`/producer/${pid}`}
+                className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-4 hover:border-emerald-400/70 transition"
+              >
+                <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-emerald-500 via-emerald-400 to-orange-500 mb-3" />
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-slate-100 truncate">
+                    {displayName}
+                  </p>
+                  {isPro && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-sky-400/70 bg-sky-500/15 px-2 py-[1px] text-[9px] font-semibold text-sky-200">
+                      <span>✓</span>
+                      <span>Verified Pro</span>
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1 text-[11px] text-slate-400">
+                  {count} beat{count !== 1 ? 's' : ''}
+                </p>
+                {prof && (
+                  <SocialIconRow
+                    website={prof.website}
+                    instagram={prof.instagram}
+                    twitterX={prof.twitterX}
+                    youtube={prof.youtube}
+                    size="xs"
+                  />
                 )}
-              </div>
-              <p className="mt-1 text-[11px] text-slate-400">{count} beat{count!==1?'s':''}</p>
-              {prof && (
-                <SocialIconRow
-                  website={prof.website}
-                  instagram={prof.instagram}
-                  twitterX={prof.twitterX}
-                  youtube={prof.youtube}
-                  size="xs"
-                />
-              )}
-              <span className="mt-2 inline-block rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-medium text-emerald-300">View Profile</span>
-            </Link>
-          )})}
-          {list.length===0 && <p className="text-xs text-slate-500">No producers yet.</p>}
+                <span className="mt-2 inline-block rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-medium text-emerald-300">
+                  View Profile
+                </span>
+              </Link>
+            )
+          })}
+          {list.length === 0 && (
+            <p className="text-xs text-slate-500">No producers yet.</p>
+          )}
         </ScrollableGrid>
       </div>
     </section>

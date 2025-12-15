@@ -277,7 +277,7 @@ export function JobsBoard() {
           }
         >
           {jobs.map((j) => (
-            <JobCard key={j.id} job={j} />
+            <JobCard key={j.id} job={j} viewMode={viewMode} />
           ))}
         </div>
         {totalPages > 1 && (
@@ -306,7 +306,7 @@ export function JobsBoard() {
   )
 }
 
-function JobCard({ job }) {
+function JobCard({ job, viewMode = 'grid' }) {
   const badgeColor =
     job.status === 'open'
       ? 'emerald'
@@ -315,6 +315,29 @@ function JobCard({ job }) {
       : job.status === 'completed'
       ? 'indigo'
       : 'red'
+  if (viewMode === 'list') {
+    return (
+      <Link
+        to={`/jobs/${job.id}`}
+        className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-sm transition hover:border-red-500/60 hover:bg-white/5 shadow-[0_18px_45px_rgba(0,0,0,0.85)]"
+      >
+        <div className="min-w-0">
+          <h2 className="truncate font-semibold text-slate-100">
+            {job.title || 'Untitled job'}
+          </h2>
+          {job.status && (
+            <p className="mt-0.5 text-[11px] text-slate-400 capitalize">
+              {job.status}
+            </p>
+          )}
+        </div>
+        <span className="ml-3 flex-shrink-0 rounded-full bg-slate-800/80 px-3 py-1 text-[11px] font-medium text-slate-100">
+          View job
+        </span>
+      </Link>
+    )
+  }
+
   return (
     <Link
       to={`/jobs/${job.id}`}
