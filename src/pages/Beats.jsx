@@ -29,6 +29,7 @@ export function Beats() {
   const [viewMode, setViewMode] = useState('grid')
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const [genreFilter, setGenreFilter] = useState('')
+  const [sortKey, setSortKey] = useState('trending')
 
   const openShare = (beat) => setShareTarget(beat)
   const closeShare = () => setShareTarget(null)
@@ -76,14 +77,50 @@ export function Beats() {
     })
   }, [beats, normalizedSearch, normalizedGenre])
 
+  const sortedBeats = useMemo(() => {
+    const list = [...filteredBeats]
+    if (!list.length) return list
+
+    if (sortKey === 'newest') {
+      return list.sort((a, b) => {
+        const at = a.createdAt ? new Date(a.createdAt).getTime() : 0
+        const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0
+        return bt - at
+      })
+    }
+
+    if (sortKey === 'price-low') {
+      return list.sort(
+        (a, b) => Number(a.price || 0) - Number(b.price || 0),
+      )
+    }
+
+    if (sortKey === 'price-high') {
+      return list.sort(
+        (a, b) => Number(b.price || 0) - Number(a.price || 0),
+      )
+    }
+
+    // Default: trending by favorites and likes
+    return list.sort((a, b) => {
+      const likesA = metrics.likeCounts[a.id] || 0
+      const favA = metrics.favoriteCounts[a.id] || 0
+      const likesB = metrics.likeCounts[b.id] || 0
+      const favB = metrics.favoriteCounts[b.id] || 0
+      const scoreA = favA * 3 + likesA
+      const scoreB = favB * 3 + likesB
+      return scoreB - scoreA
+    })
+  }, [filteredBeats, sortKey, metrics])
+
   const boostedBeats = useMemo(
     () => beats.filter((b) => boostedMap.has(b.id)),
     [beats, boostedMap],
   )
 
   const boostedFilteredBeats = useMemo(
-    () => filteredBeats.filter((b) => boostedMap.has(b.id)),
-    [filteredBeats, boostedMap],
+    () => sortedBeats.filter((b) => boostedMap.has(b.id)),
+    [sortedBeats, boostedMap],
   )
 
   useEffect(() => {
@@ -165,7 +202,10 @@ export function Beats() {
               <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-rb-sun-gold">
                 Sort
               </h2>
-              <select className="mt-2 w-full rounded-lg border border-slate-700/80 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100 focus:border-rb-trop-cyan focus:outline-none">
+              <select
+                value={sortKey}
+                onChange={(e) => setSortKey(e.target.value)}
+                className="mt-2 w-full rounded-lg border border-slate-700/80 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100 focus:border-red-500 focus:outline-none">
                 <option>Trending</option>
                 <option>Newest</option>
                 <option>Price: Low → High</option>
@@ -187,8 +227,8 @@ export function Beats() {
                         onClick={() => setGenreFilter(active ? '' : g)}
                         className={`rounded-full px-2 py-1 text-[10px] transition ${
                           active
-                            ? 'border-rb-trop-cyan bg-slate-900 text-rb-trop-cyan'
-                            : 'border border-slate-700/70 text-slate-300 hover:border-rb-trop-cyan hover:text-rb-trop-cyan'
+                            ? 'border-red-500 bg-red-500/10 text-red-300'
+                            : 'border border-slate-700/70 text-slate-300 hover:border-red-400 hover:text-red-300'
                         }`}
                       >
                         {g}
@@ -322,13 +362,13 @@ export function Beats() {
             {viewMode === 'grid' ? (
               <ScrollableGrid gridClassName={mainGridClasses}>
                 {!loading &&
-                  filteredBeats.map((b) => (
+                  sortedBeats.map((b) => (
                     <TrendingBeatCard key={b.id} beat={b} />
                   ))}
               </ScrollableGrid>
             ) : (
               <ScrollableGrid gridClassName="space-y-2">
-                {!loading && filteredBeats.map((b) => <BeatListRow key={b.id} beat={b} />)}
+                {!loading && sortedBeats.map((b) => <BeatListRow key={b.id} beat={b} />)}
               </ScrollableGrid>
             )}
 
@@ -373,7 +413,10 @@ export function Beats() {
                 <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-rb-sun-gold">
                   Sort
                 </h3>
-                <select className="mt-2 w-full rounded-lg border border-slate-700/80 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100 focus:border-rb-trop-cyan focus:outline-none">
+                  <select
+                    value={sortKey}
+                    onChange={(e) => setSortKey(e.target.value)}
+                    className="mt-2 w-full rounded-lg border border-slate-700/80 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100 focus:border-red-500 focus:outline-none">
                   <option>Trending</option>
                   <option>Newest</option>
                   <option>Price: Low → High</option>
@@ -384,26 +427,26 @@ export function Beats() {
                 <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-rb-sun-gold">
                   Genres
                 </h3>
-                <div className="mt-2 flex flex-wrap gap-2 text-[10px]">
-                  {['Dancehall', 'Trap Dancehall', 'Reggae', 'Afrobeat', 'Soca', 'Trap', 'Hip Hop', 'Drill'].map(
-                    (g) => {
-                      const active = genreFilter === g
-                      return (
-                        <button
-                          key={g}
-                          type="button"
-                          onClick={() => setGenreFilter(active ? '' : g)}
-                          className={`rounded-full px-2 py-1 text-[10px] transition ${
-                            active
-                              ? 'border-rb-trop-cyan bg-slate-900 text-rb-trop-cyan'
-                              : 'border border-slate-700/70 text-slate-300 hover:border-rb-trop-cyan hover:text-rb-trop-cyan'
-                          }`}
-                        >
-                          {g}
-                        </button>
-                      )
-                    },
-                  )}
+                  <div className="mt-2 flex flex-wrap gap-2 text-[10px]">
+                    {['Dancehall', 'Trap Dancehall', 'Reggae', 'Afrobeat', 'Soca', 'Trap', 'Hip Hop', 'Drill'].map(
+                      (g) => {
+                        const active = genreFilter === g
+                        return (
+                          <button
+                            key={g}
+                            type="button"
+                            onClick={() => setGenreFilter(active ? '' : g)}
+                            className={`rounded-full px-2 py-1 text-[10px] transition ${
+                              active
+                                ? 'border-red-500 bg-red-500/10 text-red-300'
+                                : 'border border-slate-700/70 text-slate-300 hover:border-red-400 hover:text-red-300'
+                            }`}
+                          >
+                            {g}
+                          </button>
+                        )
+                      },
+                    )}
                   {genreFilter && (
                     <button
                       type="button"
