@@ -45,6 +45,13 @@ export function DesignPanel() {
     }))
   }
 
+  const handleHeroBackgroundColorChange = (backgroundColor) => {
+    setDraft((prev) => ({
+      ...prev,
+      hero: { ...(prev.hero || {}), backgroundColor },
+    }))
+  }
+
   const handleSave = async () => {
     setLocalError(null)
     try {
@@ -159,6 +166,8 @@ export function DesignPanel() {
               {activeTab === 'hero' && (
                 <BannerManager
                   banners={draft.hero?.banners || []}
+                  heroBackgroundColor={draft.hero?.backgroundColor || '#050505'}
+                  onBackgroundColorChange={handleHeroBackgroundColorChange}
                   onChange={handleBannersChange}
                 />
               )}
