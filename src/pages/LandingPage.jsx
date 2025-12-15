@@ -17,7 +17,8 @@ export default function LandingPage() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [plans, setPlans] = useState([])
   const { settings } = useSiteSettings()
-  const heroBanners = settings?.hero?.banners || []
+  const heroSettings = settings?.hero || {}
+  const heroBanners = heroSettings.banners || []
   const heroBackgrounds = heroBanners
     .filter((b) => b.backgroundUrl)
     .map((b) => b.backgroundUrl)
@@ -125,28 +126,58 @@ export default function LandingPage() {
     }, 2000)
   }
 
+  const activeBanner =
+    heroBanners.find((b) => b.active) || heroBanners[0] || null
+  const heroTitle =
+    activeBanner?.title || 'The Home of Caribbean Beats.'
+  const heroSubtitle =
+    activeBanner?.subtitle ||
+    'Discover, sell and license Dancehall, Reggae, Trap Dancehall, Afro-Caribbean and more on a platform built for Caribbean creators, with global reach.'
+  const heroFallbackColor = heroSettings.backgroundColor || '#050505'
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#050505] via-[#05070a] to-black text-slate-100">
       <main className="mx-auto max-w-6xl px-4">
         {/* HERO */}
-        <section className="relative py-10 md:py-14 lg:py-18 overflow-hidden">
+        <section
+          className="relative py-10 md:py-14 lg:py-18 overflow-hidden"
+          style={
+            heroBackgrounds.length === 0
+              ? { backgroundColor: heroFallbackColor }
+              : undefined
+          }
+        >
           {heroBackgrounds.length > 0 && (
             <div className="absolute inset-0 -z-10">
-              {heroBackgrounds.map((url, idx) => (
-                <div
-                  key={url + idx}
-                  className={`absolute inset-0 transition-opacity duration-[1200ms] ${
-                    idx === heroBgIndex ? 'opacity-100' : 'opacity-0'
-                  }`}
-                >
-                  <img
-                    src={url}
-                    alt="Hero background"
-                    className="h-full w-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/75 to-black/95" />
-                </div>
-              ))}
+              {heroBackgrounds.map((url, idx) => {
+                const isVideo = /\.(mp4|webm|ogg)(\?|$)/i.test(url)
+                return (
+                  <div
+                    key={url + idx}
+                    className={`absolute inset-0 transition-opacity duration-[1200ms] ${
+                      idx === heroBgIndex ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  >
+                    {isVideo ? (
+                      <video
+                        src={url}
+                        className="h-full w-full object-cover"
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                      />
+                    ) : (
+                      <img
+                        src={url}
+                        alt="Hero background"
+                        className="h-full w-full object-cover"
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/75 to-black/95" />
+                  </div>
+                )
+              })}
             </div>
           )}
 
@@ -154,11 +185,10 @@ export default function LandingPage() {
             <div className="flex w-full flex-col items-center justify-center space-y-6">
               <div>
                 <h1 className="text-balance text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-[2.9rem]">
-                  The <span className="text-red-500">Home of Caribbean</span> Beats.
+                  {heroTitle}
                 </h1>
                 <p className="mt-3 max-w-2xl mx-auto text-sm text-slate-300 sm:text-[15px]">
-                  Discover, sell and license Dancehall, Reggae, Trap Dancehall, Afro-Caribbean and more on a
-                  platform built for Caribbean creators, with global reach.
+                  {heroSubtitle}
                 </p>
 
                 {/* Hero search bar with live suggestions */}
