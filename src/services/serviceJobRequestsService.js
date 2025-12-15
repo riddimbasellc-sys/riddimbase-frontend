@@ -1,11 +1,27 @@
 // Service layer for job requests using Supabase only (no localStorage fallback)
-import { createJobRequestSupabase, listJobRequestsSupabase, listJobRequestsByUserSupabase, getJobRequestSupabase, addBidToJobSupabase, updateJobStatusSupabase, computeJobRequestsStatsSupabase, updateJobBidsSupabase, deleteJobRequestSupabase } from './serviceJobRequestsRepository'
+import {
+  createJobRequestSupabase,
+  listJobRequestsSupabase,
+  listJobRequestsByUserSupabase,
+  getJobRequestSupabase,
+  addBidToJobSupabase,
+  updateJobStatusSupabase,
+  computeJobRequestsStatsSupabase,
+  updateJobBidsSupabase,
+  deleteJobRequestSupabase,
+} from './serviceJobRequestsRepository'
 
 export async function createJobRequest(fields) {
-  if (!fields.userId || !fields.title || !fields.category) return { error: 'Missing required fields' }
-  return createJobRequestSupabase(fields)
-    .then(job => ({ job }))
-    .catch(() => ({ error: 'Failed to create job' }))
+  if (!fields.userId || !fields.title || !fields.category) {
+    return { error: 'Missing required fields' }
+  }
+  try {
+    const job = await createJobRequestSupabase(fields)
+    return { job }
+  } catch (e) {
+    console.warn('[createJobRequest] Supabase error', e?.message || e)
+    return { error: e?.message || 'Failed to create job' }
+  }
 }
 
 export async function queryJobRequests(filters) {
