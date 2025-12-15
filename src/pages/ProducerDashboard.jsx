@@ -22,7 +22,7 @@ import { getSubscription } from '../services/subscriptionService'
 import { queryJobRequests } from '../services/serviceJobRequestsService'
 import { fetchProducerMetrics } from '../services/producerMetricsService'
 import { createBeat, deleteBeat as deleteBeatRemote } from '../services/beatsRepository'
-import { uploadArtwork, uploadFeedAttachment } from '../services/storageService'
+import { uploadArtwork, uploadBundle, uploadFeedAttachment } from '../services/storageService'
 import { createPost } from '../services/feedService'
 
 export function ProducerDashboard() {
@@ -388,17 +388,37 @@ export function ProducerDashboard() {
     if (!updated || !user) return
     try {
       let coverUrl = updated.coverUrl || null
+      let bundleUrl = updated.bundleUrl || null
+      let bundleName = updated.bundleName || null
+
       if (updated.newArtworkFile) {
         const { publicUrl } = await uploadArtwork(updated.newArtworkFile)
         coverUrl = publicUrl
       }
+
+      if (updated.newBundleFile) {
+        const { publicUrl, key } = await uploadBundle(updated.newBundleFile)
+        bundleUrl = publicUrl
+        bundleName = updated.newBundleFile.name || key || null
+      }
+
+      const licensePrices = updated.licensePrices || null
+
       const payload = {
         id: updated.id,
         user_id: user.id,
         title: updated.title,
+        description: updated.description || null,
+        genre: updated.genre || null,
         bpm: updated.bpm ? Number(updated.bpm) : null,
+        price: updated.price ? Number(updated.price) : null,
+        musical_key: updated.musicalKey || null,
         cover_url: coverUrl,
         collaborator: updated.collaborator || null,
+        bundle_url: bundleUrl,
+        bundle_name: bundleName,
+        license_prices: licensePrices,
+        free_download: !!updated.freeDownload,
       }
       await createBeat(payload)
     } finally {
@@ -1226,10 +1246,22 @@ function PerformanceChart({ data }) {
 
 function EditBeatModal({ beat, onClose, onSave }) {
   const [title, setTitle] = useState(beat?.title || '')
+  const [description, setDescription] = useState(beat?.description || '')
+  const [genre, setGenre] = useState(beat?.genre || '')
   const [bpm, setBpm] = useState(beat?.bpm || '')
+  const [musicalKey, setMusicalKey] = useState(beat?.musicalKey || beat?.musical_key || '')
+  const [price, setPrice] = useState(beat?.price || '')
   const [collaborator, setCollaborator] = useState(beat?.collaborator || '')
+  const [freeDownload, setFreeDownload] = useState(!!beat?.freeDownload)
   const [artworkFile, setArtworkFile] = useState(null)
+  const [bundleFile, setBundleFile] = useState(null)
   const [saving, setSaving] = useState(false)
+
+  const existingPrices = beat?.licensePrices || beat?.license_prices || {}
+  const [basicPrice, setBasicPrice] = useState(existingPrices.Basic || beat?.price || '')
+  const [premiumPrice, setPremiumPrice] = useState(existingPrices.Premium || '')
+  const [unlimitedPrice, setUnlimitedPrice] = useState(existingPrices.Unlimited || '')
+  const [exclusivePrice, setExclusivePrice] = useState(existingPrices.Exclusive || '')
 
   if (!beat) return null
 
@@ -1241,10 +1273,24 @@ function EditBeatModal({ beat, onClose, onSave }) {
       await onSave({
         id: beat.id,
         title: title || beat.title,
+        description,
+        genre,
         bpm,
+        musicalKey,
+        price,
         collaborator,
+        freeDownload,
         coverUrl: beat.coverUrl || beat.cover_url || null,
         newArtworkFile: artworkFile,
+        newBundleFile: bundleFile,
+        bundleUrl: beat.bundleUrl || beat.bundle_url || null,
+        bundleName: beat.bundleName || beat.bundle_name || null,
+        licensePrices: {
+          Basic: basicPrice ? Number(basicPrice) : null,
+          Premium: premiumPrice ? Number(premiumPrice) : null,
+          Unlimited: unlimitedPrice ? Number(unlimitedPrice) : null,
+          Exclusive: exclusivePrice ? Number(exclusivePrice) : null,
+        },
       })
     } finally {
       setSaving(false)
@@ -1253,50 +1299,193 @@ function EditBeatModal({ beat, onClose, onSave }) {
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 px-4">
-      <div className="w-full max-w-md rounded-2xl border border-slate-800/80 bg-slate-950/95 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.85)]">
-        <h2 className="text-sm font-semibold text-slate-100">Edit beat</h2>
+      <div className="w-full max-w-2xl rounded-2xl border border-slate-800/80 bg-slate-950/95 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.85)]">
+        <h2 className="text-sm font-semibold text-slate-100">Edit beat details</h2>
         <p className="mt-1 text-[11px] text-slate-400">
-          Update title, BPM, artwork, or add a collaborator.
+          Update metadata, artwork, pricing and stems. Audio file stays the same.
         </p>
-        <form onSubmit={handleSubmit} className="mt-4 space-y-3 text-[11px]">
-          <div>
-            <label className="font-semibold text-slate-300">Title</label>
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-[11px] text-slate-100 focus:border-emerald-400/70 focus:outline-none"
-            />
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4 text-[11px]">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-3">
+              <div>
+                <label className="font-semibold text-slate-300">Title</label>
+                <input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-[11px] text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="font-semibold text-slate-300">Description</label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                  className="mt-1 w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-[11px] text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/70 focus:outline-none"
+                  placeholder="Mood, vibe, placement suggestions…"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold text-slate-300">Genre</label>
+                  <input
+                    value={genre}
+                    onChange={(e) => setGenre(e.target.value)}
+                    placeholder="Dancehall, Trap, Afrobeat…"
+                    className="mt-1 w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-[11px] text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-300">Key</label>
+                  <input
+                    value={musicalKey}
+                    onChange={(e) => setMusicalKey(e.target.value)}
+                    placeholder="e.g. F#m"
+                    className="mt-1 w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-[11px] text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold text-slate-300">BPM</label>
+                  <input
+                    type="number"
+                    value={bpm}
+                    onChange={(e) => setBpm(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-[11px] text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-300">Base price</label>
+                  <div className="mt-1 flex items-center rounded-lg border border-slate-700/80 bg-slate-900/80 px-3 py-2">
+                    <span className="mr-1 text-[10px] text-slate-400">$</span>
+                    <input
+                      type="number"
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      className="w-full bg-transparent text-[11px] text-slate-100 outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="font-semibold text-slate-300">Collaborator</label>
+                <input
+                  value={collaborator}
+                  onChange={(e) => setCollaborator(e.target.value)}
+                  placeholder="Optional co-producer or beat maker"
+                  className="mt-1 w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-[11px] text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                />
+              </div>
+              <label className="mt-1 inline-flex items-center gap-2 text-[11px] text-slate-200">
+                <input
+                  type="checkbox"
+                  checked={freeDownload}
+                  onChange={(e) => setFreeDownload(e.target.checked)}
+                  className="h-3.5 w-3.5 rounded border-slate-600 bg-slate-900 text-emerald-400 focus:ring-emerald-500"
+                />
+                Allow free download
+              </label>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="font-semibold text-slate-300">Artwork</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setArtworkFile(e.target.files?.[0] || null)}
+                  className="mt-1 block w-full text-[11px] text-slate-300"
+                />
+                <p className="mt-1 text-[10px] text-slate-500">
+                  Leave empty to keep current artwork.
+                </p>
+              </div>
+              <div>
+                <label className="font-semibold text-slate-300">Stems / bundle</label>
+                <input
+                  type="file"
+                  onChange={(e) => setBundleFile(e.target.files?.[0] || null)}
+                  className="mt-1 block w-full text-[11px] text-slate-300"
+                />
+                <p className="mt-1 text-[10px] text-slate-500">
+                  Upload a ZIP of stems or project files. Leave empty to keep existing bundle.
+                </p>
+                {beat.bundleName && (
+                  <p className="mt-1 text-[10px] text-slate-400">
+                    Current bundle: <span className="font-medium text-slate-200">{beat.bundleName}</span>
+                  </p>
+                )}
+              </div>
+              <div>
+                <h3 className="text-[11px] font-semibold text-slate-200">
+                  License pricing
+                </h3>
+                <p className="mt-1 text-[10px] text-slate-500">
+                  Set prices per tier. Leave blank to fall back to your base price.
+                </p>
+                <div className="mt-2 grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] font-medium text-slate-300">
+                      Basic
+                    </label>
+                    <div className="mt-1 flex items-center rounded-lg border border-slate-700/80 bg-slate-900/80 px-3 py-2">
+                      <span className="mr-1 text-[10px] text-slate-400">$</span>
+                      <input
+                        type="number"
+                        value={basicPrice}
+                        onChange={(e) => setBasicPrice(e.target.value)}
+                        className="w-full bg-transparent text-[11px] text-slate-100 outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-medium text-slate-300">
+                      Premium
+                    </label>
+                    <div className="mt-1 flex items-center rounded-lg border border-slate-700/80 bg-slate-900/80 px-3 py-2">
+                      <span className="mr-1 text-[10px] text-slate-400">$</span>
+                      <input
+                        type="number"
+                        value={premiumPrice}
+                        onChange={(e) => setPremiumPrice(e.target.value)}
+                        className="w-full bg-transparent text-[11px] text-slate-100 outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-medium text-slate-300">
+                      Unlimited
+                    </label>
+                    <div className="mt-1 flex items-center rounded-lg border border-slate-700/80 bg-slate-900/80 px-3 py-2">
+                      <span className="mr-1 text-[10px] text-slate-400">$</span>
+                      <input
+                        type="number"
+                        value={unlimitedPrice}
+                        onChange={(e) => setUnlimitedPrice(e.target.value)}
+                        className="w-full bg-transparent text-[11px] text-slate-100 outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-medium text-slate-300">
+                      Exclusive
+                    </label>
+                    <div className="mt-1 flex items-center rounded-lg border border-slate-700/80 bg-slate-900/80 px-3 py-2">
+                      <span className="mr-1 text-[10px] text-slate-400">$</span>
+                      <input
+                        type="number"
+                        value={exclusivePrice}
+                        onChange={(e) => setExclusivePrice(e.target.value)}
+                        className="w-full bg-transparent text-[11px] text-slate-100 outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="font-semibold text-slate-300">BPM</label>
-            <input
-              type="number"
-              value={bpm}
-              onChange={(e) => setBpm(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-[11px] text-slate-100 focus:border-emerald-400/70 focus:outline-none"
-            />
-          </div>
-          <div>
-            <label className="font-semibold text-slate-300">Collaborator</label>
-            <input
-              value={collaborator}
-              onChange={(e) => setCollaborator(e.target.value)}
-              placeholder="Optional co-producer or beat maker"
-              className="mt-1 w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-[11px] text-slate-100 focus:border-emerald-400/70 focus:outline-none"
-            />
-          </div>
-          <div>
-            <label className="font-semibold text-slate-300">Artwork</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setArtworkFile(e.target.files?.[0] || null)}
-              className="mt-1 block w-full text-[11px] text-slate-300"
-            />
-            <p className="mt-1 text-[10px] text-slate-500">
-              Leave empty to keep current artwork.
-            </p>
-          </div>
+
           <div className="mt-4 flex justify-end gap-2">
             <button
               type="button"

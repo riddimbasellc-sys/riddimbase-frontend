@@ -17,6 +17,7 @@ import {
   deletePost,
 } from '../services/feedService'
 import ReportModal from '../components/ReportModal'
+import ScrollableGrid from '../components/ScrollableGrid'
 
 function timeAgo(ts) {
   if (!ts) return ''
@@ -474,7 +475,7 @@ export default function Feed() {
                 <h2 className="text-sm font-semibold text-slate-100">
                   From producers you follow
                 </h2>
-                <div className="grid grid-cols-1 gap-3 xs:grid-cols-2 lg:grid-cols-3">
+                <ScrollableGrid gridClassName="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3">
                   {repostFeed.map(({ beat, byUserId, repostedAt }) => {
                     const name =
                       repostProfiles[byUserId] || 'Producer you follow'
@@ -496,7 +497,7 @@ export default function Feed() {
                       </div>
                     )
                   })}
-                </div>
+                </ScrollableGrid>
               </div>
             )}
 
@@ -509,11 +510,11 @@ export default function Feed() {
                   </p>
                 )}
                 {recommendedBeats.length > 0 && (
-                  <div className="grid grid-cols-1 gap-3 xs:grid-cols-2 lg:grid-cols-3">
+                  <ScrollableGrid gridClassName="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3">
                     {recommendedBeats.map((beat) => (
                       <BeatCard key={beat.id} {...beat} square />
                     ))}
-                  </div>
+                  </ScrollableGrid>
                 )}
               </div>
             )}

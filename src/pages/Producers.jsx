@@ -4,6 +4,7 @@ import BackButton from '../components/BackButton'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import SocialIconRow from '../components/SocialIconRow'
+import ScrollableGrid from '../components/ScrollableGrid'
 
 export function Producers() {
   const { beats } = useBeats()
@@ -67,7 +68,7 @@ export function Producers() {
           <h1 className="font-display text-2xl font-semibold text-slate-50">Producers</h1>
         </div>
         <p className="mt-1 text-sm text-slate-300">Browse active producers and explore their catalogs.</p>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <ScrollableGrid gridClassName="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {list.map(([pid,count]) => {
             const prof = profiles[pid]
             // Fallback to beat producer name (usually display name or email) if profile missing
@@ -100,7 +101,7 @@ export function Producers() {
             </Link>
           )})}
           {list.length===0 && <p className="text-xs text-slate-500">No producers yet.</p>}
-        </div>
+        </ScrollableGrid>
       </div>
     </section>
   )
