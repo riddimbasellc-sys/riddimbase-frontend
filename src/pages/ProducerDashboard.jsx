@@ -25,6 +25,17 @@ import { createBeat, deleteBeat as deleteBeatRemote } from '../services/beatsRep
 import { uploadArtwork, uploadBundle, uploadFeedAttachment } from '../services/storageService'
 import { createPost } from '../services/feedService'
 
+const GENRES = [
+  'Dancehall',
+  'Trap Dancehall',
+  'Reggae',
+  'Afrobeat',
+  'Soca',
+  'Trap',
+  'Hip Hop',
+  'Drill',
+]
+
 export function ProducerDashboard() {
   const navigate = useNavigate()
   const { user, loading } = useSupabaseUser()
@@ -420,7 +431,34 @@ export function ProducerDashboard() {
         license_prices: licensePrices,
         free_download: !!updated.freeDownload,
       }
-      await createBeat(payload)
+      const saved = await createBeat(payload)
+
+      if (saved && saved.id) {
+        setManagedBeats((prev) =>
+          prev.map((b) =>
+            b.id === saved.id
+              ? {
+                  ...b,
+                  title: saved.title ?? b.title,
+                  description: saved.description || '',
+                  genre: saved.genre || b.genre,
+                  bpm: saved.bpm || b.bpm,
+                  price: saved.price || b.price,
+                  musicalKey: saved.musical_key || b.musicalKey,
+                  coverUrl: saved.cover_url || b.coverUrl,
+                  bundleUrl: saved.bundle_url || b.bundleUrl,
+                  bundleName: saved.bundle_name || b.bundleName,
+                  collaborator: saved.collaborator || b.collaborator,
+                  licensePrices: saved.license_prices || b.licensePrices,
+                  freeDownload:
+                    typeof saved.free_download === 'boolean'
+                      ? saved.free_download
+                      : b.freeDownload,
+                }
+              : b,
+          ),
+        )
+      }
     } finally {
       setEditingBeat(null)
     }
@@ -1247,7 +1285,9 @@ function PerformanceChart({ data }) {
 function EditBeatModal({ beat, onClose, onSave }) {
   const [title, setTitle] = useState(beat?.title || '')
   const [description, setDescription] = useState(beat?.description || '')
-  const [genre, setGenre] = useState(beat?.genre || '')
+  const initialGenre =
+    beat?.genre && GENRES.includes(beat.genre) ? beat.genre : GENRES[0]
+  const [genre, setGenre] = useState(initialGenre)
   const [bpm, setBpm] = useState(beat?.bpm || '')
   const [musicalKey, setMusicalKey] = useState(beat?.musicalKey || beat?.musical_key || '')
   const [price, setPrice] = useState(beat?.price || '')
@@ -1328,12 +1368,17 @@ function EditBeatModal({ beat, onClose, onSave }) {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="font-semibold text-slate-300">Genre</label>
-                  <input
+                  <select
                     value={genre}
                     onChange={(e) => setGenre(e.target.value)}
-                    placeholder="Dancehall, Trap, Afrobeat…"
                     className="mt-1 w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-[11px] text-slate-100 focus:border-emerald-400/70 focus:outline-none"
-                  />
+                  >
+                    {GENRES.map((g) => (
+                      <option key={g} value={g}>
+                        {g}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="font-semibold text-slate-300">Key</label>
