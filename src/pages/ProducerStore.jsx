@@ -76,26 +76,33 @@ export default function ProducerStore() {
     setPriceMax(isNaN(initPrice) ? 999 : initPrice)
     let active = true
     ;(async () => {
+      if (!producerId) {
+        // Wait until producerId is resolved (UUID or via slug)
+        return
+      }
       try {
-        const list = await fetchBeatsByProducerId(producerId, { limit: pageSize, offset: 0, genre, maxPrice: priceMax, query })
+        setLoading(true)
+        const list = await fetchBeatsByProducerId(producerId, { limit: pageSize, offset: 0, genre: initGenre, maxPrice: isNaN(initPrice) ? 999 : initPrice, query: initQuery })
         if (!active) return
         setBeats(Array.isArray(list) ? list : [])
       } catch {
+        if (!active) return
         setBeats([])
       } finally {
-        setLoading(false)
+        if (active) setLoading(false)
       }
     })()
     return () => { active = false }
   }, [producerId, location.search])
 
   useEffect(() => {
+    if (!producerId) return
     let active = true
     ;(async () => {
       try {
         const p = await getProducerProfile(producerId)
         if (active) setProfile(p || null)
-      } catch { setProfile(null) }
+      } catch { if (active) setProfile(null) }
     })()
     return () => { active = false }
   }, [producerId])
