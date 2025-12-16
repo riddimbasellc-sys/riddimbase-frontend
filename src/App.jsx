@@ -60,6 +60,7 @@ import AdminTheme from './pages/AdminTheme'
 import AdminEmailTemplates from './pages/AdminEmailTemplates'
 import AdminAnalytics from './pages/AdminAnalytics'
 import AdminDesign from './pages/AdminDesign'
+import AdminChat from './pages/AdminChat'
 import ProducerInbox from './pages/ProducerInbox'
 import { JobDelivery } from './pages/JobDelivery'
 import { MyJobs } from './pages/MyJobs'
@@ -68,6 +69,7 @@ import { Chat } from './pages/Chat'
 import UploadSoundkit from './pages/UploadSoundkit'
 import Soundkits from './pages/Soundkits'
 import Feed from './pages/Feed'
+import { MultiCheckout } from './pages/MultiCheckout'
 
 function App() {
   const { isAdmin } = useAdminRole()
@@ -109,6 +111,7 @@ function App() {
         <Route path="/jobs/:jobId/delivery" element={<JobDelivery />} />
         <Route path="/subscribe/:planId" element={<SubscriptionCheckout />} />
         <Route path="/checkout/:id" element={<Checkout />} />
+        <Route path="/checkout/cart" element={<MultiCheckout />} />
         <Route path="/my-ads" element={<MyAds />} />
         <Route path="/chat" element={<Chat />} />
         <Route path="/cart" element={<Cart />} />
@@ -139,6 +142,7 @@ function App() {
         <Route path="/admin/tickets" element={<AdminTickets />} />
         <Route path="/admin/footer-links" element={<AdminFooterLinks />} />
         <Route path="/admin/agents" element={<AdminAgents />} />
+        <Route path="/admin/chat" element={<AdminChat />} />
         <Route path="/admin/socials" element={<AdminSocials />} />
         <Route path="/admin/theme" element={<AdminTheme />} />
         <Route path="/admin/email-templates" element={<AdminEmailTemplates />} />
@@ -152,6 +156,5 @@ function App() {
 }
 
 export default App
-
 
 
