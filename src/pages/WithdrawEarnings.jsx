@@ -14,7 +14,7 @@ export function WithdrawEarnings() {
   const { user, loading } = useSupabaseUser()
   const navigate = useNavigate()
   const [amount, setAmount] = useState('')
-  const [currency, setCurrency] = useState('USD')
+  const currency = 'USD'
   const [note, setNote] = useState('')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -29,6 +29,15 @@ export function WithdrawEarnings() {
   const [bankBranch, setBankBranch] = useState('')
   const [accountType, setAccountType] = useState('checking')
   const [subscription, setSubscription] = useState(null)
+  const [addressModalOpen, setAddressModalOpen] = useState(false)
+  const [address, setAddress] = useState({
+    line1: '',
+    line2: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    country: '',
+  })
 
   const PLATFORM_COMMISSION_RATE = 0.15
   const PAYPAL_PCT = 0.029
@@ -99,15 +108,30 @@ export function WithdrawEarnings() {
     if (methodType === 'paypal' && !paypalEmail) return
     if (methodType === 'bank' && (!bankName || !accountNumber || !accountType)) return
     setSubmitting(true)
+    const trimmedAddress = {
+      line1: address.line1.trim(),
+      line2: address.line2.trim(),
+      city: address.city.trim(),
+      state: address.state.trim(),
+      postalCode: address.postalCode.trim(),
+      country: address.country.trim(),
+    }
+
     let methodDetails =
       methodType === 'paypal'
-        ? { firstName: firstName.trim(), lastName: lastName.trim(), paypalEmail }
+        ? {
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            paypalEmail,
+            address: trimmedAddress,
+          }
         : {
             firstName: firstName.trim(),
             lastName: lastName.trim(),
             bankName,
             accountLast4: accountNumber.slice(-4),
             accountType,
+            address: trimmedAddress,
           }
     if (bankBranch) methodDetails.bankBranch = bankBranch
     if (routingNumber) methodDetails.routingNumber = routingNumber
@@ -127,7 +151,120 @@ export function WithdrawEarnings() {
   }
 
   return (
-    <section className="bg-slate-950/95 min-h-screen">
+    <section className="bg-slate-950/95 min-h-screen relative">
+      {addressModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-slate-800/80 bg-slate-950/95 p-5 text-[12px] text-slate-100 shadow-xl">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-slate-50">Payout address</h2>
+              <button
+                type="button"
+                onClick={() => setAddressModalOpen(false)}
+                className="text-[16px] leading-none text-slate-500 hover:text-slate-300"
+              >
+                ×
+              </button>
+            </div>
+            <div className="mt-4 space-y-3">
+              <div>
+                <label className="text-[10px] font-semibold text-slate-400">
+                  Address line 1
+                </label>
+                <input
+                  value={address.line1}
+                  onChange={(e) =>
+                    setAddress((prev) => ({ ...prev, line1: e.target.value }))
+                  }
+                  className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-semibold text-slate-400">
+                  Address line 2 (optional)
+                </label>
+                <input
+                  value={address.line2}
+                  onChange={(e) =>
+                    setAddress((prev) => ({ ...prev, line2: e.target.value }))
+                  }
+                  className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100"
+                />
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div>
+                  <label className="text-[10px] font-semibold text-slate-400">
+                    City
+                  </label>
+                  <input
+                    value={address.city}
+                    onChange={(e) =>
+                      setAddress((prev) => ({ ...prev, city: e.target.value }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-slate-400">
+                    State / Region
+                  </label>
+                  <input
+                    value={address.state}
+                    onChange={(e) =>
+                      setAddress((prev) => ({ ...prev, state: e.target.value }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div>
+                  <label className="text-[10px] font-semibold text-slate-400">
+                    Postal code
+                  </label>
+                  <input
+                    value={address.postalCode}
+                    onChange={(e) =>
+                      setAddress((prev) => ({
+                        ...prev,
+                        postalCode: e.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-slate-400">
+                    Country
+                  </label>
+                  <input
+                    value={address.country}
+                    onChange={(e) =>
+                      setAddress((prev) => ({ ...prev, country: e.target.value }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end gap-2 text-[11px]">
+              <button
+                type="button"
+                onClick={() => setAddressModalOpen(false)}
+                className="rounded-full border border-slate-700/70 bg-slate-900 px-4 py-1.5 text-slate-200 hover:border-slate-500/80"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => setAddressModalOpen(false)}
+                className="rounded-full bg-emerald-500 px-4 py-1.5 font-semibold text-slate-950 hover:bg-emerald-400"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="mx-auto max-w-5xl px-4 py-10">
         <div className="mb-4 flex items-center gap-3">
           <BackButton />
@@ -219,6 +356,27 @@ export function WithdrawEarnings() {
                     className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-[12px] text-slate-100"
                   />
                 </div>
+              </div>
+
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setAddressModalOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-700/70 bg-slate-900/80 px-3 py-1.5 text-[11px] font-medium text-slate-200 hover:border-emerald-400/70 hover:text-emerald-200"
+                >
+                  <span role="img" aria-label="Address">
+                    🏠
+                  </span>
+                  <span>{address.line1 ? 'Edit payout address' : 'Add payout address'}</span>
+                </button>
+                {address.line1 && (
+                  <p className="mt-1 text-[10px] text-slate-500">
+                    {address.line1}
+                    {address.line2 ? `, ${address.line2}` : ''}
+                    {address.city ? ` • ${address.city}` : ''}
+                    {address.country ? ` • ${address.country}` : ''}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="text-[10px] font-semibold text-slate-400">
@@ -324,21 +482,6 @@ export function WithdrawEarnings() {
                 <p className="mt-1 text-[10px] text-slate-500">
                   Max: ${available.toFixed(2)} • Withdrawal Fee: $0.00
                 </p>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-semibold text-slate-400">
-                  Currency
-                </label>
-                <select
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-[12px] text-slate-100"
-                >
-                  {['USD', 'EUR', 'GBP', 'CAD'].map((c) => (
-                    <option key={c}>{c}</option>
-                  ))}
-                </select>
               </div>
 
               <div>

@@ -11,6 +11,16 @@ export function AdminPayouts() {
   const [loadingPayouts, setLoadingPayouts] = useState(true)
   const [plansByUser, setPlansByUser] = useState({})
 
+  const parseMethodDetails = (value) => {
+    if (!value) return {}
+    if (typeof value === 'object') return value
+    try {
+      return JSON.parse(value)
+    } catch {
+      return {}
+    }
+  }
+
   useEffect(() => {
     ;(async () => {
       try {
@@ -71,7 +81,9 @@ export function AdminPayouts() {
             currency: updated.currency || 'USD',
           },
         })
-      } catch {}
+      } catch {
+        // ignore notification failure
+      }
     }
     setItems(await listAllPayouts())
   }
@@ -81,7 +93,9 @@ export function AdminPayouts() {
       <div className="mx-auto max-w-5xl px-4 py-10">
         <div className="flex items-center gap-3">
           <BackButton />
-          <h1 className="font-display text-2xl font-semibold text-slate-50">Payout Management</h1>
+          <h1 className="font-display text-2xl font-semibold text-slate-50">
+            Payout Management
+          </h1>
         </div>
         <p className="mt-1 text-sm text-slate-300">
           Review and mark producer withdrawals. Producer Pro accounts qualify for instant payouts.
@@ -91,12 +105,15 @@ export function AdminPayouts() {
           {!loadingPayouts &&
             items.map((p) => {
               const planInfo = plansByUser[p.userId]
+              const details = parseMethodDetails(p.methodDetails)
+              const addr = details.address || {}
               const payoutType =
                 planInfo?.payoutType === 'instant' ? 'Instant payout' : 'Regular payout'
               const badgeClass =
                 planInfo?.payoutType === 'instant'
                   ? 'border-emerald-400/70 bg-emerald-500/10 text-emerald-300'
                   : 'border-slate-600/70 bg-slate-800/80 text-slate-200'
+
               return (
                 <div
                   key={p.id}
@@ -107,6 +124,23 @@ export function AdminPayouts() {
                     <p className="mt-0.5 text-[11px] text-slate-400">
                       User: {p.userId} • Amount: ${p.amount} {p.currency}
                     </p>
+                    {(details.firstName || details.lastName || details.paypalEmail) && (
+                      <p className="mt-0.5 text-[11px] text-slate-400">
+                        Recipient:{' '}
+                        {[details.firstName, details.lastName].filter(Boolean).join(' ')}
+                        {details.paypalEmail ? ` • PayPal: ${details.paypalEmail}` : ''}
+                      </p>
+                    )}
+                    {addr.line1 && (
+                      <p className="mt-0.5 text-[10px] text-slate-500">
+                        Address: {addr.line1}
+                        {addr.line2 ? `, ${addr.line2}` : ''}
+                        {addr.city ? `, ${addr.city}` : ''}
+                        {addr.state ? `, ${addr.state}` : ''}
+                        {addr.postalCode ? `, ${addr.postalCode}` : ''}
+                        {addr.country ? `, ${addr.country}` : ''}
+                      </p>
+                    )}
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px]">
                       <span
                         className={`inline-flex items-center rounded-full border px-2 py-[2px] font-semibold ${badgeClass}`}
@@ -116,7 +150,7 @@ export function AdminPayouts() {
                       <span className="text-slate-500">Status: {p.status}</span>
                     </div>
                   </div>
-                  <div className="flex gap-2 text-[11px] mt-1 md:mt-0">
+                  <div className="mt-1 flex gap-2 text-[11px] md:mt-0">
                     {p.status === 'pending' && (
                       <button
                         onClick={() => complete(p.id)}
