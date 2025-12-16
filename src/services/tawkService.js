@@ -5,10 +5,21 @@ const PROPERTY_ID = import.meta.env.VITE_TAWK_PROPERTY_ID || ''
 const WIDGET_ID = import.meta.env.VITE_TAWK_WIDGET_ID || ''
 
 let injected = false
+let styleInjected = false
 
 export function loadTawk() {
   if (injected || !PROPERTY_ID || !WIDGET_ID) return
   injected = true
+
+  // Hide the default Tawk launcher button so only our custom
+  // "Get help" bubble is visible. The chat window can still open.
+  if (!styleInjected) {
+    const style = document.createElement('style')
+    style.textContent =
+      '#tawkchat-container .tawk-button { display: none !important; }'
+    document.head.appendChild(style)
+    styleInjected = true
+  }
 
   window.Tawk_API = window.Tawk_API || {}
   window.Tawk_LoadStart = new Date()
