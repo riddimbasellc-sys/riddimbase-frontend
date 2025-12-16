@@ -11,6 +11,8 @@ export function Services() {
   const [providers, setProviders] = useState([])
   const [viewMode, setViewMode] = useState('grid')
   const [proMap, setProMap] = useState({})
+  const [search, setSearch] = useState('')
+  const [suggestions, setSuggestions] = useState([])
 
   useEffect(() => {
     let active = true
@@ -83,10 +85,32 @@ export function Services() {
     }
   }, [])
 
+  useEffect(() => {
+    const term = search.trim()
+    if (!term) {
+      setSuggestions([])
+      return
+    }
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('provider_profiles')
+          .select('id, display_name, tags')
+          .or(
+            `display_name.ilike.%${term}%,tags.ilike.%${term}%`,
+          )
+          .limit(6)
+        setSuggestions(data || [])
+      } catch {
+        setSuggestions([])
+      }
+    })()
+  }, [search])
+
   return (
     <section className="bg-slate-950/95">
       <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-10">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
             <BackButton />
             <div>
@@ -99,6 +123,39 @@ export function Services() {
               </p>
             </div>
           </div>
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+            <div className="relative w-full max-w-xs">
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search services or providers"
+                className="w-full rounded-full border border-slate-700/70 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100 placeholder:text-slate-500"
+              />
+              {suggestions.length > 0 && (
+                <div className="absolute z-20 mt-1 w-full max-h-60 overflow-auto rounded-xl border border-slate-800/80 bg-slate-950/95 text-[11px] text-slate-100 shadow-lg">
+                  {suggestions.map((p) => (
+                    <Link
+                      key={p.id}
+                      to={`/services/${p.id}`}
+                      onClick={() => {
+                        setSuggestions([])
+                        setSearch('')
+                      }}
+                      className="flex w-full flex-col items-start px-3 py-2 text-left hover:bg-slate-900/90"
+                    >
+                      <span className="w-full truncate font-semibold">
+                        {p.display_name || 'Provider'}
+                      </span>
+                      {p.tags && (
+                        <span className="mt-0.5 w-full truncate text-[10px] text-slate-400">
+                          {p.tags}
+                        </span>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
           <div className="hidden md:flex items-center gap-2">
             <button
               type="button"
@@ -178,7 +235,15 @@ export function Services() {
                 : 'space-y-3'
             }
           >
-            {providers.map((p) => {
+            {providers
+              .filter((p) => {
+                const term = search.trim().toLowerCase()
+                if (!term) return true
+                const name = (p.name || '').toLowerCase()
+                const tags = (p.tags || []).join(' ').toLowerCase()
+                return name.includes(term) || tags.includes(term)
+              })
+              .map((p) => {
               const isPro = !!proMap[p.id]
 
               if (viewMode === 'list') {

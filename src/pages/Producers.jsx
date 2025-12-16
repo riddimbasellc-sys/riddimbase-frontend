@@ -11,6 +11,8 @@ export function Producers() {
   const [profiles, setProfiles] = useState({})
   const [proMap, setProMap] = useState({})
   const [viewMode, setViewMode] = useState('grid')
+  const [search, setSearch] = useState('')
+  const [suggestions, setSuggestions] = useState([])
 
   const map = {}
   for (const b of beats) {
@@ -63,10 +65,41 @@ export function Producers() {
     })()
   }, [beats.length])
 
+  useEffect(() => {
+    const term = search.trim()
+    if (!term) {
+      setSuggestions([])
+      return
+    }
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, display_name, role, email')
+          .or(
+            `display_name.ilike.%${term}%,email.ilike.%${term}%`,
+          )
+          .limit(6)
+        setSuggestions(data || [])
+      } catch {
+        setSuggestions([])
+      }
+    })()
+  }, [search])
+
+  const filteredList = list.filter(([pid]) => {
+    const term = search.trim().toLowerCase()
+    if (!term) return true
+    const prof = profiles[pid]
+    const beatSample = beats.find((b) => b.userId === pid)
+    const name = (prof?.displayName || beatSample?.producer || pid || '').toLowerCase()
+    return name.includes(term)
+  })
+
   return (
     <section className="bg-slate-950/95">
       <div className="mx-auto max-w-6xl px-4 py-10">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
             <BackButton />
             <div>
@@ -76,7 +109,40 @@ export function Producers() {
               </p>
             </div>
           </div>
-          <div className="hidden md:flex items-center gap-2">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+            <div className="relative w-full max-w-xs">
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by name or email"
+                className="w-full rounded-full border border-slate-700/70 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100 placeholder:text-slate-500"
+              />
+              {suggestions.length > 0 && (
+                <div className="absolute z-20 mt-1 w-full max-h-60 overflow-auto rounded-xl border border-slate-800/80 bg-slate-950/95 text-[11px] text-slate-100 shadow-lg">
+                  {suggestions.map((p) => (
+                    <Link
+                      key={p.id}
+                      to={`/producer/${p.id}`}
+                      onClick={() => {
+                        setSuggestions([])
+                        setSearch('')
+                      }}
+                      className="flex w-full flex-col items-start px-3 py-2 text-left hover:bg-slate-900/90"
+                    >
+                      <span className="w-full truncate font-semibold">
+                        {p.display_name || p.email || 'Producer'}
+                      </span>
+                      {p.role && (
+                        <span className="mt-0.5 w-full truncate text-[10px] text-slate-400">
+                          {p.role}
+                        </span>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="hidden md:flex items-center gap-2">
             <button
               type="button"
               onClick={() => setViewMode('list')}
@@ -154,7 +220,7 @@ export function Producers() {
               : 'mt-6 space-y-3'
           }
         >
-          {list.map(([pid, count]) => {
+          {filteredList.map(([pid, count]) => {
             const prof = profiles[pid]
             // Fallback to beat producer name (usually display name or email) if profile missing
             const beatSample = beats.find((b) => b.userId === pid)
@@ -239,7 +305,7 @@ export function Producers() {
               </Link>
             )
           })}
-          {list.length === 0 && (
+          {filteredList.length === 0 && (
             <p className="text-xs text-slate-500">No producers yet.</p>
           )}
         </ScrollableGrid>
