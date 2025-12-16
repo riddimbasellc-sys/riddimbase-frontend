@@ -16,6 +16,8 @@ export function WithdrawEarnings() {
   const [amount, setAmount] = useState('')
   const [currency, setCurrency] = useState('USD')
   const [note, setNote] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState(null)
   const [payouts, setPayouts] = useState([])
@@ -93,13 +95,20 @@ export function WithdrawEarnings() {
     e.preventDefault()
     const v = parseFloat(amount)
     if (!v || v <= 0 || v > available) return
+    if (!firstName.trim() || !lastName.trim()) return
     if (methodType === 'paypal' && !paypalEmail) return
     if (methodType === 'bank' && (!bankName || !accountNumber || !accountType)) return
     setSubmitting(true)
     let methodDetails =
       methodType === 'paypal'
-        ? { paypalEmail }
-        : { bankName, accountLast4: accountNumber.slice(-4), accountType }
+        ? { firstName: firstName.trim(), lastName: lastName.trim(), paypalEmail }
+        : {
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            bankName,
+            accountLast4: accountNumber.slice(-4),
+            accountType,
+          }
     if (bankBranch) methodDetails.bankBranch = bankBranch
     if (routingNumber) methodDetails.routingNumber = routingNumber
     const p = await createPayout({
@@ -187,6 +196,30 @@ export function WithdrawEarnings() {
           {/* Withdrawal Form */}
           <div className="md:col-span-2 rounded-2xl border border-slate-800/80 bg-slate-900/80 p-6">
             <form onSubmit={submit} className="space-y-4">
+              <div className="grid gap-3 md:grid-cols-2">
+                <div>
+                  <label className="text-[10px] font-semibold text-slate-400">
+                    First name
+                  </label>
+                  <input
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="John"
+                    className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-[12px] text-slate-100"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-slate-400">
+                    Last name
+                  </label>
+                  <input
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="Doe"
+                    className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-[12px] text-slate-100"
+                  />
+                </div>
+              </div>
               <div>
                 <label className="text-[10px] font-semibold text-slate-400">
                   Withdrawal Method
