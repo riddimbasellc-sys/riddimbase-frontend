@@ -115,6 +115,17 @@ export function BeatCard({
     }
   }
 
+  const handleFreeDownloadClick = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    // Add to cart with Basic license to keep flow consistent, then navigate
+    if (addBeat) {
+      addBeat(id, 'Basic')
+    }
+    // Navigate to cart; checkout page will present free download based on beat flag
+    window.location.href = '/cart'
+  }
+
   const handleLike = async (e) => {
     e.preventDefault()
     e.stopPropagation()
@@ -172,7 +183,7 @@ export function BeatCard({
   const wrapperProps = noLink
     ? {}
     : {
-        to: slug ? `/beat/${id}-${slug}` : `/beat/${id}`,
+        to: slug ? `/beat/${slug}` : `/beat/${id}`,
         state: {
           beat: {
             id,
@@ -289,6 +300,16 @@ export function BeatCard({
               <span>🛒</span>
               <span>${priceLabel}</span>
             </button>
+            {freeDownload && (
+              <button
+                type="button"
+                onClick={handleFreeDownloadClick}
+                className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-2.5 py-1 font-semibold text-red-200 hover:bg-red-500/30"
+                title="Free download"
+              >
+                <span>⬇️</span>
+              </button>
+            )}
           </div>
         </div>
       </Wrapper>
@@ -365,6 +386,16 @@ export function BeatCard({
             <span className="text-[11px] font-semibold text-red-400">
               ${price?.toFixed ? price.toFixed(2) : Number(price || 0).toFixed(2)}
             </span>
+            {freeDownload && (
+              <button
+                type="button"
+                onClick={handleFreeDownloadClick}
+                className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-2.5 py-1 font-semibold text-red-200 hover:bg-red-500/30"
+                title="Free download"
+              >
+                <span>⬇️</span>
+              </button>
+            )}
           </div>
         </div>
       </Wrapper>
@@ -503,15 +534,14 @@ export function BeatCard({
 
       {freeDownload && (
         <div className="mt-2 text-right">
-          <a
-            href={`/checkout/${id}?mode=free`}
-            onClick={(e) => {
-              e.stopPropagation()
-            }}
+          <button
+            type="button"
+            onClick={handleFreeDownloadClick}
             className="inline-flex items-center rounded-full border border-red-400/70 bg-red-500/10 px-3 py-1 text-[10px] font-semibold text-red-200 hover:bg-red-500/20"
+            title="Free download"
           >
-            Free download
-          </a>
+            ⬇️ Free download
+          </button>
         </div>
       )}
     </Wrapper>
