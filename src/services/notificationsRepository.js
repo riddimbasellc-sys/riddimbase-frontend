@@ -1,5 +1,4 @@
 import { supabase } from '../lib/supabaseClient'
-import { addNotification as addLocal, getNotifications as getLocal, markAllRead as markLocal } from './notificationsService'
 
 const TABLE = 'notifications'
 
@@ -12,9 +11,8 @@ export async function addNotification({ recipientId, actorId, type, data }) {
   if (supabaseAvailable()) {
     const { error, data: rows } = await supabase.from(TABLE).insert({ user_id: recipientId, actor_id: actorId || null, type, data })
     if (!error) return rows?.[0] || null
-    console.warn('[notificationsRepository] insert error; falling back to local', error)
+    console.warn('[notificationsRepository] insert error', error)
   }
-  addLocal(type, { ...data, recipientId, actorId })
   return null
 }
 
@@ -23,18 +21,17 @@ export async function listNotifications(recipientId) {
   if (supabaseAvailable()) {
     const { data: rows, error } = await supabase.from(TABLE).select('*').eq('user_id', recipientId).order('created_at', { ascending: false }).limit(250)
     if (!error && rows) return rows.map(r => ({ id: r.id, type: r.type, data: r.data || {}, ts: new Date(r.created_at).getTime(), read: r.read }))
-    if (error) console.warn('[notificationsRepository] list error; using local fallback', error)
+    if (error) console.warn('[notificationsRepository] list error', error)
   }
-  return getLocal()
+  return []
 }
 
 export async function markAllRead(recipientId) {
   if (recipientId && supabaseAvailable()) {
     const { error } = await supabase.from(TABLE).update({ read: true }).eq('user_id', recipientId).eq('read', false)
     if (!error) return
-    console.warn('[notificationsRepository] markAllRead error; local fallback', error)
+    console.warn('[notificationsRepository] markAllRead error', error)
   }
-  markLocal()
 }
 
 export function realtimeSubscribe(recipientId, onEvent) {
