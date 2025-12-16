@@ -123,13 +123,24 @@ export async function listTicketMessages(ticketId) {
   return data || []
 }
 
-export async function addTicketMessage({ ticketId, senderId, senderType, message }) {
-  if (!ticketId || !message) return null
+export async function addTicketMessage({
+  ticketId,
+  senderId,
+  senderType,
+  message,
+  attachmentUrl,
+  attachmentType,
+  attachmentName,
+}) {
+  if (!ticketId || (!message && !attachmentUrl)) return null
   const payload = {
     ticket_id: ticketId,
     sender_id: senderId || null,
     sender_type: senderType,
-    message,
+    message: message || '',
+    attachment_url: attachmentUrl || null,
+    attachment_type: attachmentType || null,
+    attachment_name: attachmentName || null,
   }
   const { data, error } = await supabase
     .from(TABLE_MESSAGES)
