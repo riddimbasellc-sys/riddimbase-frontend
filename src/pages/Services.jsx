@@ -1,10 +1,10 @@
-import BackButton from '../components/BackButton'
-import { listProviderProfiles, fetchCatalog } from '../services/supabaseProvidersRepository'
-import { Link } from 'react-router-dom'
-import SocialIconRow from '../components/SocialIconRow'
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import BackButton from '../components/BackButton'
+import SocialIconRow from '../components/SocialIconRow'
 import { BeatPlayer } from '../components/BeatPlayer'
 import ScrollableGrid from '../components/ScrollableGrid'
+import { listProviderProfiles, fetchCatalog } from '../services/supabaseProvidersRepository'
 import { supabase } from '../lib/supabaseClient'
 
 export function Services() {
@@ -16,8 +16,10 @@ export function Services() {
 
   useEffect(() => {
     let active = true
+
     async function load() {
       const rows = await listProviderProfiles()
+
       const baseProviders = rows.map((row) => ({
         id: row.id,
         name: row.display_name || row.id,
@@ -30,6 +32,7 @@ export function Services() {
             .filter(Boolean) || [],
         bio: row.bio || '',
         contact: {
+          website: row.website || '',
           email: row.contact_email || '',
           phone: row.contact_phone || '',
           instagram: row.instagram || '',
@@ -60,7 +63,6 @@ export function Services() {
       }))
       setProviders(enriched)
 
-      // Map which providers are producer pro accounts (same plan as producers page)
       try {
         const ids = baseProviders.map((p) => p.id)
         const { data: subs } = await supabase
@@ -68,18 +70,23 @@ export function Services() {
           .select('user_id, plan_id, status')
           .in('user_id', ids)
           .in('status', ['active', 'trialing', 'past_due'])
-        const pro = {}
-        ;(subs || []).forEach((row) => {
-          if (row.plan_id === 'producer-pro') {
-            pro[row.user_id] = true
-          }
-        })
-        if (active) setProMap(pro)
+
+        if (active) {
+          const pro = {}
+          ;(subs || []).forEach((row) => {
+            if (row.plan_id === 'producer-pro') {
+              pro[row.user_id] = true
+            }
+          })
+          setProMap(pro)
+        }
       } catch {
         if (active) setProMap({})
       }
     }
+
     load()
+
     return () => {
       active = false
     }
@@ -91,21 +98,33 @@ export function Services() {
       setSuggestions([])
       return
     }
+
+    let active = true
     ;(async () => {
       try {
         const { data } = await supabase
           .from('provider_profiles')
           .select('id, display_name, tags')
-          .or(
-            `display_name.ilike.%${term}%,tags.ilike.%${term}%`,
-          )
+          .or(`display_name.ilike.%${term}%,tags.ilike.%${term}%`)
           .limit(6)
-        setSuggestions(data || [])
+        if (active) setSuggestions(data || [])
       } catch {
-        setSuggestions([])
+        if (active) setSuggestions([])
       }
     })()
+
+    return () => {
+      active = false
+    }
   }, [search])
+
+  const filteredProviders = providers.filter((p) => {
+    const term = search.trim().toLowerCase()
+    if (!term) return true
+    const name = (p.name || '').toLowerCase()
+    const tags = (p.tags || []).join(' ').toLowerCase()
+    return name.includes(term) || tags.includes(term)
+  })
 
   return (
     <section className="bg-slate-950/95">
@@ -156,40 +175,41 @@ export function Services() {
                 </div>
               )}
             </div>
-          <div className="hidden md:flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setViewMode('list')}
-              className={`flex h-8 w-8 items-center justify-center rounded-full border text-[12px] ${
-                viewMode === 'list'
-                  ? 'border-emerald-400 bg-slate-900 text-emerald-300'
-                  : 'border-slate-700 bg-slate-900 text-slate-300'
-              }`}
-              aria-label="List view"
-            >
-              <span className="flex flex-col gap-[2px]">
-                <span className="h-[2px] w-4 rounded bg-current" />
-                <span className="h-[2px] w-4 rounded bg-current" />
-                <span className="h-[2px] w-4 rounded bg-current" />
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('grid')}
-              className={`flex h-8 w-8 items-center justify-center rounded-full border text-[12px] ${
-                viewMode === 'grid'
-                  ? 'border-emerald-400 bg-slate-900 text-emerald-300'
-                  : 'border-slate-700 bg-slate-900 text-slate-300'
-              }`}
-              aria-label="Grid view"
-            >
-              <span className="grid h-3 w-3 grid-cols-2 gap-[2px]">
-                <span className="rounded bg-current" />
-                <span className="rounded bg-current" />
-                <span className="rounded bg-current" />
-                <span className="rounded bg-current" />
-              </span>
-            </button>
+            <div className="hidden items-center gap-2 md:flex">
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                className={`flex h-8 w-8 items-center justify-center rounded-full border text-[12px] ${
+                  viewMode === 'list'
+                    ? 'border-emerald-400 bg-slate-900 text-emerald-300'
+                    : 'border-slate-700 bg-slate-900 text-slate-300'
+                }`}
+                aria-label="List view"
+              >
+                <span className="flex flex-col gap-[2px]">
+                  <span className="h-[2px] w-4 rounded bg-current" />
+                  <span className="h-[2px] w-4 rounded bg-current" />
+                  <span className="h-[2px] w-4 rounded bg-current" />
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                className={`flex h-8 w-8 items-center justify-center rounded-full border text-[12px] ${
+                  viewMode === 'grid'
+                    ? 'border-emerald-400 bg-slate-900 text-emerald-300'
+                    : 'border-slate-700 bg-slate-900 text-slate-300'
+                }`}
+                aria-label="Grid view"
+              >
+                <span className="grid h-3 w-3 grid-cols-2 gap-[2px]">
+                  <span className="rounded bg-current" />
+                  <span className="rounded bg-current" />
+                  <span className="rounded bg-current" />
+                  <span className="rounded bg-current" />
+                </span>
+              </button>
+            </div>
           </div>
         </div>
         <div className="mt-4 flex items-center justify-end gap-2 md:hidden">
@@ -235,15 +255,7 @@ export function Services() {
                 : 'space-y-3'
             }
           >
-            {providers
-              .filter((p) => {
-                const term = search.trim().toLowerCase()
-                if (!term) return true
-                const name = (p.name || '').toLowerCase()
-                const tags = (p.tags || []).join(' ').toLowerCase()
-                return name.includes(term) || tags.includes(term)
-              })
-              .map((p) => {
+            {filteredProviders.map((p) => {
               const isPro = !!proMap[p.id]
 
               if (viewMode === 'list') {
@@ -251,20 +263,18 @@ export function Services() {
                   <Link
                     key={p.id}
                     to={`/services/${p.id}`}
-                    className="flex items-center justify-between gap-4 rounded-2xl border border-slate-800/70 bg-slate-900/70 px-4 py-3 hover:border-emerald-400/60 transition"
+                    className="flex items-center justify-between gap-4 rounded-2xl border border-slate-800/70 bg-slate-900/70 px-4 py-3 transition hover:border-emerald-400/60"
                   >
                     <div className="min-w-0">
-                      <h2 className="text-sm font-semibold text-slate-100 truncate">
-                        {p.name}
-                      </h2>
-                      <p className="mt-1 text-[11px] text-slate-400 truncate">
+                      <h2 className="truncate text-sm font-semibold text-slate-100">{p.name}</h2>
+                      <p className="mt-1 truncate text-[11px] text-slate-400">
                         {p.location || p.bio}
                       </p>
                     </div>
                     <div className="flex flex-shrink-0 items-center gap-3">
                       {isPro && (
-                        <span className="hidden sm:inline-flex items-center gap-1 rounded-full border border-sky-400/70 bg-sky-500/15 px-2 py-[1px] text-[9px] font-semibold text-sky-200">
-                          <span>✓</span>
+                        <span className="hidden items-center gap-1 rounded-full border border-sky-400/70 bg-sky-500/15 px-2 py-[1px] text-[9px] font-semibold text-sky-200 sm:inline-flex">
+                          <span>バ"</span>
                           <span>Verified Pro</span>
                         </span>
                       )}
@@ -292,16 +302,16 @@ export function Services() {
                 <Link
                   key={p.id}
                   to={`/services/${p.id}`}
-                  className="group rounded-2xl border border-slate-800/70 bg-slate-900/70 p-5 hover:border-emerald-400/60 transition"
+                  className="group rounded-2xl border border-slate-800/70 bg-slate-900/70 p-5 transition hover:border-emerald-400/60"
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <h2 className="text-sm font-semibold text-slate-100 group-hover:text-emerald-300 transition">
+                      <h2 className="text-sm font-semibold text-slate-100 transition group-hover:text-emerald-300">
                         {p.name}
                       </h2>
                       <p className="mt-1 text-[11px] text-slate-400">{p.location}</p>
                     </div>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-800/80 text-[10px] font-bold text-slate-300 overflow-hidden">
+                    <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-slate-800/80 text-[10px] font-bold text-slate-300">
                       {p.avatar ? (
                         <img src={p.avatar} alt={p.name} className="h-full w-full object-cover" />
                       ) : (
@@ -316,7 +326,7 @@ export function Services() {
                   {isPro && (
                     <div className="mt-2">
                       <span className="inline-flex items-center gap-1 rounded-full border border-sky-400/70 bg-sky-500/15 px-2 py-[1px] text-[9px] font-semibold text-sky-200">
-                        <span>✓</span>
+                        <span>バ"</span>
                         <span>Verified Pro</span>
                       </span>
                     </div>
@@ -350,18 +360,20 @@ export function Services() {
                     ))}
                   </div>
                   {p.contact && (
-                    <SocialIconRow
-                      website={p.contact.website}
-                      instagram={p.contact.instagram}
-                      twitterX={p.contact.twitterX}
-                      whatsapp={p.contact.whatsapp}
-                      telegram={p.contact.telegram}
-                      size="xs"
-                    />
+                    <div className="mt-3">
+                      <SocialIconRow
+                        website={p.contact.website}
+                        instagram={p.contact.instagram}
+                        twitterX={p.contact.twitterX}
+                        whatsapp={p.contact.whatsapp}
+                        telegram={p.contact.telegram}
+                        size="xs"
+                      />
+                    </div>
                   )}
                   <div className="mt-4 flex items-center justify-between text-[10px] text-slate-400">
                     <span>{p.catalog.length} / 3 catalog demos</span>
-                    <span className="text-emerald-400 group-hover:translate-x-1 transition-transform">
+                    <span className="text-emerald-400 transition-transform group-hover:translate-x-1">
                       View profile
                     </span>
                   </div>
