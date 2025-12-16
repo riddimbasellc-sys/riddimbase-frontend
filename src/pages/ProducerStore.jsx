@@ -4,9 +4,17 @@ import BackButton from '../components/BackButton'
 import { BeatCard } from '../components/BeatCard'
 import { fetchBeatsByProducerId } from '../services/beatsRepository'
 import { getProducerProfile } from '../services/producerProfileService'
+import { supabase } from '../lib/supabaseClient'
+import { slugify } from '../utils/slugify'
 
 export default function ProducerStore() {
-  const { producerId } = useParams()
+  const { producerId: producerIdParam } = useParams()
+  const [producerId, setProducerId] = useState(() => {
+    const raw = producerIdParam ? String(producerIdParam) : ''
+    const candidate = raw.substring(0, 36)
+    const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    return uuidRegex.test(candidate) ? candidate : null
+  })
   const location = useLocation()
   const navigate = useNavigate()
   const [beats, setBeats] = useState([])
@@ -22,6 +30,33 @@ export default function ProducerStore() {
   const [priceMax, setPriceMax] = useState(999)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [chips, setChips] = useState([])
+
+  // Resolve non-UUID route params (slugs) to actual producer ID
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      if (producerId || !producerIdParam) return
+      const raw = String(producerIdParam)
+      const candidate = raw.substring(0, 36)
+      const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+      if (uuidRegex.test(candidate)) {
+        if (active) setProducerId(candidate)
+        return
+      }
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, display_name')
+        if (error || !data) return
+        const targetSlug = slugify(raw || '')
+        const match = data.find((row) => slugify(row.display_name || row.id) === targetSlug)
+        if (match && active) setProducerId(match.id)
+      } catch {
+        // ignore resolution errors
+      }
+    })()
+    return () => { active = false }
+  }, [producerId, producerIdParam])
 
   useEffect(() => {
     // Initialize from URL or localStorage
@@ -212,7 +247,7 @@ export default function ProducerStore() {
               <p className="text-sm font-semibold text-slate-50">{profile.displayName || 'Producer'}</p>
               <p className="text-[11px] text-slate-400 truncate">{profile.bio || 'Browse the full catalog from this producer.'}</p>
             </div>
-            <a href={`/producer/${producerId}`} className="rounded-full border border-slate-700/70 bg-slate-800/70 px-3 py-1.5 text-[11px] text-slate-200 hover:bg-slate-700/70">View Profile</a>
+            <a href={`/producer/${producerId || producerIdParam}`} className="rounded-full border border-slate-700/70 bg-slate-800/70 px-3 py-1.5 text-[11px] text-slate-200 hover:bg-slate-700/70">View Profile</a>
           </div>
         )}
 
