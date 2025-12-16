@@ -308,7 +308,9 @@ export function SubscriptionCheckout() {
                   <p className="text-sm font-semibold text-slate-50">
                     {baseAmount > 0 ? `$${baseAmount.toFixed(2)}` : 'Free'}
                   </p>
-                  <p className="text-[10px] text-slate-400">per month</p>
+                  <p className="text-[10px] text-slate-400">
+                    per {billingCycle === 'yearly' ? 'year' : 'month'}
+                  </p>
                 </div>
               </div>
 
@@ -457,7 +459,7 @@ export function SubscriptionCheckout() {
                     {details.name} Plan
                   </span>
                   <span className="text-slate-100">
-                    ${baseAmount.toFixed(2)}/mo
+                    ${baseAmount.toFixed(2)}/{billingCycle === 'yearly' ? 'yr' : 'mo'}
                   </span>
                 </div>
                 <p className="mt-1 text-[10px] text-slate-400">
