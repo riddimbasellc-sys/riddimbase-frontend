@@ -29,6 +29,11 @@ export function SubscriptionCheckout() {
   const { user, plan, loading } = useUserPlan()
 
   const planId = paramPlanId || 'free'
+
+  const searchParams = new URLSearchParams(location.search)
+  const initialCycle = searchParams.get('cycle') === 'yearly' ? 'yearly' : 'monthly'
+  const kind = searchParams.get('kind') || null
+
   const [planMeta, setPlanMeta] = useState(null)
   const details = {
     name:
@@ -41,6 +46,7 @@ export function SubscriptionCheckout() {
 
   const [step, setStep] = useState(1)
   const [processing, setProcessing] = useState(false)
+  const [billingCycle] = useState(initialCycle)
   const [billing, setBilling] = useState({
     firstName: '',
     lastName: '',
@@ -54,9 +60,7 @@ export function SubscriptionCheckout() {
     country: '',
   })
 
-  const [baseAmount, setBaseAmount] = useState(
-    planId === 'starter' ? 9.99 : planId === 'pro' ? 19.99 : 0,
-  )
+  const [baseAmount, setBaseAmount] = useState(0)
 
   useEffect(() => {
     let active = true
@@ -66,8 +70,14 @@ export function SubscriptionCheckout() {
         if (!active || !meta) return
         setPlanMeta(meta)
         const monthly = Number(meta.monthly || 0)
-        if (monthly > 0) {
+        const yearly = Number(meta.yearly || 0)
+
+        if (billingCycle === 'yearly' && yearly > 0) {
+          setBaseAmount(yearly)
+        } else if (monthly > 0) {
           setBaseAmount(monthly)
+        } else {
+          setBaseAmount(0)
         }
       } catch {
         // fall back to defaults
@@ -76,7 +86,7 @@ export function SubscriptionCheckout() {
     return () => {
       active = false
     }
-  }, [planId])
+  }, [planId, billingCycle])
 
   const [couponCode, setCouponCode] = useState('')
   const [couponResult, setCouponResult] = useState(null)
@@ -133,8 +143,6 @@ export function SubscriptionCheckout() {
   }
 
   const alreadyActive = plan === planId
-  const search = new URLSearchParams(location.search)
-  const kind = search.get('kind') || null
   const isProducerPro = planId === 'pro' && kind === 'producer'
 
   const close = () => navigate(-1)
@@ -469,7 +477,9 @@ export function SubscriptionCheckout() {
                   )}
                   <p className="mt-1 flex justify-between font-semibold text-slate-50">
                     <span>Total</span>
-                    <span>${finalAmount.toFixed(2)}/mo</span>
+                    <span>
+                      ${finalAmount.toFixed(2)}/{billingCycle === 'yearly' ? 'yr' : 'mo'}
+                    </span>
                   </p>
                 </div>
               </div>

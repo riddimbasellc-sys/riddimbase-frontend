@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react'
 import BackButton from '../components/BackButton'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { listPlans } from '../services/plansRepository'
 import useUserPlan from '../hooks/useUserPlan'
 import { cancelSubscription, getSubscription } from '../services/subscriptionService'
 
 export function Pricing() {
-  const [cycle, setCycle] = useState('monthly')
+  const location = useLocation()
+  const searchParams = new URLSearchParams(location.search)
+  const initialCycle = searchParams.get('cycle') === 'yearly' ? 'yearly' : 'monthly'
+
+  const [cycle, setCycle] = useState(initialCycle)
   const [plans, setPlans] = useState([])
   const navigate = useNavigate()
   const { user, plan, loading } = useUserPlan()
@@ -69,6 +73,23 @@ export function Pricing() {
 
   const currentPlanLabel =
     plan === 'starter' ? 'Starter' : plan === 'pro' ? 'Pro' : 'Free'
+
+  const updateCycle = (next) => {
+    setCycle(next)
+    const params = new URLSearchParams(location.search)
+    if (next === 'yearly') {
+      params.set('cycle', 'yearly')
+    } else {
+      params.delete('cycle')
+    }
+    navigate(
+      {
+        pathname: location.pathname,
+        search: params.toString() ? `?${params.toString()}` : '',
+      },
+      { replace: true },
+    )
+  }
 
   return (
     <section className="bg-slate-950/95">
@@ -146,7 +167,7 @@ export function Pricing() {
         <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-slate-700/70 bg-slate-900/70 p-1 text-xs">
           <button
             type="button"
-            onClick={() => setCycle('monthly')}
+            onClick={() => updateCycle('monthly')}
             className={`rounded-full px-3 py-1 font-medium transition ${
               cycle === 'monthly'
                 ? 'bg-rb-trop-sunrise text-slate-950'
@@ -157,7 +178,7 @@ export function Pricing() {
           </button>
           <button
             type="button"
-            onClick={() => setCycle('yearly')}
+            onClick={() => updateCycle('yearly')}
             className={`rounded-full px-3 py-1 font-medium transition ${
               cycle === 'yearly'
                 ? 'bg-rb-trop-sunrise text-slate-950'
@@ -214,7 +235,7 @@ export function Pricing() {
                 </ul>
                 <button
                   type="button"
-                  onClick={() => navigate(`/subscribe/${p.id}`)}
+                  onClick={() => navigate(`/subscribe/${p.id}?cycle=${cycle}`)}
                   className="mt-5 rounded-full bg-rb-trop-sunrise px-4 py-2 text-xs font-semibold text-slate-950 hover:brightness-110 transition shadow-rb-gloss-btn"
                 >
                   {p.cta}
