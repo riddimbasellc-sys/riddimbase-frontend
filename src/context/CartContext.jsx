@@ -1,10 +1,13 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { computeBeatQuote, computeCartQuote } from '../services/paymentsService'
 import { useBeats } from '../hooks/useBeats'
+import useSupabaseUser from '../hooks/useSupabaseUser'
+import { loadCart, replaceCart } from '../services/cartRepository'
 
 const CartContext = createContext(null)
 
 export function CartProvider({ children }) {
+  const { user } = useSupabaseUser()
   const [items, setItems] = useState(() => {
     try {
       const raw = localStorage.getItem('rb_cart')
@@ -18,6 +21,22 @@ export function CartProvider({ children }) {
   useEffect(() => {
     try { localStorage.setItem('rb_cart', JSON.stringify(items)) } catch {}
   }, [items])
+
+  // Sync with Supabase for logged-in users
+  useEffect(() => {
+    if (!user?.id) return
+    ;(async () => {
+      const remote = await loadCart(user.id)
+      if (remote.length) {
+        setItems(remote)
+      }
+    })()
+  }, [user?.id])
+
+  useEffect(() => {
+    if (!user?.id) return
+    replaceCart(user.id, items)
+  }, [user?.id, items])
 
   // Supabase-backed beats (single source of truth for marketplace)
   const { beats: remoteBeats } = useBeats()
