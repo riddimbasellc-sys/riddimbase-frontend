@@ -10,6 +10,7 @@ import { useAdminRole } from '../hooks/useAdminRole'
 import { useCart } from '../context/CartContext'
 import CartPanel from './CartPanel'
 import { supabase } from '../lib/supabaseClient'
+import SupportBubbleWidget from './SupportBubbleWidget'
 
 export function Layout({ children }) {
   const [announcements, setAnnouncements] = useState([])
@@ -48,7 +49,7 @@ export function Layout({ children }) {
         {children}
       </main>
       <MobileBottomNav />
-      <SupportBubble />
+      <SupportBubbleWidget />
       {mainMenuOpen && <MobileMainMenuSheet onClose={() => setMainMenuOpen(false)} />}
       <Footer />
     </div>
