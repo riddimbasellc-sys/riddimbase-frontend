@@ -55,6 +55,7 @@ export function computeBeatQuote({ beat, license, currency = 'USD', coupon }) {
 // items: [{ beat, license }]; options { currency='USD', coupon }
 export function computeCartQuote({ items = [], currency = 'USD', coupon }) {
   const valid = items.filter(it => it.beat && it.license)
+  const allFree = valid.length > 0 && valid.every(it => !!(it.beat.freeDownload || it.beat.free_download))
   const couponMap = { SAVE10: 0.10, SAVE20: 0.20, EXCLUSIVE50: 0.50 }
   const discountRate = coupon && couponMap[coupon.toUpperCase()] ? couponMap[coupon.toUpperCase()] : 0
 
@@ -62,17 +63,17 @@ export function computeCartQuote({ items = [], currency = 'USD', coupon }) {
   const perItem = valid.map(it => {
     const tierPrices = it.beat.licensePrices || it.beat.license_prices || null
     const fallbackPrice = Number(it.beat.price || 0)
-    const baseUSD = resolveLicensePrice(tierPrices, it.license, fallbackPrice)
+    const baseUSD = allFree ? 0 : resolveLicensePrice(tierPrices, it.license, fallbackPrice)
     const itemSubtotalUSD = baseUSD
     return { ...it, multiplier: 1, subtotalUSD: itemSubtotalUSD }
   })
 
-  const subtotalUSD = perItem.reduce((sum, p) => sum + p.subtotalUSD, 0)
-  const couponDiscountUSD = subtotalUSD * discountRate
-  const totalUSD = subtotalUSD - couponDiscountUSD
+  const subtotalUSD = allFree ? 0 : perItem.reduce((sum, p) => sum + p.subtotalUSD, 0)
+  const couponDiscountUSD = allFree ? 0 : subtotalUSD * discountRate
+  const totalUSD = allFree ? 0 : subtotalUSD - couponDiscountUSD
   const serviceFeeRate = 0.12
-  const serviceFeeUSD = totalUSD * serviceFeeRate
-  const grandUSD = totalUSD + serviceFeeUSD
+  const serviceFeeUSD = allFree ? 0 : totalUSD * serviceFeeRate
+  const grandUSD = allFree ? 0 : totalUSD + serviceFeeUSD
 
   // No FX conversion: values are already in the display currency.
   const fx = v => v
