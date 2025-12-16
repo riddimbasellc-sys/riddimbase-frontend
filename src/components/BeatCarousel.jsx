@@ -21,7 +21,7 @@ export function TrendingBeatCard({ beat, onAddedToCart }) {
   const { addBeat } = useCart() || {}
   const { user } = useSupabaseUser()
   const slug = slugify(beat.title || '')
-  const to = slug ? `/beat/${beat.id}-${slug}` : `/beat/${beat.id}`
+  const to = slug ? `/beat/${slug}` : `/beat/${beat.id}`
   const price = typeof beat.price === 'number' ? beat.price : Number(beat.price || 0)
   const priceLabel = price.toFixed(2)
   const [liked, setLiked] = useState(false)
@@ -124,7 +124,7 @@ export function TrendingBeatCard({ beat, onAddedToCart }) {
           onClick={handlePlayClick}
           className="absolute inset-0 m-auto flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-[14px] font-semibold text-slate-900 shadow-lg transition group-hover:scale-105"
         >
-          {playing ? '❚❚' : '▶'}
+          {playing ? '||' : '▶'}
         </button>
         {/* Heart / like */}
         <button
@@ -154,11 +154,38 @@ export function TrendingBeatCard({ beat, onAddedToCart }) {
             className="inline-flex items-center gap-1 rounded-full bg-white/95 px-3 py-1 text-[11px] font-semibold text-slate-950 shadow-[0_0_20px_rgba(248,250,252,0.45)] hover:bg-white"
           >
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-[11px]">
-              🛒
+              $
             </span>
             <span>${priceLabel}</span>
           </button>
-          <span className="ml-2 text-[10px] text-slate-400">{likes}</span>
+          <div className="ml-2 flex items-center gap-2">
+            {beat.freeDownload && (
+              <a
+                href={`/checkout/${beat.id}?mode=free`}
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                }}
+                className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-600/80 bg-slate-900/80 text-[11px] text-slate-100 hover:border-emerald-400/70 hover:text-emerald-200"
+                title="Free download"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4"
+                >
+                  <path d="M12 3v14" />
+                  <path d="M6 11l6 6 6-6" />
+                  <path d="M5 21h14" />
+                </svg>
+              </a>
+            )}
+            <span className="text-[10px] text-slate-400">{likes}</span>
+          </div>
         </div>
       </div>
     </Link>
@@ -274,7 +301,6 @@ export function BeatCarousel({ beats, onAddedToCart }) {
           ))}
         </div>
       </div>
-
     </div>
   )
 }
