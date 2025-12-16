@@ -5,24 +5,39 @@ const PROPERTY_ID = import.meta.env.VITE_TAWK_PROPERTY_ID || ''
 const WIDGET_ID = import.meta.env.VITE_TAWK_WIDGET_ID || ''
 
 let injected = false
-let styleInjected = false
 
 export function loadTawk() {
   if (injected || !PROPERTY_ID || !WIDGET_ID) return
   injected = true
 
-  // Hide the default Tawk launcher button so only our custom
-  // "Get help" bubble is visible. The chat window can still open.
-  if (!styleInjected) {
-    const style = document.createElement('style')
-    style.textContent =
-      '#tawkchat-container .tawk-button { display: none !important; }'
-    document.head.appendChild(style)
-    styleInjected = true
-  }
-
   window.Tawk_API = window.Tawk_API || {}
   window.Tawk_LoadStart = new Date()
+
+  const api = window.Tawk_API
+
+  // When the widget loads, immediately hide the default launcher
+  // so only our custom "Get help" bubble is visible.
+  const prevOnLoad = api.onLoad
+  api.onLoad = function () {
+    if (typeof prevOnLoad === 'function') {
+      try {
+        prevOnLoad()
+      } catch {
+        // ignore handler errors
+      }
+    }
+    if (typeof api.hideWidget === 'function') {
+      api.hideWidget()
+    }
+
+    // Whenever the chat is minimized, hide the widget again so
+    // Tawk's own bubble never sits on top of our UI.
+    api.onChatMinimized = function () {
+      if (typeof api.hideWidget === 'function') {
+        api.hideWidget()
+      }
+    }
+  }
 
   const s1 = document.createElement('script')
   const s0 = document.getElementsByTagName('script')[0]
@@ -39,14 +54,23 @@ export function openTawk() {
 
   const api = (window.Tawk_API = window.Tawk_API || {})
 
+  const openNow = () => {
+    if (typeof api.showWidget === 'function') {
+      api.showWidget()
+    }
+    if (typeof api.maximize === 'function') {
+      api.maximize()
+    }
+  }
+
   // If the widget API is ready, open immediately
   if (typeof api.maximize === 'function') {
-    api.maximize()
+    openNow()
     return
   }
 
-  // Otherwise, register an onLoad handler so it opens
-  // as soon as the Tawk script finishes loading.
+  // Otherwise, register an onLoad handler so it opens as soon
+  // as the Tawk script finishes loading.
   const previousOnLoad = api.onLoad
   api.onLoad = function () {
     if (typeof previousOnLoad === 'function') {
@@ -56,8 +80,6 @@ export function openTawk() {
         // ignore handler errors
       }
     }
-    if (typeof api.maximize === 'function') {
-      api.maximize()
-    }
+    openNow()
   }
 }
