@@ -97,8 +97,10 @@ export function Cart() {
                 onClick={() => {
                   if (singleReady) {
                     const first = enriched[0]
+                    const isFree = !!(first.beat && (first.beat.freeDownload || first.beat.free_download))
+                    const modeParam = isFree ? 'mode=free' : `license=${first.license}`
                     navigate(
-                      `/checkout/${first.beatId}?license=${first.license}`,
+                      `/checkout/${first.beatId}?${modeParam}`,
                       {
                         state: { beat: first.beat },
                       },
