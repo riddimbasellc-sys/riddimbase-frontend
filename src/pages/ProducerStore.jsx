@@ -2,6 +2,8 @@ import { useParams, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import BackButton from '../components/BackButton'
 import { BeatCard } from '../components/BeatCard'
+import { useCart } from '../context/CartContext'
+import { slugify } from '../utils/slugify'
 import { fetchBeatsByProducerId } from '../services/beatsRepository'
 import { getProducerProfile } from '../services/producerProfileService'
 import { supabase } from '../lib/supabaseClient'
@@ -269,7 +271,7 @@ export default function ProducerStore() {
         )}
 
         {!loading && filteredSorted.length > 0 && (
-          <div className={`${layout==='grid' ? 'mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'mt-6 space-y-4'} overflow-y-auto max-h-[70vh] pr-1`}>
+          <div className={`${layout==='grid' ? 'mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'mt-6 space-y-2'} overflow-y-auto max-h-[70vh] pr-1`}>
             {/* Filter chips */}
             <div className="col-span-full -mt-2 mb-1 flex flex-wrap gap-2 text-[10px]">
               {query && (
@@ -288,27 +290,34 @@ export default function ProducerStore() {
                 </button>
               )}
             </div>
-            {paged.map((b) => (
-              <BeatCard
-                key={b.id}
-                id={b.id}
-                title={b.title}
-                producer={b.producer || 'Unknown'}
-                collaborator={b.collaborator || null}
-                userId={b.user_id || b.userId}
-                genre={b.genre}
-                bpm={b.bpm}
-                musicalKey={b.key}
-                price={b.price}
-                coverUrl={b.cover_url || b.coverUrl}
-                audioUrl={b.audio_url || b.audioUrl}
-                description={b.description}
-                licensePrices={b.license_prices || b.licensePrices}
-                freeDownload={!!(b.free_download || b.freeDownload)}
-                square={layout==='grid'}
-                compact={layout==='grid'}
-              />
-            ))}
+            {layout==='grid'
+              ? (
+                paged.map((b) => (
+                  <BeatCard
+                    key={b.id}
+                    id={b.id}
+                    title={b.title}
+                    producer={b.producer || 'Unknown'}
+                    collaborator={b.collaborator || null}
+                    userId={b.user_id || b.userId}
+                    genre={b.genre}
+                    bpm={b.bpm}
+                    musicalKey={b.key}
+                    price={b.price}
+                    coverUrl={b.cover_url || b.coverUrl}
+                    audioUrl={b.audio_url || b.audioUrl}
+                    description={b.description}
+                    licensePrices={b.license_prices || b.licensePrices}
+                    freeDownload={!!(b.free_download || b.freeDownload)}
+                    square
+                    compact
+                  />
+                ))
+              ) : (
+                paged.map((b) => (
+                  <StoreListRow key={b.id} beat={b} />
+                ))
+              )}
             <div ref={loadMoreRef} className="col-span-full h-10" />
           </div>
         )}
@@ -345,5 +354,60 @@ export default function ProducerStore() {
         )}
       </div>
     </section>
+  )
+}
+
+function StoreListRow({ beat }) {
+  const { addBeat } = useCart() || {}
+  const slug = slugify(beat?.title || '')
+  const to = slug ? `/beat/${slug}` : `/beat/${beat.id}`
+  const coverUrl = beat?.cover_url || beat?.coverUrl || null
+  const title = beat?.title || 'Untitled Beat'
+  const producer = beat?.producer || 'Unknown'
+  const free = !!(beat?.free_download || beat?.freeDownload)
+  const price = typeof beat?.price === 'number' ? beat.price : Number(beat?.price || 0)
+
+  const handleAdd = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (addBeat) addBeat(beat.id, 'Basic')
+  }
+
+  return (
+    <Link
+      to={to}
+      state={{ beat }}
+      className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-900/60 px-3 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.55)] backdrop-blur transition hover:border-red-500/60 hover:bg-slate-900/80"
+    >
+      <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl bg-slate-800">
+        {coverUrl ? (
+          <img src={coverUrl} alt={title} className="h-full w-full object-cover" />
+        ) : (
+          <div className="h-full w-full bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950" />
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <p className="min-w-0 truncate text-[12px] font-semibold text-slate-50">{title}</p>
+          {free ? (
+            <span className="flex-shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-200">FREE</span>
+          ) : (
+            <span className="flex-shrink-0 rounded-full bg-slate-950/60 px-2 py-0.5 text-[10px] font-semibold text-slate-200">${Number.isFinite(price) ? price.toFixed(2) : '0.00'}</span>
+          )}
+        </div>
+        <p className="mt-0.5 truncate text-[11px] text-slate-400">{producer}</p>
+      </div>
+
+      <button
+        type="button"
+        onClick={handleAdd}
+        className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-sky-500/90 text-[14px] text-white shadow-[0_0_24px_rgba(56,189,248,0.35)] transition hover:bg-sky-400"
+        aria-label="Add to cart"
+        title="Add to cart"
+      >
+        🛍
+      </button>
+    </Link>
   )
 }
