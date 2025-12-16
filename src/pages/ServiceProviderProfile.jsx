@@ -104,8 +104,10 @@ export function ServiceProviderProfile() {
       })
     }
     load()
-    return () => { active = false }
-  }, [id])
+    return () => {
+      active = false
+    }
+  }, [providerId])
 
   if (!provider) {
     return (
