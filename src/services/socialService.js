@@ -60,7 +60,7 @@ export async function toggleLike({ userId, beatId, producerId }) {
               .maybeSingle(),
           ])
           const actorName =
-            profile?.display_name || profile?.email || 'Someone'
+            profile?.display_name || profile?.email || 'User'
           await addNotification({
             recipientId: producerId,
             actorId: userId,
@@ -113,7 +113,7 @@ export async function toggleFavorite({ userId, beatId, producerId }) {
             .eq('id', beatId)
             .maybeSingle(),
         ])
-        const actorName = profile?.display_name || profile?.email || 'Someone'
+        const actorName = profile?.display_name || profile?.email || 'User'
         await addNotification({
           recipientId: producerId,
           actorId: userId,
@@ -169,7 +169,7 @@ export async function toggleFollow({ followerId, producerId }) {
           .eq('id', followerId)
           .maybeSingle()
         const actorName =
-          profile?.display_name || profile?.email || 'Someone'
+          profile?.display_name || profile?.email || 'User'
         await addNotification({
           recipientId: producerId,
           actorId: followerId,
@@ -327,7 +327,7 @@ export async function addBeatComment({ beatId, userId, content }) {
         .eq('id', userId)
         .maybeSingle()
       const actorName =
-        profile?.display_name || profile?.email || 'Someone'
+        profile?.display_name || profile?.email || 'User'
       await addNotification({
         recipientId,
         actorId: userId,
