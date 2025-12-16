@@ -65,10 +65,12 @@ export function Chat() {
   }, [searchEmail])
 
   const profileFor = (id) => profiles.find((p) => p.id === id)
+  const recipientProfile = selected ? profileFor(selected.otherUserId) : null
   const recipient = selected
     ? {
         id: selected.otherUserId,
-        email: profileFor(selected.otherUserId)?.email || 'user',
+        email: recipientProfile?.email || 'user',
+        display_name: recipientProfile?.display_name || null,
       }
     : null
 
