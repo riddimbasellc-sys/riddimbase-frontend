@@ -31,8 +31,8 @@ export function AdminTickets() {
   const [assignments, setAssignments] = useState({}) // key: ticket id -> assignment
   const { user } = useSupabaseUser()
 
-  const addMessage = async (tid, kind, text) => {
-    if (!text) return
+  const addMessage = async (tid, kind, text, attachment) => {
+    if (!text && !attachment) return
     // Persist in Supabase support_messages
     const senderType = kind === 'chat' ? 'agent' : 'system'
     try {
@@ -40,7 +40,10 @@ export function AdminTickets() {
         ticketId: tid,
         senderId: user?.id || null,
         senderType,
-        message: text,
+        message: text || '',
+        attachmentUrl: attachment?.url,
+        attachmentType: attachment?.type,
+        attachmentName: attachment?.name,
       })
       setThreads(prev => {
         const list = prev[tid] ? [...prev[tid]] : []
@@ -49,6 +52,9 @@ export function AdminTickets() {
           ts: saved?.created_at || Date.now(),
           kind,
           text,
+          attachmentUrl: saved?.attachment_url || attachment?.url || null,
+          attachmentType: saved?.attachment_type || attachment?.type || null,
+          attachmentName: saved?.attachment_name || attachment?.name || null,
         })
         return { ...prev, [tid]: list }
       })
@@ -56,7 +62,15 @@ export function AdminTickets() {
       // Fallback to in-memory only if Supabase fails
       setThreads(prev => {
         const list = prev[tid] ? [...prev[tid]] : []
-        list.push({ id: 'm_'+Date.now(), ts: Date.now(), kind, text })
+        list.push({
+          id: 'm_' + Date.now(),
+          ts: Date.now(),
+          kind,
+          text,
+          attachmentUrl: attachment?.url || null,
+          attachmentType: attachment?.type || null,
+          attachmentName: attachment?.name || null,
+        })
         return { ...prev, [tid]: list }
       })
     }
@@ -99,6 +113,9 @@ export function AdminTickets() {
           ts: m.created_at,
           kind: m.sender_type === 'system' ? 'contact' : 'chat',
           text: m.message,
+          attachmentUrl: m.attachment_url || null,
+          attachmentType: m.attachment_type || null,
+          attachmentName: m.attachment_name || null,
         })),
       }))
     })()
@@ -204,7 +221,7 @@ export function AdminTickets() {
                 email: (tickets.find(t=>t.id===chatOpen)||{}).contactEmail,
                 phone: (tickets.find(t=>t.id===chatOpen)||{}).contactPhone,
               }}
-              onSend={text => addMessage(chatOpen,'chat',text)}
+              onSend={(text, attachment) => addMessage(chatOpen,'chat',text, attachment)}
               onLogContact={text => addMessage(chatOpen,'contact',text)}
               onClose={()=> setChatOpen(null)}
               contextKind="ticket"

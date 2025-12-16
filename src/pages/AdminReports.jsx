@@ -50,11 +50,19 @@ export function AdminReports() {
     }
   }
 
-  const addMessage = async (rid, kind, text) => {
-    if (!text) return
+  const addMessage = async (rid, kind, text, attachment) => {
+    if (!text && !attachment) return
     setThreads(prev => {
       const list = prev[rid] ? [...prev[rid]] : []
-      list.push({ id: 'm_'+Date.now(), ts: Date.now(), kind, text })
+      list.push({
+        id: 'm_' + Date.now(),
+        ts: Date.now(),
+        kind,
+        text,
+        attachmentUrl: attachment?.url || null,
+        attachmentType: attachment?.type || null,
+        attachmentName: attachment?.name || null,
+      })
       const next = { ...prev, [rid]: list }
       try { localStorage.setItem('rb_report_threads', JSON.stringify(next)) } catch {}
       return next
@@ -178,7 +186,7 @@ export function AdminReports() {
               mode="report"
               messages={threads[chatOpen] || []}
               contact={contactInfo[chatOpen] || {}}
-              onSend={text => addMessage(chatOpen,'chat',text)}
+              onSend={(text, attachment) => addMessage(chatOpen,'chat',text, attachment)}
               onLogContact={text => addMessage(chatOpen,'contact',text)}
               onClose={()=> setChatOpen(null)}
               contextKind="report"
