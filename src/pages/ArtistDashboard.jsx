@@ -1,4 +1,5 @@
 import BackButton from '../components/BackButton'
+import { useEffect, useState } from 'react'
 import { useSales } from '../hooks/useSales'
 import { fetchBeat as fetchBeatRemote } from '../services/beatsRepository'
 
