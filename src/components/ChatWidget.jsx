@@ -22,7 +22,7 @@ const EMOJI_PICKER_EMOJIS = [
   '❌',
 ]
 
-export default function ChatWidget({ recipientExternal, initialEmail }) {
+export default function ChatWidget({ recipientExternal, initialEmail, onIncomingMessage }) {
   const { user } = useSupabaseUser()
   const [recipientEmail, setRecipientEmail] = useState(initialEmail || '')
   const [recipient, setRecipient] = useState(recipientExternal || null)
@@ -57,6 +57,10 @@ export default function ChatWidget({ recipientExternal, initialEmail }) {
       setMessages(await fetchMessages({ userId: user.id, otherUserId: recipient.id, limit: 100 }))
       unsub = subscribeMessages({ userId: user.id, otherUserId: recipient.id, onMessage: (m) => {
         setMessages(prev => [...prev, m])
+        // Notify parent about incoming messages (e.g., for unread badges)
+        if (typeof onIncomingMessage === 'function') {
+          onIncomingMessage(m)
+        }
       }})
     })()
     return () => unsub()
