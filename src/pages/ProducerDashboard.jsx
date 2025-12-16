@@ -21,6 +21,7 @@ import { fetchProducerMetrics } from '../services/producerMetricsService'
 import { createBeat, deleteBeat as deleteBeatRemote } from '../services/beatsRepository'
 import { uploadArtwork, uploadBundle, uploadFeedAttachment } from '../services/storageService'
 import { createPost } from '../services/feedService'
+import ChatWidget from '../components/ChatWidget'
 
 const GENRES = [
   'Dancehall',
@@ -71,6 +72,8 @@ export function ProducerDashboard() {
   const [statusUploading, setStatusUploading] = useState(false)
   const [statusAttachment, setStatusAttachment] = useState(null)
   const [statusEmojiOpen, setStatusEmojiOpen] = useState(false)
+  const [chatCollapsed, setChatCollapsed] = useState(false)
+  const [chatUnread, setChatUnread] = useState(0)
 
   useEffect(() => {
     if (!loading && !user) navigate('/login')
@@ -589,6 +592,52 @@ export function ProducerDashboard() {
                   <li>• Use visuals — cover art, studio photos, short videos.</li>
                 </ul>
               </div>
+              {/* Sidebar column: followers + direct messages */}
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-slate-800/70 bg-slate-900/80 p-4">
+                  <p className="text-sm font-semibold text-slate-100">Followers</p>
+                  <p className="mt-1 text-[12px] text-slate-300">{followers} followers</p>
+                </div>
+                <div className="rounded-2xl border border-slate-800/70 bg-slate-900/80">
+                  <div className="flex items-center justify-between gap-2 p-4">
+                    <p className="text-sm font-semibold text-slate-100 flex items-center gap-2">
+                      Chat
+                      {chatUnread > 0 && (
+                        <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-semibold text-slate-950">
+                          {chatUnread}
+                        </span>
+                      )}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setChatCollapsed((v) => {
+                        const next = !v
+                        if (!next) {
+                          // Panel is being expanded; clear unread count
+                          setChatUnread(0)
+                        }
+                        return next
+                      })}
+                      className="rounded-full border border-slate-700/70 bg-slate-800/70 px-3 py-1 text-[10px] text-slate-200 hover:bg-slate-700/70"
+                    >
+                      {chatCollapsed ? 'Expand' : 'Collapse'}
+                    </button>
+                  </div>
+                  {!chatCollapsed && (
+                    <div className="p-4 pt-0">
+                      <ChatWidget
+                        recipientExternal={null}
+                        onIncomingMessage={(m) => {
+                          // Only count messages not sent by the current user
+                          if (user && m && m.sender_id !== user.id) {
+                            setChatUnread((c) => c + 1)
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -889,6 +938,15 @@ export function ProducerDashboard() {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+
+          {/* Direct Messages */}
+          <div className="mt-8 rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 shadow-rb-gloss-panel">
+            <h2 className="text-sm font-semibold text-slate-100">Direct Messages</h2>
+            <p className="mt-1 text-[11px] text-slate-400">Chat with artists and collaborators. Emoji and attachments supported.</p>
+            <div className="mt-3">
+              <ChatWidget />
             </div>
           </div>
 
