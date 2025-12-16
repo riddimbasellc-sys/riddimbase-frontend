@@ -149,7 +149,6 @@ export default function NotificationsBell() {
   const ref = useRef(null)
 
   useEffect(() => {
-    refresh()
     const handler = (e) => {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false)
     }
@@ -158,8 +157,27 @@ export default function NotificationsBell() {
   }, [])
 
   useEffect(() => {
-    if (!user) return
-    const unsubscribe = realtimeSubscribe(user.id, () => refresh())
+    if (!user) {
+      setItems([])
+      setUnread(0)
+      return
+    }
+    // Load existing notifications on login
+    refresh()
+    // Realtime subscription for instant badge updates
+    const unsubscribe = realtimeSubscribe(user.id, (n) => {
+      setItems((prev) => {
+        const idx = prev.findIndex((row) => row.id === n.id)
+        if (idx === -1) return [n, ...prev]
+        const copy = [...prev]
+        copy[idx] = n
+        return copy
+      })
+      setUnread((prev) => {
+        if (n.read) return Math.max(0, prev - 1)
+        return prev + 1
+      })
+    })
     return unsubscribe
   }, [user])
 
@@ -248,7 +266,7 @@ export default function NotificationsBell() {
                     )}
                     {n.type === 'like' && (
                       <>
-                        Like: {n.data.user || 'Someone'} liked{' '}
+                        Like: {n.data.user || 'User'} liked{' '}
                         <span className="text-pink-300">
                           {n.data.beatTitle || 'your beat'}
                         </span>
@@ -256,7 +274,7 @@ export default function NotificationsBell() {
                     )}
                     {n.type === 'favorite' && (
                       <>
-                        Favorite: {n.data.user || 'Someone'} saved{' '}
+                        Favorite: {n.data.user || 'User'} saved{' '}
                         <span className="text-amber-300">
                           {n.data.beatTitle || 'your beat'}
                         </span>
@@ -271,13 +289,13 @@ export default function NotificationsBell() {
                       <>
                         New follower:{' '}
                         <span className="text-indigo-300">
-                          {n.data.user || 'Someone'}
+                          {n.data.user || 'User'}
                         </span>
                       </>
                     )}
                     {n.type === 'message' && (
                       <>
-                        Message from {n.data.from || 'someone'}: "
+                        Message from {n.data.from || 'User'}: "
                         {n.data.snippet || ''}"
                       </>
                     )}
