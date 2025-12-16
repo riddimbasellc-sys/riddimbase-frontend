@@ -357,20 +357,33 @@ export function ProducerProfile() {
             )}
           </div>
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-slate-100">Beat Catalog ({catalog.length})</h3>
-            {catalog.length === 0 ? (
-              <p className="text-xs text-slate-500">No beats uploaded yet.</p>
-            ) : (
-              <ScrollableGrid gridClassName="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-                {catalog.map((b) => (
-                  <BeatSquareCard
-                    key={b.id}
-                    beat={b}
-                    boosted={isBeatBoosted(b.id)}
-                  />
-                ))}
-              </ScrollableGrid>
-            )}
+            <h3 className="text-sm font-semibold text-slate-100">Store</h3>
+            <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4">
+              <p className="text-[12px] text-slate-300">Browse the producer’s full beat store with modern grid and list views.</p>
+              <Link
+                to={`/producer/${producerId || producerIdParam}/store`}
+                className="mt-3 inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-[11px] font-semibold text-slate-950 hover:bg-emerald-400"
+              >
+                <span>🏢</span>
+                <span>View Beat Store</span>
+              </Link>
+            </div>
+            <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4">
+              <p className="text-[12px] text-slate-300">Featured beats</p>
+              {catalog.length === 0 ? (
+                <p className="mt-2 text-xs text-slate-500">No beats uploaded yet.</p>
+              ) : (
+                <ScrollableGrid gridClassName="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                  {catalog.slice(0, 8).map((b) => (
+                    <BeatSquareCard
+                      key={b.id}
+                      beat={b}
+                      boosted={isBeatBoosted(b.id)}
+                    />
+                  ))}
+                </ScrollableGrid>
+              )}
+            </div>
           </div>
         </div>
         <ProfileShareModal open={shareOpen} onClose={() => setShareOpen(false)} profileType="producer" profileId={producerId} displayName={displayName} />
