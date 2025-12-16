@@ -1,9 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import useSupabaseUser from '../hooks/useSupabaseUser'
 import {
-  getUnreadCount as getUnreadLocal,
-} from '../services/notificationsService'
-import {
   listNotifications,
   markAllRead,
   realtimeSubscribe,
@@ -172,10 +169,9 @@ export default function NotificationsBell() {
       setItems(rows)
       setUnread(rows.filter((r) => !r.read).length)
     } else {
-      // local fallback
-      const rows = []
-      setItems(rows)
-      setUnread(getUnreadLocal())
+      // guests do not have stored notifications
+      setItems([])
+      setUnread(0)
     }
   }
 
