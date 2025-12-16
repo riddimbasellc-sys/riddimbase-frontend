@@ -44,6 +44,13 @@ export default function ChatWidget({ recipientExternal, initialEmail }) {
   }, [initialEmail])
 
   useEffect(() => {
+    // Keep local recipient in sync when parent passes a new one (e.g., from thread list)
+    if (recipientExternal && recipientExternal.id !== recipient?.id) {
+      setRecipient(recipientExternal)
+    }
+  }, [recipientExternal])
+
+  useEffect(() => {
     if (!user || !recipient) return
     let unsub = () => {}
     ;(async () => {
@@ -140,7 +147,12 @@ export default function ChatWidget({ recipientExternal, initialEmail }) {
       {user && recipient && (
         <div className="mt-3 flex flex-col h-full">
           <div className="mb-2 flex items-center justify-between">
-            <p className="text-[11px] text-slate-300">Chatting with <span className="font-medium text-slate-200">{recipient.email}</span></p>
+            <p className="text-[11px] text-slate-300">
+              Chatting with{' '}
+              <span className="font-medium text-slate-200">
+                {recipient.display_name || recipient.name || recipient.email || 'User'}
+              </span>
+            </p>
             <button onClick={()=>setRecipient(null)} className="text-[10px] text-slate-400 hover:text-red-300">End</button>
           </div>
           <div ref={listRef} className="flex-1 overflow-y-auto space-y-2 pr-1">
