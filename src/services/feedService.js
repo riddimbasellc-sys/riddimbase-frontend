@@ -6,6 +6,7 @@ const COMMENTS_TABLE = 'feed_post_comments'
 
 function mapPost(row, profileMap) {
   const profile = profileMap?.get(row.user_id) || {}
+  const emailName = (profile.email || '').split('@')[0] || null
   return {
     id: row.id,
     userId: row.user_id,
@@ -15,7 +16,7 @@ function mapPost(row, profileMap) {
     attachmentName: row.attachment_name || null,
     originalPostId: row.original_post_id || null,
     createdAt: row.created_at,
-    displayName: profile.display_name || profile.email || 'Creator',
+    displayName: profile.display_name || emailName || 'Creator',
     avatarUrl: profile.avatar_url || null,
   }
 }
@@ -153,13 +154,14 @@ export async function listPostComments(postId) {
   }
   return data.map((row) => {
     const profile = profileMap.get(row.user_id) || {}
+    const emailName = (profile.email || '').split('@')[0] || null
     return {
       id: row.id,
       postId: row.post_id,
       userId: row.user_id,
       content: row.content,
       createdAt: row.created_at,
-      displayName: profile.display_name || profile.email || 'User',
+      displayName: profile.display_name || emailName || 'User',
       avatarUrl: profile.avatar_url || null,
     }
   })
