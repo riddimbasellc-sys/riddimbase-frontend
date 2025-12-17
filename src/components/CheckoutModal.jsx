@@ -23,11 +23,11 @@ export default function CheckoutModal({ open, onClose, beat, license }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
-      <div className="w-full max-w-lg rounded-2xl border border-slate-800/80 bg-slate-900/90 p-5 shadow-xl space-y-5">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-labelledby="checkout-title">
+      <div className="w-full max-w-lg rb-panel p-5 space-y-5">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-100">Checkout</h2>
-          <button onClick={onClose} className="rounded-full bg-slate-800/70 px-3 py-1 text-[11px] text-slate-300 hover:bg-slate-700/70">Close</button>
+          <h2 id="checkout-title" className="text-sm font-semibold text-slate-100">Checkout</h2>
+          <button onClick={onClose} className="rb-btn-outline">Close</button>
         </div>
         <div className="text-[12px] text-slate-300">
           <p className="font-medium text-slate-200">{beat.title}</p>
@@ -60,7 +60,7 @@ export default function CheckoutModal({ open, onClose, beat, license }) {
         </div>
         <div className="space-y-2">
           {!showPayPal && (
-            <button disabled={loading || !buyerEmail || !buyerName} onClick={initiatePayPal} className="w-full rounded-full bg-emerald-500 px-4 py-2 text-[12px] font-semibold text-slate-950 disabled:opacity-40">{loading ? 'Loading…' : `Pay ${quote?.currency} ${quote?.total.toFixed(2)}`}</button>
+            <button disabled={loading || !buyerEmail || !buyerName} onClick={initiatePayPal} className="w-full rb-btn-primary disabled:opacity-40">{loading ? 'Loading…' : `Pay ${quote?.currency} ${quote?.total.toFixed(2)}`}</button>
           )}
           {showPayPal && quote && (
             <PayPalButtonsGroup
@@ -85,7 +85,7 @@ export default function CheckoutModal({ open, onClose, beat, license }) {
           <p className="text-[10px] text-slate-500 leading-relaxed">Delivery of files and license PDF is instant after payment. Off‑platform payments are prohibited.</p>
         </div>
         {result && (
-          <div className="rounded-xl border border-slate-800/70 bg-slate-950/70 p-3 text-[11px] text-slate-300 space-y-1">
+          <div className="rb-card p-3 text-[11px] text-slate-300 space-y-1">
             {result.success ? <p>Payment successful. License generated.</p> : <p className="text-red-300">Payment failed: {result.error || 'Error'}</p>}
             {result.success && result.license && <p className="text-emerald-300">License Ready: <a href={result.license.publicUrl} target="_blank" rel="noreferrer" className="underline">Download PDF</a></p>}
           </div>

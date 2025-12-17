@@ -33,17 +33,17 @@ export default function ReportModal({ open, onClose, targetId, type }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
-      <div className="w-full max-w-md rounded-2xl border border-slate-800/80 bg-slate-900/90 p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-labelledby="report-title">
+      <div className="w-full max-w-md rb-panel p-6">
         {!done && (
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <h2 className="text-sm font-semibold text-slate-100">Report this {type === 'beat' ? 'Beat' : 'Producer'}</h2>
+              <h2 id="report-title" className="text-sm font-semibold text-slate-100">Report this {type === 'beat' ? 'Beat' : 'Producer'}</h2>
               <p className="mt-1 text-[11px] text-slate-400">Your report is anonymous. Please select the most accurate reason.</p>
             </div>
             <div className="space-y-2">
               {REASONS.map(r => (
-                <button type="button" key={r} onClick={()=>pick(r)} className={`w-full rounded-lg border px-3 py-2 text-left text-[12px] font-medium transition ${reason===r ? 'border-rose-400/70 bg-rose-500/10 text-rose-200' : 'border-slate-700/70 bg-slate-950/50 text-slate-300 hover:border-slate-600'}`}>{r}</button>
+                <button type="button" key={r} onClick={()=>pick(r)} className={`w-full rounded-lg border px-3 py-2 text-left text-[12px] font-medium transition rb-focus ${reason===r ? 'border-rose-400/70 bg-rose-500/10 text-rose-200' : 'border-slate-700/70 bg-slate-950/50 text-slate-300 hover:border-slate-600'}`}>{r}</button>
               ))}
             </div>
             {reason==='Other' && (
@@ -54,9 +54,9 @@ export default function ReportModal({ open, onClose, targetId, type }) {
             )}
             <div className="flex items-center justify-between text-[10px] text-slate-500">
               <span>Anonymous submission</span>
-              <button type="button" onClick={onClose} className="rounded-full border border-slate-700/70 px-3 py-1 text-[11px] text-slate-300 hover:border-rose-400/60 hover:text-rose-300">Cancel</button>
+              <button type="button" onClick={onClose} className="rb-btn-outline">Cancel</button>
             </div>
-            <button type="submit" disabled={!reason || (reason==='Other' && !otherText.trim()) || submitting} className="w-full rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-slate-950 hover:bg-rose-400 disabled:opacity-40">{submitting? 'Submitting…':'Submit Report'}</button>
+            <button type="submit" disabled={!reason || (reason==='Other' && !otherText.trim()) || submitting} className="w-full rb-btn-danger disabled:opacity-40">{submitting? 'Submitting…':'Submit Report'}</button>
           </form>
         )}
         {done && (

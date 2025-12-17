@@ -240,7 +240,7 @@ export function BeatCard({
     return (
       <Wrapper
         {...wrapperProps}
-        className="group relative aspect-square overflow-hidden rounded-2xl border border-white/10 bg-slate-900/90 shadow-[0_18px_48px_rgba(0,0,0,0.9)] backdrop-blur transition hover:border-red-500/80 hover:shadow-[0_0_32px_rgba(248,113,113,0.45)]"
+        className="group relative aspect-square overflow-hidden rb-card backdrop-blur transition hover:border-red-500/80 hover:shadow-[0_0_32px_rgba(248,113,113,0.45)]"
       >
         {coverUrl ? (
           <img

@@ -175,8 +175,8 @@ export function Navbar({ onMobileMenuToggle = () => {} }) {
             )}
             {!user && (
               <>
-                <a href="/login" className="rounded-full border border-slate-700/80 px-4 py-1.5 text-xs font-medium text-slate-200">Log in</a>
-                <a href="/signup" className="rounded-full bg-emerald-500 px-4 py-1.5 text-xs font-semibold text-slate-950">Sign up</a>
+                <a href="/login" className="rb-btn-outline">Log in</a>
+                <a href="/signup" className="rb-btn-primary">Sign up</a>
               </>
             )}
             {user && (

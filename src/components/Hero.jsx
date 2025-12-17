@@ -53,18 +53,8 @@ export function Hero() {
           </div>
 
           <div className="mt-5 flex flex-wrap gap-3">
-            <Link
-              to="/beats"
-              className="rounded-full bg-rb-trop-sunrise px-5 py-2 text-xs font-semibold text-slate-950 shadow-rb-gloss-btn hover:brightness-110 transition duration-200 ease-snappy"
-            >
-              Browse Beats
-            </Link>
-            <Link
-              to="/producer/dashboard"
-              className="rounded-full border border-rb-trop-cyan/60 bg-slate-900/80 px-5 py-2 text-xs font-semibold text-rb-trop-cyan hover:bg-slate-900/90 hover:border-rb-sun-gold/70 hover:text-rb-sun-gold transition duration-200 ease-snappy"
-            >
-              I&apos;m a Producer
-            </Link>
+            <Link to="/beats" className="rb-btn-primary rb-hover-lift">Browse Beats</Link>
+            <Link to="/producer/dashboard" className="rb-btn-outline rb-hover-lift">I&apos;m a Producer</Link>
           </div>
           <GenreChips />
           <p className="mt-3 text-[11px] text-slate-400">
