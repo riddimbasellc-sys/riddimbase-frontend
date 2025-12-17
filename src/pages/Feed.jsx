@@ -85,7 +85,8 @@ export default function Feed() {
           if (!active) return
           const map = {}
           ;(profRows || []).forEach((p) => {
-            map[p.id] = p.display_name || p.email || 'Producer'
+            const emailName = (p.email || '').split('@')[0] || null
+            map[p.id] = p.display_name || emailName || 'Producer'
           })
           setRepostProfiles(map)
         } else {
