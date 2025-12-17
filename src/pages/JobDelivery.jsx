@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import useSupabaseUser from '../hooks/useSupabaseUser'
-import { getJobRequest, getJobDelivery, saveJobDelivery, markJobPaid, addJobReview } from '../services/serviceJobRequestsService'
+import { getJobRequest, getJobDelivery, saveJobDelivery, markJobPaid, addJobReview, getJobEscrow, releaseJobFunds } from '../services/serviceJobRequestsService'
 import { addNotification } from '../services/notificationsRepository'
 import PayPalButtonsGroup from '../components/payments/PayPalButtonsGroup'
 
@@ -19,6 +19,8 @@ export function JobDelivery() {
   const [reviewOpen, setReviewOpen] = useState(false)
   const [reviewRating, setReviewRating] = useState(5)
   const [reviewText, setReviewText] = useState('')
+  const [escrow, setEscrow] = useState({ paid: false, released: false })
+  const [approved, setApproved] = useState(false)
 
   useEffect(() => { load() }, [jobId])
 
@@ -26,6 +28,7 @@ export function JobDelivery() {
     setLoading(true)
     const j = await getJobRequest(jobId)
     setJob(j)
+    try { setEscrow(await getJobEscrow(jobId)) } catch { setEscrow({ paid:false, released:false }) }
     const existing = getJobDelivery(jobId)
     if (existing) {
       setLinks(existing.links || [''])
@@ -66,13 +69,31 @@ export function JobDelivery() {
     // Kept for potential manual override; main flow uses PayPalButtonsGroup onSuccess.
     setSaving(true); setFeedback(''); setError('')
     try {
-      markJobPaid(jobId)
+      const res = await markJobPaid(jobId, Number(job?.budget||0), 'USD')
+      setEscrow(res)
       setFeedback('Marked as paid. Funds held until release.')
     } catch (e) {
       setError(e.message || 'Failed to mark paid')
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleReleaseFunds = async () => {
+    if (!isOwner || !escrow?.paid || escrow?.released || !approved) return
+    setSaving(true); setFeedback(''); setError('')
+    try {
+      const res = await releaseJobFunds(jobId, user?.id || null)
+      setEscrow(res)
+      setFeedback('Funds released to provider. Thank you!')
+      try {
+        if (job?.assignedProviderId) {
+          await addNotification({ recipientId: job.assignedProviderId, actorId: user?.id || null, type: 'job-released', data: { title: job.title, amount: job?.budget||0, currency: 'USD' } })
+        }
+      } catch {}
+    } catch (e) {
+      setError(e.message || 'Failed to release funds')
+    } finally { setSaving(false) }
   }
 
   const submitReview = (e) => {
@@ -182,7 +203,8 @@ export function JobDelivery() {
                           currency: 'USD',
                         }),
                         }).catch(() => {})
-                        markJobPaid(jobId)
+                        const res = await markJobPaid(jobId, Number(job?.budget||0), 'USD', user?.id || null)
+                        setEscrow(res)
                         try {
                           if (job?.assignedProviderId) {
                             await addNotification({
@@ -213,6 +235,32 @@ export function JobDelivery() {
                 </p>
               )}
             </div>
+            {/* Release section for client */}
+            {user && isOwner && (
+              <div className="mt-3 rounded-xl border border-slate-800/70 bg-slate-900/80 p-3">
+                <div className="flex items-center justify-between gap-2 text-[11px] text-slate-200">
+                  <div className="min-w-0">
+                    <p className="font-semibold">Release funds</p>
+                    <p className="mt-0.5 text-[10px] text-slate-400">Confirm you’re satisfied, then release escrow to the provider.</p>
+                  </div>
+                  <span className={`flex-shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold ${escrow?.paid ? 'border-emerald-400/60 bg-emerald-500/10 text-emerald-200 border' : 'border-slate-700/60 bg-slate-800/40 text-slate-300 border'}`}>{escrow?.paid ? 'Escrow funded' : 'Awaiting payment'}</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-3">
+                  <label className="flex items-center gap-2 text-[11px] text-slate-300">
+                    <input type="checkbox" checked={approved} onChange={e=>setApproved(e.target.checked)} />
+                    I approve delivery and agree to release funds.
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleReleaseFunds}
+                    disabled={!escrow?.paid || escrow?.released || !approved || saving}
+                    className="rounded-full border border-emerald-400/70 bg-emerald-500/10 px-4 py-1.5 text-emerald-200 font-semibold hover:bg-emerald-500/20 disabled:opacity-60"
+                  >
+                    {escrow?.released ? 'Released' : 'Release funds'}
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="mt-3 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-[11px] text-red-200">
               Reminder: funds are released when the client marks the delivery as satisfactory.
             </div>
