@@ -322,11 +322,11 @@ export function ProducerDashboard() {
       )
     : null
   const planLabel =
-      subscription?.planId === 'starter'
-        ? 'Starter'
-          {(subscription?.planId === 'pro') ? (
-        ? 'Pro'
-        : 'Free'
+    subscription?.planId === 'starter'
+      ? 'Starter'
+      : subscription?.planId === 'pro'
+      ? 'Pro'
+      : 'Free'
 
   const handleStatusEmojiSelect = (emoji) => {
     setStatusText((prev) => (prev || '') + emoji)
