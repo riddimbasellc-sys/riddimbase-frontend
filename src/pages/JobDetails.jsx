@@ -263,19 +263,19 @@ export function JobDetails() {
               </div>
             ) : (
               <div className="mt-4 space-y-4">
-                <div className=\"rounded-xl border border-slate-800/80 bg-slate-900/80 p-4\">
-                  <div className=\"flex items-center justify-between\">
-                    <p className=\"text-sm font-semibold text-slate-200\">Payment</p>
+                <div className="rounded-xl border border-slate-800/80 bg-slate-900/80 p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-slate-200">Payment</p>
                     {checkoutPaid && (
-                      <span className=\"inline-flex items-center rounded-full border border-emerald-400/70 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold text-emerald-200\">Paid ✓</span>
+                      <span className="inline-flex items-center rounded-full border border-emerald-400/70 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold text-emerald-200">Paid ✓</span>
                     )}
                   </div>
-                  <p className=\"text-[11px] text-slate-400\">Amount: <span className=\"font-semibold text-emerald-300\">${Number(job?.budget||0).toFixed(2)}</span></p>
+                  <p className="text-[11px] text-slate-400">Amount: <span className="font-semibold text-emerald-300">${Number(job?.budget||0).toFixed(2)}</span></p>
                   {!checkoutPaid && (
-                    <div className=\"mt-3\">
+                    <div className="mt-3">
                       <PayPalButtonsGroup
                         amount={Number(job?.budget||0)}
-                        currency=\"USD\"
+                        currency="USD"
                         description={`Job: ${job?.title || ''}`}
                         onSuccess={async ({ orderId }) => {
                           try {
@@ -299,10 +299,6 @@ export function JobDetails() {
                       />
                     </div>
                   )}
-                </div>
-                    {/* Reuse checkout patterns; actual PayPal buttons appear on the delivery page */}
-                    <Link to={`/jobs/${job.id}/delivery`} className="inline-flex items-center gap-2 rounded-full bg-rb-trop-sunrise px-5 py-2 text-[11px] font-semibold text-slate-950 shadow-rb-gloss-btn hover:brightness-110">Proceed to payment</Link>
-                  </div>
                 </div>
                 <div className="rounded-xl border border-slate-800/80 bg-slate-900/80 p-4">
                   <p className="text-sm font-semibold text-slate-200">Upload Files</p>
