@@ -140,3 +140,20 @@ export async function generateLicense({
     return null
   }
 }
+
+// Record revenue split for a beat sale via backend
+export async function recordBeatSaleSplit({ saleId, beatId, amount, currency }) {
+  try {
+    const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001'
+    const res = await fetch(`${base}/sales/record-split`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sale_id: saleId, beat_id: beatId, amount, currency })
+    })
+    if (!res.ok) return null
+    return await res.json()
+  } catch (e) {
+    console.warn('[paymentsService] recordBeatSaleSplit failed', e.message)
+    return null
+  }
+}
