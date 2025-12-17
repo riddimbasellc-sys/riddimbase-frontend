@@ -176,14 +176,14 @@ export function JobsBoard() {
           </div>
           <button
             onClick={() => navigate('/jobs/post')}
-            className="rounded-full bg-rb-trop-sunrise px-5 py-2 text-sm font-semibold text-slate-950 shadow-rb-gloss-btn hover:brightness-110 transition"
+            className="rb-btn-primary"
           >
             Post a Job
           </button>
           {myJobsCount > 0 && (
             <button
               onClick={() => navigate('/jobs/my')}
-              className="rounded-full border border-emerald-400/60 bg-emerald-500/10 px-5 py-2 text-sm font-semibold text-emerald-200 hover:bg-emerald-500/20 transition"
+              className="rb-btn-outline"
               title="View jobs you posted"
             >
               My Jobs
@@ -191,14 +191,15 @@ export function JobsBoard() {
           )}
         </div>
       </div>
-      <div className="grid gap-4 rounded-xl border border-white/10 bg-black/70 bg-rb-gloss-stripes bg-blend-soft-light p-4 shadow-rb-gloss-panel md:grid-cols-3">
+      <div className="grid gap-4 rb-panel p-4 md:grid-cols-3">
         <div className="space-y-3">
           <div className="relative">
             <input
               value={search}
               onChange={handleSearchChange}
               placeholder="Search title"
-              className="w-full rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2 text-xs text-slate-100"
+              aria-label="Search job title"
+              className="w-full rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2 text-xs text-slate-100 rb-focus"
             />
             {jobSuggestions.length > 0 && (
               <div className="absolute z-20 mt-1 w-full max-h-60 overflow-auto rounded-xl border border-slate-800/80 bg-slate-950/95 text-[11px] text-slate-100 shadow-lg">
@@ -226,7 +227,8 @@ export function JobsBoard() {
               setStatus(e.target.value)
               setPage(1)
             }}
-            className="w-full rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2 text-xs text-slate-100"
+            aria-label="Filter by status"
+            className="w-full rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2 text-xs text-slate-100 rb-focus"
           >
             <option value="open">Open</option>
             <option value="assigned">Assigned</option>
@@ -242,7 +244,8 @@ export function JobsBoard() {
               setCategory(e.target.value)
               setPage(1)
             }}
-            className="w-full rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2 text-xs text-slate-100"
+            aria-label="Filter by category"
+            className="w-full rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2 text-xs text-slate-100 rb-focus"
           >
             {catOptions.map((c) => (
               <option key={c} value={c}>
@@ -256,7 +259,8 @@ export function JobsBoard() {
               setGenre(e.target.value)
               setPage(1)
             }}
-            className="w-full rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2 text-xs text-slate-100"
+            aria-label="Filter by genre"
+            className="w-full rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2 text-xs text-slate-100 rb-focus"
           >
             {genreOptions.map((g) => (
               <option key={g} value={g}>
@@ -266,7 +270,7 @@ export function JobsBoard() {
           </select>
         </div>
         <div className="space-y-3">
-          <div className="rounded-xl border border-emerald-400/20 bg-slate-950/80 p-3 text-[11px] text-slate-200 shadow-inner">
+          <div className="rb-card p-3 text-[11px] text-slate-200">
             <p className="font-semibold text-emerald-200">How to get picked</p>
             <ul className="mt-2 space-y-1 text-slate-400">
               <li>• Clear deliverables & timeline</li>
@@ -278,8 +282,10 @@ export function JobsBoard() {
       </div>
       <div className="mt-8">
         {loading && (
-          <div className="py-10 text-center text-sm text-slate-400">
-            Loading jobs…
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-32 rb-skeleton" />
+            ))}
           </div>
         )}
         {error && (
@@ -308,7 +314,7 @@ export function JobsBoard() {
             <button
               disabled={page === 1}
               onClick={() => setPage((p) => p - 1)}
-              className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300 disabled:opacity-40"
+              className="rb-btn-outline disabled:opacity-40"
             >
               Prev
             </button>
@@ -318,7 +324,7 @@ export function JobsBoard() {
             <button
               disabled={page === totalPages}
               onClick={() => setPage((p) => p + 1)}
-              className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300 disabled:opacity-40"
+              className="rb-btn-outline disabled:opacity-40"
             >
               Next
             </button>
@@ -342,7 +348,7 @@ function JobCard({ job, viewMode = 'grid' }) {
     return (
       <Link
         to={`/jobs/${job.id}`}
-        className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-sm transition hover:border-red-500/60 hover:bg-white/5 shadow-[0_18px_45px_rgba(0,0,0,0.85)]"
+        className="flex items-center justify-between gap-4 rb-card px-4 py-3 text-sm transition hover:border-red-500/60"
       >
         <div className="min-w-0">
           <h2 className="truncate font-semibold text-slate-100">
@@ -354,7 +360,7 @@ function JobCard({ job, viewMode = 'grid' }) {
             </p>
           )}
         </div>
-        <span className="ml-3 flex-shrink-0 rounded-full bg-slate-800/80 px-3 py-1 text-[11px] font-medium text-slate-100">
+        <span className="ml-3 flex-shrink-0 rb-badge">
           View job
         </span>
       </Link>
@@ -364,15 +370,13 @@ function JobCard({ job, viewMode = 'grid' }) {
   return (
     <Link
       to={`/jobs/${job.id}`}
-      className="group rounded-2xl border border-white/10 bg-black/60 p-4 transition hover:border-red-500/60 hover:bg-white/5 shadow-[0_18px_45px_rgba(0,0,0,0.85)]"
+      className="group rb-card p-4 transition hover:border-red-500/60"
     >
       <div className="mb-3 flex items-center justify-between">
         <h2 className="line-clamp-1 text-sm font-semibold text-slate-100 group-hover:text-rb-trop-cyan">
           {job.title}
         </h2>
-        <span
-          className={`ml-2 rounded-full bg-${badgeColor}-500/20 px-2 py-0.5 text-[10px] font-semibold text-${badgeColor}-300`}
-        >
+        <span className="ml-2 rb-badge">
           {job.status}
         </span>
       </div>
@@ -381,7 +385,7 @@ function JobCard({ job, viewMode = 'grid' }) {
         {job.genres.slice(0, 4).map((g) => (
           <span
             key={g}
-            className="rounded-full bg-slate-800/80 px-2 py-0.5 text-[10px] text-slate-300"
+            className="rb-chip"
           >
             {g}
           </span>

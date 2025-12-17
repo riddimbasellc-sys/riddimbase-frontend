@@ -167,7 +167,7 @@ export function Beats() {
 
         <div className="flex flex-col gap-6 md:grid md:grid-cols-[260px,1fr] md:gap-8">
           {/* Desktop filters sidebar */}
-          <aside className="order-0 hidden space-y-6 rounded-2xl border border-slate-800/80 bg-slate-950/90 bg-rb-gloss-stripes bg-blend-soft-light p-4 shadow-rb-gloss-panel md:order-none md:block md:h-fit">
+          <aside className="order-0 hidden space-y-6 rb-panel p-4 md:order-none md:block md:h-fit">
             <div className="relative">
                 <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-red-400">
                   Search
@@ -175,7 +175,8 @@ export function Beats() {
               <input
                 value={search}
                 onChange={handleSearchChange}
-                className="mt-2 w-full rounded-lg border border-slate-700/80 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100 placeholder:text-slate-500 focus:border-red-500 focus:outline-none"
+                aria-label="Search beats by keyword or producer"
+                className="mt-2 w-full rounded-lg border border-slate-700/80 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100 placeholder:text-slate-500 rb-focus"
                 placeholder="Keywords or producer"
               />
               {suggestions.length > 0 && (
@@ -205,7 +206,8 @@ export function Beats() {
               <select
                 value={sortKey}
                 onChange={(e) => setSortKey(e.target.value)}
-                className="mt-2 w-full rounded-lg border border-slate-700/80 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100 focus:border-red-500 focus:outline-none">
+                aria-label="Sort beats"
+                className="mt-2 w-full rounded-lg border border-slate-700/80 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100 rb-focus">
                 <option>Trending</option>
                 <option>Newest</option>
                 <option>Price: Low → High</option>
@@ -225,11 +227,7 @@ export function Beats() {
                         key={g}
                         type="button"
                         onClick={() => setGenreFilter(active ? '' : g)}
-                        className={`rounded-full px-2 py-1 text-[10px] transition ${
-                          active
-                            ? 'border-red-500 bg-red-500/10 text-red-300'
-                            : 'border border-slate-700/70 text-slate-300 hover:border-red-400 hover:text-red-300'
-                        }`}
+                        className={`${active ? 'border-red-500 bg-red-500/10 text-red-300' : 'rb-chip'} rb-focus`}
                       >
                         {g}
                       </button>
@@ -240,7 +238,7 @@ export function Beats() {
                   <button
                     type="button"
                     onClick={() => setGenreFilter('')}
-                    className="ml-1 text-[10px] text-slate-400 underline underline-offset-2"
+                    className="ml-1 rb-chip"
                   >
                     Clear
                   </button>
@@ -273,7 +271,7 @@ export function Beats() {
               <button
                 type="button"
                 onClick={() => setMobileFiltersOpen(true)}
-                className="inline-flex items-center rounded-full bg-slate-900 px-4 py-2 text-[11px] font-semibold text-slate-100 shadow-md border border-slate-700"
+                className="inline-flex items-center rb-btn-outline"
               >
                 <span className="mr-2 flex h-4 w-4 items-center justify-center rounded-full bg-slate-800">
                   <span className="block h-2 w-2 border-b-2 border-r-2 border-slate-300 rotate-45 translate-y-[1px]" />
@@ -283,7 +281,7 @@ export function Beats() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-700 bg-slate-900 text-[13px] text-slate-200"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-700 bg-slate-900 text-[13px] text-slate-200 rb-focus"
                   aria-label="Favorites"
                 >
                   ♥
@@ -291,7 +289,7 @@ export function Beats() {
                 <button
                   type="button"
                   onClick={() => setViewMode('list')}
-                  className={`flex h-8 w-8 items-center justify-center rounded-full border text-[12px] ${
+                  className={`flex h-8 w-8 items-center justify-center rounded-full border text-[12px] rb-focus ${
                     viewMode === 'list'
                       ? 'border-emerald-400 bg-slate-900 text-emerald-300'
                       : 'border-slate-700 bg-slate-900 text-slate-300'
@@ -307,7 +305,7 @@ export function Beats() {
                 <button
                   type="button"
                   onClick={() => setViewMode('grid')}
-                  className={`flex h-8 w-8 items-center justify-center rounded-full border text-[12px] ${
+                  className={`flex h-8 w-8 items-center justify-center rounded-full border text-[12px] rb-focus ${
                     viewMode === 'grid'
                       ? 'border-emerald-400 bg-slate-900 text-emerald-300'
                       : 'border-slate-700 bg-slate-900 text-slate-300'
@@ -324,10 +322,16 @@ export function Beats() {
               </div>
             </div>
 
-            {loading && <p className="text-sm text-slate-400">Loading beats…</p>}
+            {loading && (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="h-36 rb-skeleton" />
+                ))}
+              </div>
+            )}
 
             {!loading && boostedBeats.length > 0 && (
-              <div className="mb-6 rounded-2xl border border-yellow-500/40 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 shadow-rb-gloss-panel">
+              <div className="mb-6 rb-panel p-4">
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <h2 className="text-sm font-semibold text-slate-100">
@@ -337,7 +341,7 @@ export function Beats() {
                       Boosted listings appear above search results.
                     </p>
                   </div>
-                  <span className="rounded-full border border-yellow-400/60 bg-yellow-500/10 px-3 py-1 text-[10px] font-semibold text-yellow-200">
+                  <span className="rb-badge">
                     {boostedBeats.length} active
                   </span>
                 </div>
@@ -386,13 +390,13 @@ export function Beats() {
       {/* Mobile filters sheet */}
       {mobileFiltersOpen && (
         <div className="fixed inset-0 z-40 flex items-end bg-black/60 md:hidden">
-          <div className="w-full max-h-[80vh] rounded-t-3xl border-t border-slate-800 bg-slate-950 p-4 shadow-2xl">
+          <div className="w-full max-h-[80vh] rounded-t-3xl rb-panel p-4 shadow-2xl">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-slate-100">Filters</h2>
               <button
                 type="button"
                 onClick={() => setMobileFiltersOpen(false)}
-                className="rounded-full border border-slate-700 px-3 py-1 text-[11px] text-slate-200"
+                className="rb-btn-outline"
               >
                 Close
               </button>
@@ -405,7 +409,8 @@ export function Beats() {
                 <input
                   value={search}
                   onChange={handleSearchChange}
-                  className="mt-2 w-full rounded-lg border border-slate-700/80 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100 placeholder:text-slate-500 focus:border-red-500 focus:outline-none"
+                  aria-label="Search beats by keyword or producer"
+                  className="mt-2 w-full rounded-lg border border-slate-700/80 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100 placeholder:text-slate-500 rb-focus"
                   placeholder="Keywords or producer"
                 />
               </div>
@@ -416,7 +421,8 @@ export function Beats() {
                   <select
                     value={sortKey}
                     onChange={(e) => setSortKey(e.target.value)}
-                    className="mt-2 w-full rounded-lg border border-slate-700/80 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100 focus:border-red-500 focus:outline-none">
+                    aria-label="Sort beats"
+                    className="mt-2 w-full rounded-lg border border-slate-700/80 bg-slate-950/80 px-3 py-2 text-[12px] text-slate-100 rb-focus">
                   <option>Trending</option>
                   <option>Newest</option>
                   <option>Price: Low → High</option>
@@ -436,11 +442,7 @@ export function Beats() {
                             key={g}
                             type="button"
                             onClick={() => setGenreFilter(active ? '' : g)}
-                            className={`rounded-full px-2 py-1 text-[10px] transition ${
-                              active
-                                ? 'border-red-500 bg-red-500/10 text-red-300'
-                                : 'border border-slate-700/70 text-slate-300 hover:border-red-400 hover:text-red-300'
-                            }`}
+                            className={`${active ? 'border-red-500 bg-red-500/10 text-red-300' : 'rb-chip'} rb-focus`}
                           >
                             {g}
                           </button>
@@ -451,7 +453,7 @@ export function Beats() {
                     <button
                       type="button"
                       onClick={() => setGenreFilter('')}
-                      className="ml-1 text-[10px] text-slate-400 underline underline-offset-2"
+                      className="ml-1 rb-chip"
                     >
                       Clear
                     </button>
@@ -466,7 +468,7 @@ export function Beats() {
                   {['Basic', 'Premium', 'Unlimited', 'Exclusive'].map((l) => (
                     <span
                       key={l}
-                      className="rounded-full bg-slate-950/70 px-2 py-1 text-[10px] text-slate-400"
+                      className="rb-chip"
                     >
                       {l}
                     </span>
@@ -476,7 +478,7 @@ export function Beats() {
               <button
                 type="button"
                 onClick={() => setMobileFiltersOpen(false)}
-                className="mt-2 w-full rounded-full bg-emerald-500 px-4 py-2 text-center text-[11px] font-semibold text-slate-950"
+                className="mt-2 w-full rb-btn-primary"
               >
                 Apply filters
               </button>
@@ -512,7 +514,7 @@ function BeatListRow({ beat }) {
     <Link
       to={to}
       state={{ beat }}
-      className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-900/60 px-3 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.55)] backdrop-blur transition hover:border-red-500/60 hover:bg-slate-900/80"
+      className="group flex items-center gap-3 rb-card px-3 py-2 backdrop-blur transition hover:border-red-500/60"
     >
       <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl bg-slate-800">
         {coverUrl ? (
@@ -547,7 +549,7 @@ function BeatListRow({ beat }) {
       <button
         type="button"
         onClick={handleAdd}
-        className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-sky-500/90 text-[14px] text-white shadow-[0_0_24px_rgba(56,189,248,0.35)] transition hover:bg-sky-400"
+        className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-sky-500/90 text-[14px] text-white shadow-[0_0_24px_rgba(56,189,248,0.35)] transition hover:bg-sky-400 rb-focus"
         aria-label="Add to cart"
         title="Add to cart"
       >

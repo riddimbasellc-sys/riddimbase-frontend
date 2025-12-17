@@ -205,7 +205,7 @@ export default function ProducerStore() {
   return (
     <section className="bg-slate-950/95 min-h-screen">
       <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-8">
-        <div className="flex items-center justify-between gap-3 sticky top-0 z-10 bg-slate-950/95 py-2">
+        <div className="flex items-center justify-between gap-3 sticky top-0 z-10 bg-slate-950/95 py-2 rb-panel">
           <div className="flex items-center gap-3">
             <BackButton />
             <div>
@@ -222,13 +222,14 @@ export default function ProducerStore() {
               value={query}
               onChange={e=>setQuery(e.target.value)}
               placeholder="Search titles or genres"
-              className="hidden sm:block rounded-full border border-slate-700/70 bg-slate-900/80 px-3 py-1.5 text-[12px] text-slate-100"
+              aria-label="Search titles or genres"
+              className="hidden sm:block rounded-full border border-slate-700/70 bg-slate-900/80 px-3 py-1.5 text-[12px] text-slate-100 rb-focus"
             />
-            <select value={genre} onChange={e=>setGenre(e.target.value)} className="rounded-full border border-slate-700/70 bg-slate-900/80 px-3 py-1.5 text-[12px] text-slate-100">
+            <select value={genre} onChange={e=>setGenre(e.target.value)} aria-label="Filter by genre" className="rounded-full border border-slate-700/70 bg-slate-900/80 px-3 py-1.5 text-[12px] text-slate-100 rb-focus">
               <option value="">All genres</option>
               {['Dancehall','Trap Dancehall','Reggae','Afrobeat','Soca','Trap','Hip Hop','Drill'].map(g=> <option key={g}>{g}</option>)}
             </select>
-            <select value={sort} onChange={e=>setSort(e.target.value)} className="rounded-full border border-slate-700/70 bg-slate-900/80 px-3 py[1.5] text-[12px] text-slate-100">
+            <select value={sort} onChange={e=>setSort(e.target.value)} aria-label="Sort beats" className="rounded-full border border-slate-700/70 bg-slate-900/80 px-3 py[1.5] text-[12px] text-slate-100 rb-focus">
               <option value="newest">Newest</option>
               <option value="oldest">Oldest</option>
               <option value="price_low">Price: Low → High</option>
@@ -238,16 +239,16 @@ export default function ProducerStore() {
             </select>
             <div className="hidden md:flex items-center gap-2">
               <label className="text-[10px] text-slate-400">Max Price</label>
-              <input type="range" min="0" max="999" value={priceMax} onChange={e=>setPriceMax(Number(e.target.value))} />
+              <input aria-label="Maximum price" type="range" min="0" max="999" value={priceMax} onChange={e=>setPriceMax(Number(e.target.value))} />
               <span className="text-[11px] font-semibold text-slate-200">${priceMax}</span>
             </div>
             <GridToggle />
-            <button type="button" onClick={()=>setDrawerOpen(true)} className="md:hidden rounded-full border border-slate-700/70 bg-slate-800/70 px-3 py-1.5 text-[11px] text-slate-200">Filters</button>
+            <button type="button" onClick={()=>setDrawerOpen(true)} className="md:hidden rb-btn-outline">Filters</button>
           </div>
         </div>
 
         {profile && (
-          <div className="mt-4 rounded-2xl border border-slate-800/70 bg-slate-900/80 p-4 flex items-center gap-3">
+          <div className="mt-4 rb-card p-4 flex items-center gap-3">
             <div className="h-12 w-12 overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500 via-emerald-400 to-orange-500">
               {profile.avatarUrl && <img src={profile.avatarUrl} alt={profile.displayName||'Producer'} className="h-full w-full object-cover" />}
             </div>
@@ -255,12 +256,16 @@ export default function ProducerStore() {
               <p className="text-sm font-semibold text-slate-50">{profile.displayName || 'Producer'}</p>
               <p className="text-[11px] text-slate-400 truncate">{profile.bio || 'Browse the full catalog from this producer.'}</p>
             </div>
-            <a href={`/producer/${producerId || producerIdParam}`} className="rounded-full border border-slate-700/70 bg-slate-800/70 px-3 py-1.5 text-[11px] text-slate-200 hover:bg-slate-700/70">View Profile</a>
+            <a href={`/producer/${producerId || producerIdParam}`} className="rb-btn-outline">View Profile</a>
           </div>
         )}
 
         {loading && (
-          <p className="mt-6 text-[11px] text-slate-500">Loading beats…</p>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="h-36 rb-skeleton" />
+            ))}
+          </div>
         )}
 
         {!loading && beats.length === 0 && (
@@ -274,18 +279,18 @@ export default function ProducerStore() {
             {/* Filter chips */}
             <div className="col-span-full -mt-2 mb-1 flex flex-wrap gap-2 text-[10px]">
               {query && (
-                <button onClick={()=>setQuery('')} className="inline-flex items-center gap-1 rounded-full border border-slate-700/70 bg-slate-900/80 px-2 py-1 text-slate-200">
-                  <span>Search: {query}</span><span className="text-slate-400">×</span>
+                <button onClick={()=>setQuery('')} className="rb-chip">
+                  <span>Search: {query}</span><span className="rb-chip-close" aria-hidden="true">×</span>
                 </button>
               )}
               {genre && (
-                <button onClick={()=>setGenre('')} className="inline-flex items-center gap-1 rounded-full border border-slate-700/70 bg-slate-900/80 px-2 py-1 text-slate-200">
-                  <span>Genre: {genre}</span><span className="text-slate-400">×</span>
+                <button onClick={()=>setGenre('')} className="rb-chip">
+                  <span>Genre: {genre}</span><span className="rb-chip-close" aria-hidden="true">×</span>
                 </button>
               )}
               {priceMax !== 999 && (
-                <button onClick={()=>setPriceMax(999)} className="inline-flex items-center gap-1 rounded-full border border-slate-700/70 bg-slate-900/80 px-2 py-1 text-slate-200">
-                  <span>Max Price: ${priceMax}</span><span className="text-slate-400">×</span>
+                <button onClick={()=>setPriceMax(999)} className="rb-chip">
+                  <span>Max Price: ${priceMax}</span><span className="rb-chip-close" aria-hidden="true">×</span>
                 </button>
               )}
             </div>
@@ -376,7 +381,7 @@ function StoreListRow({ beat }) {
     <Link
       to={to}
       state={{ beat }}
-      className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-900/60 px-3 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.55)] backdrop-blur transition hover:border-red-500/60 hover:bg-slate-900/80"
+      className="group flex items-center gap-3 rb-card px-3 py-2 backdrop-blur transition hover:border-red-500/60"
     >
       <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl bg-slate-800">
         {coverUrl ? (
@@ -401,7 +406,7 @@ function StoreListRow({ beat }) {
       <button
         type="button"
         onClick={handleAdd}
-        className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-sky-500/90 text-[14px] text-white shadow-[0_0_24px_rgba(56,189,248,0.35)] transition hover:bg-sky-400"
+        className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-sky-500/90 text-[14px] text-white shadow-[0_0_24px_rgba(56,189,248,0.35)] transition hover:bg-sky-400 rb-focus"
         aria-label="Add to cart"
         title="Add to cart"
       >

@@ -124,11 +124,11 @@ export function JobDelivery() {
           <h1 className="text-2xl font-semibold text-slate-50">Complete: {job.title}</h1>
           <p className="text-sm text-slate-400">Upload files and process payment. RiddimBase holds the funds in escrow until you click <span className="font-semibold text-emerald-300">Release funds</span> after the job is completed to your satisfaction.</p>
         </div>
-        <button onClick={()=>navigate(-1)} className="rounded-full border border-slate-700/70 px-3 py-1 text-[11px] text-slate-300 hover:border-emerald-400/70">Back</button>
+        <button onClick={()=>navigate(-1)} className="rb-btn-outline text-[11px]">Back</button>
       </div>
       <div className="grid gap-6 lg:grid-cols-[1.2fr,0.9fr]">
         <div className="space-y-4">
-          <div className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-5">
+          <div className="rb-panel p-5">
             <h2 className="text-sm font-semibold text-slate-200">Share deliverables</h2>
             <p className="text-[11px] text-slate-400">Paste file links (Drive/Dropbox/WeTransfer) or notes. Keep everything in one thread.</p>
             <form onSubmit={submitDelivery} className="mt-4 space-y-3">
@@ -138,13 +138,13 @@ export function JobDelivery() {
                   value={link}
                   onChange={e=>updateLink(idx, e.target.value)}
                   placeholder="https://link-to-files"
-                  className="w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 rb-focus"
                 />
               ))}
               <button
                 type="button"
                 onClick={addLink}
-                className="rounded-full border border-slate-700/70 px-3 py-1 text-[11px] text-slate-200 hover:border-emerald-400/70"
+                className="rb-btn-outline text-[11px]"
               >
                 + Add another link
               </button>
@@ -153,7 +153,7 @@ export function JobDelivery() {
                 onChange={e=>setNotes(e.target.value)}
                 rows={4}
                 placeholder="Notes: versioning, instructions, passwords"
-                className="w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                className="w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 rb-focus"
               />
               {error && <div className="rounded border border-red-500/40 bg-red-500/10 px-2 py-1 text-[11px] text-red-300">{error}</div>}
               {feedback && <div className="rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 text-[11px] text-emerald-300">{feedback}</div>}
@@ -162,14 +162,14 @@ export function JobDelivery() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-full border border-emerald-400/70 bg-emerald-500/10 px-4 py-1.5 text-emerald-200 font-semibold hover:bg-emerald-500/20 disabled:opacity-60"
+                  className="rb-btn-primary disabled:opacity-60"
                 >
                   {saving ? 'Sending…' : 'Send Files'}
                 </button>
               </div>
             </form>
           </div>
-          <div className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-5">
+          <div className="rb-card p-5">
             <h3 className="text-sm font-semibold text-slate-200">Escrow notice</h3>
             <p className="mt-1 text-[11px] text-slate-400">
               Funds are held until the client marks the job as complete. If revisions are pending, keep communication in the thread
@@ -178,11 +178,11 @@ export function JobDelivery() {
           </div>
         </div>
         <div className="space-y-4">
-          <div className="rounded-2xl border border-slate-800/80 bg-gradient-to-br from-slate-900 to-slate-950 p-5 shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
+          <div className="rb-panel p-5 shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
             <h3 className="text-sm font-semibold text-slate-200">Pay securely</h3>
             <p className="text-[11px] text-slate-400">Payment will be released after approval.</p>
-            <div className="mt-3 rounded-xl border border-slate-800/70 bg-slate-900/80 p-3">
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-400/70 bg-emerald-500/10 px-4 py-2 text-[12px] font-semibold text-emerald-200">
+            <div className="mt-3 rb-card p-3">
+              <div className="mb-2 inline-flex items-center gap-2 rb-badge text-[12px]">
                 PayPal (escrow hold)
               </div>
               {job && job.budget > 0 && (
@@ -237,13 +237,13 @@ export function JobDelivery() {
             </div>
             {/* Release section for client */}
             {user && isOwner && (
-              <div className="mt-3 rounded-xl border border-slate-800/70 bg-slate-900/80 p-3">
+              <div className="mt-3 rb-card p-3">
                 <div className="flex items-center justify-between gap-2 text-[11px] text-slate-200">
                   <div className="min-w-0">
                     <p className="font-semibold">Release funds</p>
                     <p className="mt-0.5 text-[10px] text-slate-400">Confirm you’re satisfied, then release escrow to the provider.</p>
                   </div>
-                  <span className={`flex-shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold ${escrow?.paid ? 'border-emerald-400/60 bg-emerald-500/10 text-emerald-200 border' : 'border-slate-700/60 bg-slate-800/40 text-slate-300 border'}`}>{escrow?.paid ? 'Escrow funded' : 'Awaiting payment'}</span>
+                  <span className="flex-shrink-0 rb-badge">{escrow?.paid ? 'Escrow funded' : 'Awaiting payment'}</span>
                 </div>
                 <div className="mt-2 flex items-center justify-between gap-3">
                   <label className="flex items-center gap-2 text-[11px] text-slate-300">
@@ -254,23 +254,23 @@ export function JobDelivery() {
                     type="button"
                     onClick={handleReleaseFunds}
                     disabled={!escrow?.paid || escrow?.released || !approved || saving}
-                    className="rounded-full border border-emerald-400/70 bg-emerald-500/10 px-4 py-1.5 text-emerald-200 font-semibold hover:bg-emerald-500/20 disabled:opacity-60"
+                    className="rb-btn-primary disabled:opacity-60"
                   >
                     {escrow?.released ? 'Released' : 'Release funds'}
                   </button>
                 </div>
               </div>
             )}
-            <div className="mt-3 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-[11px] text-red-200">
+            <div className="mt-3 rb-card p-3 text-[11px] text-red-200 border border-red-500/30">
               Reminder: funds are released when the client marks the delivery as satisfactory.
             </div>
             {user && isOwner && (
-              <div className="mt-3 rounded-xl border border-slate-800/70 bg-slate-900/80 p-3">
+              <div className="mt-3 rb-card p-3">
                 <div className="flex items-center justify-between text-[11px] text-slate-200">
                   <span>Happy with the work?</span>
                   <button
                     onClick={()=>setReviewOpen(true)}
-                    className="rounded-full border border-emerald-400/70 px-3 py-1 text-emerald-200 hover:bg-emerald-500/10"
+                    className="rb-btn-outline"
                   >
                     Leave review
                   </button>
@@ -278,10 +278,10 @@ export function JobDelivery() {
               </div>
             )}
           </div>
-          <div className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-4 text-[11px] text-slate-300 space-y-2">
+          <div className="rb-panel p-4 text-[11px] text-slate-300 space-y-2">
             <div className="flex items-center justify-between">
               <span>Assigned provider</span>
-              <span className="rounded-full border border-emerald-400/60 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold text-emerald-200">
+              <span className="rb-badge">
                 {job.assignedProviderId || 'Pending'}
               </span>
             </div>
@@ -293,16 +293,16 @@ export function JobDelivery() {
         </div>
       </div>
       {reviewOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-          <div className="w-full max-w-md rounded-2xl border border-slate-800/80 bg-slate-950/95 p-5 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4" role="dialog" aria-modal="true" aria-labelledby="review-title">
+          <div className="w-full max-w-md rb-panel p-5 shadow-2xl" role="document">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-slate-100">Rate the provider</p>
+                <p id="review-title" className="text-sm font-semibold text-slate-100">Rate the provider</p>
                 <p className="text-[11px] text-slate-400">Stars + short note appears on their services profile.</p>
               </div>
               <button
                 onClick={()=>setReviewOpen(false)}
-                className="text-[11px] text-slate-400 hover:text-emerald-300"
+                className="rb-btn-outline text-[11px]"
               >
                 Close
               </button>
@@ -326,19 +326,19 @@ export function JobDelivery() {
                 onChange={e=>setReviewText(e.target.value)}
                 rows={3}
                 placeholder="What stood out? Communication, quality, speed."
-                className="w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                className="w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 rb-focus"
               />
               <div className="flex items-center justify-end gap-2 text-[11px] text-slate-400">
                 <button
                   type="button"
                   onClick={()=>setReviewOpen(false)}
-                  className="rounded-full border border-slate-700/70 px-3 py-1 text-slate-200 hover:border-slate-500/60"
+                  className="rb-btn-outline"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-full border border-emerald-400/70 bg-emerald-500/10 px-4 py-1.5 text-emerald-200 font-semibold hover:bg-emerald-500/20"
+                  className="rb-btn-primary"
                 >
                   Submit review
                 </button>

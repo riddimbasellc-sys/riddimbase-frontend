@@ -335,7 +335,7 @@ export default function LandingPage() {
 
         {/* TESTIMONIALS */}
         <section className="pb-10 md:pb-12">
-          <div className="rounded-3xl border border-white/10 bg-black/70 bg-rb-gloss-stripes bg-blend-soft-light p-4 shadow-rb-gloss-panel md:p-6">
+          <div className="rb-panel p-4 md:p-6">
             <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
               <div>
                 <h2 className="text-sm font-semibold text-slate-100 sm:text-base">
@@ -459,7 +459,7 @@ export default function LandingPage() {
 
 function FeatureCard({ label, title, body }) {
   return (
-    <div className="flex flex-col rounded-xl border border-white/5 bg-white/5 p-4 text-xs text-slate-200">
+    <div className="flex flex-col rb-card p-4 text-xs text-slate-200">
       <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">{label}</p>
       <p className="mt-1 text-sm font-semibold text-white">{title}</p>
       <p className="mt-2 text-[11px] text-slate-400">{body}</p>
@@ -469,7 +469,7 @@ function FeatureCard({ label, title, body }) {
 
 function StepCard({ step, title, body }) {
   return (
-    <div className="flex flex-col rounded-xl border border-white/5 bg-white/5 p-4">
+    <div className="flex flex-col rb-card p-4">
       <div className="mb-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white text-[11px] font-bold text-black">
         {step}
       </div>

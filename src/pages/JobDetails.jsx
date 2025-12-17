@@ -107,20 +107,20 @@ export function JobDetails() {
     <div className="mx-auto max-w-5xl px-4 py-10">
       <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <h1 className="text-xl font-semibold tracking-tight text-slate-100">{job.title}</h1>
-        <span className={`inline-flex items-center rounded-full bg-${badgeColor}-500/20 px-3 py-1 text-xs font-semibold text-${badgeColor}-300`}>{job.status}</span>
+        <span className="rb-badge">{job.status}</span>
       </div>
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          <div className="rounded-2xl border border-slate-800/70 bg-slate-900/60 p-5">
+          <div className="rb-panel p-5">
             <h2 className="mb-2 text-sm font-semibold text-slate-200">Description</h2>
             <p className="whitespace-pre-wrap text-xs leading-relaxed text-slate-300">{job.description || 'No description provided.'}</p>
             <div className="mt-4 flex flex-wrap gap-2">
-              {job.genres.map(g => <span key={g} className="rounded-full bg-slate-800/80 px-2 py-0.5 text-[10px] text-slate-300">{g}</span>)}
+              {job.genres.map(g => <span key={g} className="rb-chip">{g}</span>)}
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3 text-[11px] text-slate-300">
-              <div className="rounded-lg bg-slate-800/60 p-2"><span className="block text-[9px] uppercase tracking-wide text-slate-400">Budget</span>${job.budget}</div>
-              {job.deadlineDate && <div className="rounded-lg bg-slate-800/60 p-2"><span className="block text-[9px] uppercase tracking-wide text-slate-400">Deadline</span>{job.deadlineDate}</div>}
-              <div className="rounded-lg bg-slate-800/60 p-2"><span className="block text-[9px] uppercase tracking-wide text-slate-400">Revisions</span>{job.revisionsExpected}</div>
+              <div className="rb-card p-2"><span className="block text-[9px] uppercase tracking-wide text-slate-400">Budget</span>${job.budget}</div>
+              {job.deadlineDate && <div className="rb-card p-2"><span className="block text-[9px] uppercase tracking-wide text-slate-400">Deadline</span>{job.deadlineDate}</div>}
+              <div className="rb-card p-2"><span className="block text-[9px] uppercase tracking-wide text-slate-400">Revisions</span>{job.revisionsExpected}</div>
             </div>
             {job.referenceUrls?.length>0 && (
               <div className="mt-4">
@@ -131,20 +131,20 @@ export function JobDetails() {
               </div>
             )}
           </div>
-          <div className="rounded-2xl border border-slate-800/70 bg-slate-900/60 p-5">
+          <div className="rb-panel p-5">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-sm font-semibold text-slate-200">Proposals</h2>
                 <p className="text-[11px] text-slate-400">{isOwner ? 'Review proposals below.' : 'We only show totals for privacy.'}</p>
               </div>
-              <div className="rounded-full bg-emerald-500/15 border border-emerald-400/60 px-4 py-2 text-sm font-semibold text-emerald-200">
+              <div className="rb-badge">
                 {job.bids.length}
               </div>
             </div>
             {isOwner && job.bids.length > 0 && (
               <div className="mt-4 space-y-2">
                 {job.bids.map((b)=> (
-                  <div key={b.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-slate-900/70 px-3 py-2 text-[12px] text-slate-200">
+                  <div key={b.id} className="flex items-center justify-between gap-3 rb-card px-3 py-2 text-[12px] text-slate-200">
                     <div className="min-w-0">
                           <p className="truncate font-semibold">
                             <span>${Number(b.amount||0).toFixed(2)}</span> • <span>{(b.providerId||'').slice(0,8)}…</span>
@@ -153,11 +153,11 @@ export function JobDetails() {
                     </div>
                     {job.status === 'open' ? (
                       <div className="flex flex-shrink-0 items-center gap-2">
-                        <button onClick={()=>handleAccept(b)} className="rounded-full border border-emerald-400/70 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold text-emerald-200 hover:bg-emerald-500/20">Accept</button>
-                        <button onClick={()=>handleDecline(b)} className="rounded-full border border-red-400/70 bg-red-500/10 px-3 py-1 text-[11px] font-semibold text-red-200 hover:bg-red-500/20">Decline</button>
+                        <button onClick={()=>handleAccept(b)} className="rb-btn-primary text-[11px] px-3 py-1">Accept</button>
+                        <button onClick={()=>handleDecline(b)} className="rb-btn-danger text-[11px] px-3 py-1">Decline</button>
                       </div>
                     ) : (
-                      <span className="flex-shrink-0 rounded-full border border-orange-400/60 bg-orange-500/10 px-3 py-1 text-[11px] font-semibold text-orange-200">{isAssigned ? 'Assigned' : job.status}</span>
+                      <span className="flex-shrink-0 rb-badge">{isAssigned ? 'Assigned' : job.status}</span>
                     )}
                   </div>
                 ))}
@@ -167,23 +167,23 @@ export function JobDetails() {
         </div>
         <div className="space-y-6">
           {user && job.status === 'open' && (
-            <div className="rounded-2xl border border-slate-800/70 bg-slate-900/60 p-5 space-y-3">
+            <div className="rb-panel p-5 space-y-3">
               <h2 className="text-sm font-semibold text-slate-200">Ready to pitch?</h2>
               <p className="text-[11px] text-slate-400">Send a polished proposal. Client sees it instantly in email, dashboard and notifications.</p>
-              <button onClick={()=>setProposalOpen(true)} className="w-full rounded-full bg-red-500 px-5 py-2 text-xs font-semibold text-slate-50 hover:bg-red-400">Send Proposal</button>
+              <button onClick={()=>setProposalOpen(true)} className="w-full rb-btn-primary">Send Proposal</button>
               {feedback && <div className="rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 text-[10px] text-emerald-300">{feedback}</div>}
               {error && <div className="rounded border border-red-500/40 bg-red-500/10 px-2 py-1 text-[10px] text-red-300">{error}</div>}
             </div>
           )}
           {isAssigned && (
-            <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-center text-[11px] font-medium text-red-300 space-y-2">
+            <div className="rb-card p-4 text-center text-[11px] font-medium text-red-300 space-y-2">
               <p>This job is assigned. Proposals closed.</p>
-              {isOwner && <Link to={`/jobs/${job.id}/delivery`} className="inline-flex items-center justify-center rounded-full border border-emerald-400/70 bg-emerald-500/10 px-4 py-1.5 text-[11px] font-semibold text-emerald-200 hover:bg-emerald-500/20">Upload files & handle payment</Link>}
+              {isOwner && <Link to={`/jobs/${job.id}/delivery`} className="inline-flex items-center justify-center rb-btn-outline">Upload files & handle payment</Link>}
               {isOwner && (
                 <div className="mt-2 flex items-center justify-center gap-2">
-                  <button onClick={()=>handleStartEscrow(job?.bids?.find(b=> b.providerId === job.assignedProviderId)?.amount || 0)} className="rounded-full border border-sky-400/70 bg-sky-500/10 px-4 py-1.5 text-[11px] font-semibold text-sky-200 hover:bg-sky-500/20">Fund Escrow</button>
+                  <button onClick={()=>handleStartEscrow(job?.bids?.find(b=> b.providerId === job.assignedProviderId)?.amount || 0)} className="rb-btn-outline">Fund Escrow</button>
                   {escrow?.paid && !escrow?.released && (
-                    <span className="rounded-full border border-emerald-400/60 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold text-emerald-200">Escrow funded</span>
+                    <span className="rb-badge">Escrow funded</span>
                   )}
                 </div>
               )}
@@ -192,41 +192,41 @@ export function JobDetails() {
         </div>
       </div>
       {proposalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-          <div className="w-full max-w-xl rounded-2xl border border-slate-800/80 bg-slate-950/95 p-5 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4" role="dialog" aria-modal="true" aria-labelledby="proposal-title">
+          <div className="w-full max-w-xl rb-panel p-5 shadow-2xl" role="document">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-slate-100">Send Proposal</p>
+                <p id="proposal-title" className="text-sm font-semibold text-slate-100">Send Proposal</p>
                 <p className="text-[11px] text-slate-400">Modern, BeatStars-style pitch with the essentials.</p>
               </div>
-              <button onClick={()=>setProposalOpen(false)} className="text-[11px] text-slate-400 hover:text-emerald-300">Close</button>
+              <button onClick={()=>setProposalOpen(false)} className="rb-btn-outline text-[11px]">Close</button>
             </div>
             <form onSubmit={submitProposal} className="mt-4 grid gap-3">
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="text-[11px] text-slate-300 flex flex-col gap-1">
                   Budget (USD)
-                  <input type="number" min="1" value={proposalBudget} onChange={e=>setProposalBudget(e.target.value)} required className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none" />
+                  <input type="number" min="1" value={proposalBudget} onChange={e=>setProposalBudget(e.target.value)} required className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 rb-focus" />
                 </label>
                 <label className="text-[11px] text-slate-300 flex flex-col gap-1">
                   Timeline
-                  <input value={proposalTimeline} onChange={e=>setProposalTimeline(e.target.value)} placeholder="e.g. 5 days, 1 week" className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none" />
+                  <input value={proposalTimeline} onChange={e=>setProposalTimeline(e.target.value)} placeholder="e.g. 5 days, 1 week" className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 rb-focus" />
                 </label>
               </div>
               <label className="text-[11px] text-slate-300 flex flex-col gap-1">
                 Deliverables
-                <input value={proposalDeliverables} onChange={e=>setProposalDeliverables(e.target.value)} placeholder="Mix/master + radio edit + stems" className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none" />
+                <input value={proposalDeliverables} onChange={e=>setProposalDeliverables(e.target.value)} placeholder="Mix/master + radio edit + stems" className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 rb-focus" />
               </label>
               <label className="text-[11px] text-slate-300 flex flex-col gap-1">
                 Reference / Portfolio Link
-                <input value={proposalLink} onChange={e=>setProposalLink(e.target.value)} placeholder="URL to similar work" className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none" />
+                <input value={proposalLink} onChange={e=>setProposalLink(e.target.value)} placeholder="URL to similar work" className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 rb-focus" />
               </label>
               <label className="text-[11px] text-slate-300 flex flex-col gap-1">
                 Message
-                <textarea value={proposalMessage} onChange={e=>setProposalMessage(e.target.value)} rows={4} placeholder="Outline approach, communication cadence, revision policy." className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none" />
+                <textarea value={proposalMessage} onChange={e=>setProposalMessage(e.target.value)} rows={4} placeholder="Outline approach, communication cadence, revision policy." className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 rb-focus" />
               </label>
               <div className="flex items-center justify-end gap-2 text-[11px] text-slate-400">
-                <button type="button" onClick={()=>setProposalOpen(false)} className="rounded-full border border-slate-700/70 px-4 py-1 text-slate-200 hover:border-slate-500/60">Cancel</button>
-                <button type="submit" disabled={proposalLoading} className="rounded-full border border-emerald-400/70 bg-emerald-500/10 px-5 py-1.5 text-emerald-200 font-semibold hover:bg-emerald-500/20 disabled:opacity-60">{proposalLoading ? 'Sending…' : 'Send Proposal'}</button>
+                <button type="button" onClick={()=>setProposalOpen(false)} className="rb-btn-outline">Cancel</button>
+                <button type="submit" disabled={proposalLoading} className="rb-btn-primary disabled:opacity-60">{proposalLoading ? 'Sending…' : 'Send Proposal'}</button>
               </div>
             </form>
           </div>
@@ -235,39 +235,39 @@ export function JobDetails() {
 
       {/* 2-step modal after accept: client info then payment + upload CTA */}
       {checkoutOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-          <div className="w-full max-w-2xl rounded-2xl border border-slate-800/80 bg-slate-950/95 p-5 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4" role="dialog" aria-modal="true" aria-labelledby="checkout-title">
+          <div className="w-full max-w-2xl rb-panel p-5 shadow-2xl" role="document">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-slate-100">Checkout</p>
+                <p id="checkout-title" className="text-sm font-semibold text-slate-100">Checkout</p>
                 <p className="text-[11px] text-slate-400">Step {checkoutStep} of 2</p>
               </div>
-              <button onClick={()=>setCheckoutOpen(false)} className="text-[11px] text-slate-400 hover:text-emerald-300">Close</button>
+              <button onClick={()=>setCheckoutOpen(false)} className="rb-btn-outline text-[11px]">Close</button>
             </div>
             {checkoutStep === 1 ? (
               <div className="mt-4 space-y-3">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="text-[11px] text-slate-300 flex flex-col gap-1">
                     Full name
-                    <input value={clientName} onChange={e=>setClientName(e.target.value)} placeholder="e.g. Jane Doe" className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none" />
+                    <input value={clientName} onChange={e=>setClientName(e.target.value)} placeholder="e.g. Jane Doe" className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 rb-focus" />
                   </label>
                   <label className="text-[11px] text-slate-300 flex flex-col gap-1">
                     Address
-                    <input value={clientAddress} onChange={e=>setClientAddress(e.target.value)} placeholder="Street, City, Country" className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none" />
+                    <input value={clientAddress} onChange={e=>setClientAddress(e.target.value)} placeholder="Street, City, Country" className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 rb-focus" />
                   </label>
                 </div>
                 <div className="flex items-center justify-end gap-2">
-                  <button onClick={()=>setCheckoutOpen(false)} className="rounded-full border border-slate-700/70 px-4 py-1 text-[11px] text-slate-200 hover:border-slate-500/60">Cancel</button>
-                  <button onClick={()=>setCheckoutStep(2)} className="rounded-full bg-red-500 px-5 py-2 text-[11px] font-semibold text-slate-50 hover:bg-red-400">Next</button>
+                  <button onClick={()=>setCheckoutOpen(false)} className="rb-btn-outline text-[11px]">Cancel</button>
+                  <button onClick={()=>setCheckoutStep(2)} className="rb-btn-primary text-[11px]">Next</button>
                 </div>
               </div>
             ) : (
               <div className="mt-4 space-y-4">
-                <div className="rounded-xl border border-slate-800/80 bg-slate-900/80 p-4">
+                <div className="rb-card p-4">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-semibold text-slate-200">Payment</p>
                     {checkoutPaid && (
-                      <span className="inline-flex items-center rounded-full border border-emerald-400/70 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold text-emerald-200">Paid ✓</span>
+                      <span className="rb-badge">Paid ✓</span>
                     )}
                   </div>
                   <p className="text-[11px] text-slate-400">Amount: <span className="font-semibold text-emerald-300">${Number(job?.budget||0).toFixed(2)}</span></p>
@@ -300,16 +300,16 @@ export function JobDetails() {
                     </div>
                   )}
                 </div>
-                <div className="rounded-xl border border-slate-800/80 bg-slate-900/80 p-4">
+                <div className="rb-card p-4">
                   <p className="text-sm font-semibold text-slate-200">Upload Files</p>
                   <p className="text-[11px] text-slate-400">After payment, share deliverables in the delivery page.</p>
-                  <Link to={`/jobs/${job.id}/delivery`} className="mt-2 inline-flex items-center gap-2 rounded-full border border-emerald-400/70 bg-emerald-500/10 px-5 py-2 text-[11px] font-semibold text-emerald-200 hover:bg-emerald-500/20">
+                  <Link to={`/jobs/${job.id}/delivery`} className="mt-2 inline-flex items-center gap-2 rb-btn-outline">
                     <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-[11px]">+</span>
                     <span>Upload files</span>
                   </Link>
                 </div>
                 <div className="flex items-center justify-end gap-2">
-                  <button onClick={()=>setCheckoutOpen(false)} className="rounded-full border border-slate-700/70 px-4 py-1 text-[11px] text-slate-200 hover:border-slate-500/60">Close</button>
+                  <button onClick={()=>setCheckoutOpen(false)} className="rb-btn-outline text-[11px]">Close</button>
                 </div>
               </div>
             )}
