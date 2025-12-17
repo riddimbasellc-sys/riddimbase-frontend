@@ -8,6 +8,7 @@ import supabase from '../lib/supabaseClient'
 // bids (json array), assigned_provider_id, created_at, updated_at
 
 const TABLE = 'job_requests'
+const ESCROW_TABLE = 'job_escrow'
 
 function safeArray(val) { return Array.isArray(val) ? val : (val ? [val] : []) }
 
@@ -75,9 +76,12 @@ export async function addBidToJobSupabase(jobId, { providerId, amount, message }
   return mapRow(data)
 }
 
-export async function updateJobStatusSupabase(jobId, status, assignedProviderId=null) {
+export async function updateJobStatusSupabase(jobId, status, assignedProviderId=null, assignedBidAmount=null) {
   const fields = { status, updated_at: new Date().toISOString() }
   if (assignedProviderId) fields.assigned_provider_id = assignedProviderId
+  if (typeof assignedBidAmount === 'number' && !Number.isNaN(assignedBidAmount)) {
+    fields.budget = Number(assignedBidAmount)
+  }
   const { data, error } = await supabase.from(TABLE).update(fields).eq('id', jobId).select().single()
   if (error) throw error
   return mapRow(data)
@@ -132,4 +136,43 @@ function mapRow(row) {
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }
+}
+
+// Escrow helpers
+export async function getJobEscrowSupabase(jobId) {
+  if (!jobId) return { paid: false, released: false }
+  const { data, error } = await supabase.from(ESCROW_TABLE).select('*').eq('job_id', jobId).maybeSingle()
+  if (error) throw error
+  if (!data) return { paid: false, released: false }
+  return { paid: !!data.funded, released: !!data.released, amount: Number(data.amount||0), currency: data.currency||'USD', updatedAt: data.updated_at }
+}
+
+export async function markJobPaidSupabase(jobId, amount=0, currency='USD', actorId=null) {
+  if (!jobId) return { paid: false, released: false }
+  const payload = { job_id: jobId, funded: true, released: false, amount: Number(amount)||0, currency, updated_at: new Date().toISOString() }
+  const { data, error } = await supabase
+    .from(ESCROW_TABLE)
+    .upsert(payload, { onConflict: 'job_id' })
+    .select()
+    .single()
+  if (error) throw error
+  try {
+    await supabase.from('job_escrow_audit').insert({ job_id: jobId, action: 'fund', amount: Number(amount)||0, currency, actor_id: actorId, created_at: new Date().toISOString() })
+  } catch {}
+  return { paid: !!data.funded, released: !!data.released, amount: Number(data.amount||0), currency: data.currency||'USD', updatedAt: data.updated_at }
+}
+
+export async function releaseJobFundsSupabase(jobId, actorId=null) {
+  if (!jobId) return { paid: false, released: false }
+  const { data, error } = await supabase
+    .from(ESCROW_TABLE)
+    .update({ released: true, updated_at: new Date().toISOString() })
+    .eq('job_id', jobId)
+    .select()
+    .single()
+  if (error) throw error
+  try {
+    await supabase.from('job_escrow_audit').insert({ job_id: jobId, action: 'release', amount: Number(data.amount||0), currency: data.currency||'USD', actor_id: actorId, created_at: new Date().toISOString() })
+  } catch {}
+  return { paid: !!data.funded, released: !!data.released, amount: Number(data.amount||0), currency: data.currency||'USD', updatedAt: data.updated_at }
 }

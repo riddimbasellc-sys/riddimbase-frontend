@@ -9,6 +9,9 @@ import {
   computeJobRequestsStatsSupabase,
   updateJobBidsSupabase,
   deleteJobRequestSupabase,
+  getJobEscrowSupabase,
+  markJobPaidSupabase,
+  releaseJobFundsSupabase,
 } from './serviceJobRequestsRepository'
 
 export async function createJobRequest(fields) {
@@ -52,8 +55,8 @@ export async function addBid(jobId, bidFields) {
     .catch(()=> ({ error: 'Failed to add bid' }))
 }
 
-export async function updateJobStatus(jobId, status, assignedProviderId=null) {
-  return updateJobStatusSupabase(jobId, status, assignedProviderId)
+export async function updateJobStatus(jobId, status, assignedProviderId=null, assignedBidAmount=null) {
+  return updateJobStatusSupabase(jobId, status, assignedProviderId, assignedBidAmount)
     .catch(()=> ({ error: 'Failed to update job status' }))
 }
 
@@ -95,19 +98,22 @@ export function getJobDelivery(jobId) {
   return null
 }
 
-export function markJobPaid(jobId) {
-  console.warn('[serviceJobRequestsService] markJobPaid called without persistent backend implementation', jobId)
-  return { paid: true, released: false, updatedAt: new Date().toISOString() }
+export async function markJobPaid(jobId, amount=0, currency='USD', actorId=null) {
+  try { return await markJobPaidSupabase(jobId, amount, currency, actorId) } catch {
+    return { paid: false, released: false }
+  }
 }
 
-export function releaseJobFunds(jobId) {
-  console.warn('[serviceJobRequestsService] releaseJobFunds called without persistent backend implementation', jobId)
-  return { paid: true, released: true, updatedAt: new Date().toISOString() }
+export async function releaseJobFunds(jobId, actorId=null) {
+  try { return await releaseJobFundsSupabase(jobId, actorId) } catch {
+    return { paid: false, released: false }
+  }
 }
 
-export function getJobEscrow(jobId) {
-  console.warn('[serviceJobRequestsService] getJobEscrow called without persistent backend implementation', jobId)
-  return { paid: false, released: false }
+export async function getJobEscrow(jobId) {
+  try { return await getJobEscrowSupabase(jobId) } catch {
+    return { paid: false, released: false }
+  }
 }
 
 export function addJobReview({ jobId, providerId, rating, text }) {
