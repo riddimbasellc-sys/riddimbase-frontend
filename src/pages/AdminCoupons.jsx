@@ -1,6 +1,7 @@
 import { useAdminRole } from '../hooks/useAdminRole'
 import BackButton from '../components/BackButton'
 import { listCoupons, createCoupon, deleteCoupon, toggleCoupon } from '../services/couponsService'
+import { listPlans } from '../services/plansRepository'
 import { useEffect, useState } from 'react'
 
 export function AdminCoupons() {
@@ -10,12 +11,20 @@ export function AdminCoupons() {
   const [type, setType] = useState('fixed')
   const [value, setValue] = useState('')
   const [maxRedemptions, setMaxRedemptions] = useState('')
+  const [planIds, setPlanIds] = useState([])
+  const [plans, setPlans] = useState([])
 
   useEffect(() => {
     if (!isAdmin) return
     ;(async () => {
       const rows = await listCoupons()
       setItems(rows || [])
+      try {
+        const ps = await listPlans({ includeHidden: true })
+        setPlans(ps || [])
+      } catch {
+        setPlans([])
+      }
     })()
   }, [isAdmin])
   if (loading) return <section className="min-h-screen flex items-center justify-center bg-slate-950/95"><p className="text-sm text-slate-400">Loading auth…</p></section>
@@ -29,12 +38,14 @@ export function AdminCoupons() {
       type,
       value: Number(value),
       maxRedemptions: Number(maxRedemptions || 0),
+      planIds,
     })
     const rows = await listCoupons()
     setItems(rows || [])
     setCode('')
     setValue('')
     setMaxRedemptions('')
+    setPlanIds([])
   }
 
   return (
@@ -45,7 +56,7 @@ export function AdminCoupons() {
           <h1 className="font-display text-2xl font-semibold text-slate-50">Subscription Coupons</h1>
         </div>
         <p className="mt-1 text-sm text-slate-300">Create and manage discount codes for subscription plans only.</p>
-        <form onSubmit={create} className="mt-6 grid gap-3 rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 md:grid-cols-5">
+        <form onSubmit={create} className="mt-6 grid gap-3 rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 md:grid-cols-6">
           <div className="flex flex-col">
             <label className="text-[10px] font-semibold text-slate-400">Code</label>
             <input value={code} onChange={e=>setCode(e.target.value)} placeholder="SUMMER25" className="mt-1 rounded-lg border border-slate-700/70 bg-slate-950/70 px-2 py-1.5 text-[12px] text-slate-100" />
@@ -65,6 +76,26 @@ export function AdminCoupons() {
             <label className="text-[10px] font-semibold text-slate-400">Max Uses (0=∞)</label>
             <input value={maxRedemptions} onChange={e=>setMaxRedemptions(e.target.value)} type="number" min="0" step="1" className="mt-1 rounded-lg border border-slate-700/70 bg-slate-950/70 px-2 py-1.5 text-[12px] text-slate-100" />
           </div>
+          <div className="flex flex-col">
+            <label className="text-[10px] font-semibold text-slate-400">Plans (leave empty = all)</label>
+            <div className="mt-1 grid grid-cols-2 gap-2 md:grid-cols-3">
+              {plans.map(p => {
+                const checked = planIds.includes(p.id)
+                return (
+                  <label key={p.id} className="flex items-center gap-2 text-[12px] text-slate-200">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e)=>{
+                        setPlanIds(prev => e.target.checked ? [...prev, p.id] : prev.filter(id=>id!==p.id))
+                      }}
+                    />
+                    <span>{p.name}</span>
+                  </label>
+                )
+              })}
+            </div>
+          </div>
           <div className="flex items-end">
             <button type="submit" className="w-full rounded-full bg-emerald-500 px-4 py-2 text-[11px] font-semibold text-slate-950 hover:bg-emerald-400">Create</button>
           </div>
@@ -74,7 +105,7 @@ export function AdminCoupons() {
             <div key={c.id} className="rounded-xl border border-slate-800/80 bg-slate-900/80 p-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between text-[12px]">
               <div>
                 <p className="font-semibold text-slate-100">{c.code}</p>
-                <p className="text-[10px] text-slate-400">{c.type==='fixed'?'$'+c.value: c.value+'%'} • Used {c.used}{c.maxRedemptions?'/'+c.maxRedemptions:''} • {c.active?'Active':'Disabled'}</p>
+                <p className="text-[10px] text-slate-400">{c.type==='fixed'?'$'+c.value: c.value+'%'} • { (c.planIds && c.planIds.length>0) ? `Plans: ${c.planIds.join(', ')}` : (c.planId ? `Plan: ${c.planId}` : 'All plans') } • Used {c.used}{c.maxRedemptions?'/'+c.maxRedemptions:''} • {c.active?'Active':'Disabled'}</p>
               </div>
               <div className="flex gap-2 text-[10px]">
                 <button
