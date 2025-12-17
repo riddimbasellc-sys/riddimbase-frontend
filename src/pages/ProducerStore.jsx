@@ -20,6 +20,7 @@ export default function ProducerStore() {
   const navigate = useNavigate()
   const [beats, setBeats] = useState([])
   const [loading, setLoading] = useState(true)
+  const [fallbackMode, setFallbackMode] = useState(false)
   const [layout, setLayout] = useState('grid') // 'grid' or 'list'
   const [genre, setGenre] = useState('')
   const [sort, setSort] = useState('newest') // 'newest' | 'oldest' | 'price_low' | 'price_high' | 'bpm_low' | 'bpm_high'
@@ -83,9 +84,29 @@ export default function ProducerStore() {
       }
       try {
         setLoading(true)
-        const list = await fetchBeatsByProducerId(producerId, { limit: pageSize, offset: 0, genre: initGenre, maxPrice: isNaN(initPrice) ? 999 : initPrice, query: initQuery })
+        let list = await fetchBeatsByProducerId(producerId, { limit: pageSize, offset: 0, genre: initGenre, maxPrice: isNaN(initPrice) ? 999 : initPrice, query: initQuery })
         if (!active) return
-        setBeats(Array.isArray(list) ? list : [])
+        if (!Array.isArray(list)) list = []
+        if (list.length === 0) {
+          // Fallback: some older beats may not have user_id set; match by producer display name
+          try {
+            const prof = await getProducerProfile(producerId)
+            const display = prof?.displayName || null
+            if (display) {
+              const { data, error } = await supabase
+                .from('beats')
+                .select('*')
+                .ilike('producer', display)
+                .order('created_at', { ascending: false })
+                .limit(pageSize)
+              if (!error && Array.isArray(data) && data.length > 0) {
+                list = data
+                setFallbackMode(true)
+              }
+            }
+          } catch {}
+        }
+        setBeats(list)
       } catch {
         if (!active) return
         setBeats([])
@@ -147,7 +168,25 @@ export default function ProducerStore() {
             const nextCount = (p + 1) * pageSize
             if (nextCount <= filteredSorted.length) return p + 1
             try {
-              const more = await fetchBeatsByProducerId(producerId, { limit: pageSize, offset: beats.length, genre, maxPrice: priceMax, query })
+              let more
+              if (fallbackMode) {
+                // Continue loading by producer name when in fallback mode
+                const prof = await getProducerProfile(producerId)
+                const display = prof?.displayName || null
+                if (display) {
+                  const { data, error } = await supabase
+                    .from('beats')
+                    .select('*')
+                    .ilike('producer', display)
+                    .order('created_at', { ascending: false })
+                    .range(beats.length, Math.max(beats.length, beats.length + pageSize - 1))
+                  more = error ? [] : (data || [])
+                } else {
+                  more = []
+                }
+              } else {
+                more = await fetchBeatsByProducerId(producerId, { limit: pageSize, offset: beats.length, genre, maxPrice: priceMax, query })
+              }
               if (Array.isArray(more) && more.length > 0) {
                 setBeats(prev => [...prev, ...more])
                 return p + 1
@@ -160,7 +199,7 @@ export default function ProducerStore() {
     }, { rootMargin: '1200px' })
     io.observe(el)
     return () => io.disconnect()
-  }, [filteredSorted.length, genre, priceMax, query])
+  }, [filteredSorted.length, genre, priceMax, query, fallbackMode])
 
   // Persist controls to URL + localStorage
   useEffect(() => {
