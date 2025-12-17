@@ -12,6 +12,10 @@ function mapRow(row) {
     code: row.code,
     type: row.type,
     value: Number(row.value || 0),
+    planId: row.plan_id || null,
+    planIds: Array.isArray(row.coupon_plans)
+      ? row.coupon_plans.map((r) => r.plan_id)
+      : [],
     maxRedemptions: row.max_redemptions ?? null,
     used: Number(row.used || 0),
     active: !!row.active,
@@ -23,7 +27,7 @@ export async function listCoupons() {
   try {
     const { data, error } = await supabase
       .from(TABLE)
-      .select('*')
+      .select('*, coupon_plans ( plan_id )')
       .order('created_at', { ascending: false })
     if (error) throw error
     memoryCoupons = (data || []).map(mapRow)
@@ -33,11 +37,12 @@ export async function listCoupons() {
   }
 }
 
-export async function createCoupon({ code, type, value, maxRedemptions }) {
+export async function createCoupon({ code, type, value, maxRedemptions, planId = null, planIds = [] }) {
   const payload = {
     code: code.trim(),
     type,
     value,
+    plan_id: planId || null,
     max_redemptions: maxRedemptions || null,
   }
   try {
@@ -48,7 +53,24 @@ export async function createCoupon({ code, type, value, maxRedemptions }) {
       .maybeSingle()
     if (error) throw error
     if (data) {
-      const mapped = mapRow(data)
+      const allowList = (planIds || []).filter(Boolean)
+      if (allowList.length) {
+        const joinRows = allowList.map((pid) => ({ coupon_id: data.id, plan_id: pid }))
+        try { await supabase.from('coupon_plans').insert(joinRows) } catch {}
+      }
+      // Re-fetch including relation so planIds present
+      let mapped
+      try {
+        const { data: withRel } = await supabase
+          .from(TABLE)
+          .select('*, coupon_plans ( plan_id )')
+          .eq('id', data.id)
+          .maybeSingle()
+        mapped = mapRow(withRel || data)
+      } catch {
+        mapped = mapRow(data)
+        mapped.planIds = allowList
+      }
       memoryCoupons = [mapped, ...memoryCoupons.filter((c) => c.id !== mapped.id)]
       return mapped
     }
@@ -60,6 +82,8 @@ export async function createCoupon({ code, type, value, maxRedemptions }) {
       type: payload.type,
       value: payload.value,
       maxRedemptions: payload.max_redemptions,
+      planId: payload.plan_id || null,
+      planIds: (planIds || []).filter(Boolean),
       used: 0,
       active: true,
       createdAt: new Date().toISOString(),
@@ -111,7 +135,7 @@ export async function validateCoupon({ code, planId, amount }) {
   try {
     const { data, error } = await supabase
       .from(TABLE)
-      .select('*')
+      .select('*, coupon_plans ( plan_id )')
       .eq('code', normalized)
       .maybeSingle()
     if (error) throw error
@@ -119,6 +143,15 @@ export async function validateCoupon({ code, planId, amount }) {
 
     const coupon = mapRow(data)
     if (!coupon.active) return { valid: false, reason: 'Inactive' }
+    const restrictions = (coupon.planIds && coupon.planIds.length > 0)
+      ? coupon.planIds
+      : (coupon.planId ? [coupon.planId] : [])
+    if (restrictions.length > 0) {
+      if (!planId) return { valid: false, reason: 'Plan required' }
+      if (!restrictions.includes(planId)) {
+        return { valid: false, reason: 'Plan mismatch' }
+      }
+    }
     if (
       coupon.maxRedemptions &&
       coupon.maxRedemptions > 0 &&
