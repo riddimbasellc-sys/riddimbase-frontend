@@ -2,6 +2,7 @@
 import { Link, useParams } from 'react-router-dom'
 import useSupabaseUser from '../hooks/useSupabaseUser'
 import { getJobRequest, addBid, updateJobStatus, declineBid, markJobPaid, getJobEscrow } from '../services/serviceJobRequestsService'
+import PayPalButtonsGroup from '../components/payments/PayPalButtonsGroup'
 import { addNotification } from '../services/notificationsRepository'
 
 export function JobDetails() {
@@ -19,6 +20,11 @@ export function JobDetails() {
   const [error, setError] = useState('')
   const [feedback, setFeedback] = useState('')
   const [escrow, setEscrow] = useState(null)
+  const [checkoutOpen, setCheckoutOpen] = useState(false)
+  const [checkoutStep, setCheckoutStep] = useState(1) // 1: info, 2: pay/upload
+  const [clientName, setClientName] = useState('')
+  const [clientAddress, setClientAddress] = useState('')
+  const [checkoutPaid, setCheckoutPaid] = useState(false)
 
   useEffect(()=> { load() }, [jobId])
   async function load() {
@@ -60,6 +66,9 @@ export function JobDetails() {
         setJob(updated)
         setFeedback('Proposal accepted. Job assigned.')
         try { await addNotification({ recipientId: bid.providerId, actorId: user.id, type: 'job-assigned', data: { jobId: job.id, title: job.title } }) } catch {}
+        // Open 2-step checkout modal: info then payment
+        setCheckoutStep(1)
+        setCheckoutOpen(true)
       }
     } catch (e) {
       setError(e.message || 'Failed to accept proposal')
@@ -220,6 +229,94 @@ export function JobDetails() {
                 <button type="submit" disabled={proposalLoading} className="rounded-full border border-emerald-400/70 bg-emerald-500/10 px-5 py-1.5 text-emerald-200 font-semibold hover:bg-emerald-500/20 disabled:opacity-60">{proposalLoading ? 'Sending…' : 'Send Proposal'}</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 2-step modal after accept: client info then payment + upload CTA */}
+      {checkoutOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
+          <div className="w-full max-w-2xl rounded-2xl border border-slate-800/80 bg-slate-950/95 p-5 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-slate-100">Checkout</p>
+                <p className="text-[11px] text-slate-400">Step {checkoutStep} of 2</p>
+              </div>
+              <button onClick={()=>setCheckoutOpen(false)} className="text-[11px] text-slate-400 hover:text-emerald-300">Close</button>
+            </div>
+            {checkoutStep === 1 ? (
+              <div className="mt-4 space-y-3">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="text-[11px] text-slate-300 flex flex-col gap-1">
+                    Full name
+                    <input value={clientName} onChange={e=>setClientName(e.target.value)} placeholder="e.g. Jane Doe" className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none" />
+                  </label>
+                  <label className="text-[11px] text-slate-300 flex flex-col gap-1">
+                    Address
+                    <input value={clientAddress} onChange={e=>setClientAddress(e.target.value)} placeholder="Street, City, Country" className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none" />
+                  </label>
+                </div>
+                <div className="flex items-center justify-end gap-2">
+                  <button onClick={()=>setCheckoutOpen(false)} className="rounded-full border border-slate-700/70 px-4 py-1 text-[11px] text-slate-200 hover:border-slate-500/60">Cancel</button>
+                  <button onClick={()=>setCheckoutStep(2)} className="rounded-full bg-red-500 px-5 py-2 text-[11px] font-semibold text-slate-50 hover:bg-red-400">Next</button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 space-y-4">
+                <div className=\"rounded-xl border border-slate-800/80 bg-slate-900/80 p-4\">
+                  <div className=\"flex items-center justify-between\">
+                    <p className=\"text-sm font-semibold text-slate-200\">Payment</p>
+                    {checkoutPaid && (
+                      <span className=\"inline-flex items-center rounded-full border border-emerald-400/70 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold text-emerald-200\">Paid ✓</span>
+                    )}
+                  </div>
+                  <p className=\"text-[11px] text-slate-400\">Amount: <span className=\"font-semibold text-emerald-300\">${Number(job?.budget||0).toFixed(2)}</span></p>
+                  {!checkoutPaid && (
+                    <div className=\"mt-3\">
+                      <PayPalButtonsGroup
+                        amount={Number(job?.budget||0)}
+                        currency=\"USD\"
+                        description={`Job: ${job?.title || ''}`}
+                        onSuccess={async ({ orderId }) => {
+                          try {
+                            setFeedback('Payment captured. Finalizing escrow…')
+                            setError('')
+                            await fetch(`/api/jobs/${jobId}/pay`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ orderId, amount: Number(job?.budget||0), currency: 'USD' }),
+                            }).catch(() => {})
+                            const res = await markJobPaid(jobId, Number(job?.budget||0), 'USD', user?.id || null)
+                            setEscrow(res)
+                            setCheckoutPaid(true)
+                          } catch (e) {
+                            setError(e.message || 'Payment recorded, but escrow update may have failed.')
+                          }
+                        }}
+                        onError={(err) => {
+                          setError(err?.message || 'PayPal error. Please try again.')
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+                    {/* Reuse checkout patterns; actual PayPal buttons appear on the delivery page */}
+                    <Link to={`/jobs/${job.id}/delivery`} className="inline-flex items-center gap-2 rounded-full bg-rb-trop-sunrise px-5 py-2 text-[11px] font-semibold text-slate-950 shadow-rb-gloss-btn hover:brightness-110">Proceed to payment</Link>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-slate-800/80 bg-slate-900/80 p-4">
+                  <p className="text-sm font-semibold text-slate-200">Upload Files</p>
+                  <p className="text-[11px] text-slate-400">After payment, share deliverables in the delivery page.</p>
+                  <Link to={`/jobs/${job.id}/delivery`} className="mt-2 inline-flex items-center gap-2 rounded-full border border-emerald-400/70 bg-emerald-500/10 px-5 py-2 text-[11px] font-semibold text-emerald-200 hover:bg-emerald-500/20">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-[11px]">+</span>
+                    <span>Upload files</span>
+                  </Link>
+                </div>
+                <div className="flex items-center justify-end gap-2">
+                  <button onClick={()=>setCheckoutOpen(false)} className="rounded-full border border-slate-700/70 px-4 py-1 text-[11px] text-slate-200 hover:border-slate-500/60">Close</button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
