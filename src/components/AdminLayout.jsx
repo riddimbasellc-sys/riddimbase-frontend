@@ -41,7 +41,7 @@ export default function AdminLayout({ title, subtitle, children, actions }) {
         <div className="flex h-full flex-col">
           <div className="px-5 pt-5 pb-4 border-b border-slate-900/80">
             <Link to="/" className="inline-flex items-center rb-logo-gloss">
-              <img src="/assets/rb-logo.png" alt="RiddimBase" className="h-7 w-auto rb-logo-img" />
+              <img src="/assets/rb-logo.png" alt="RiddimBase" className="h-8 w-auto rb-logo-img" />
             </Link>
           </div>
           <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">

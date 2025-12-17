@@ -62,7 +62,7 @@ export function Navbar({ onMobileMenuToggle = () => {} }) {
             </svg>
           </button>
           <Link to="/" className="flex items-center gap-2 rb-logo-gloss">
-            <img src="/assets/rb-logo.png" alt="RiddimBase" className="h-9 w-auto rb-logo-img" />
+            <img src="/assets/rb-logo.png" alt="RiddimBase" className="h-12 w-auto rb-logo-img" />
           </Link>
           <div className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center">
@@ -100,7 +100,7 @@ export function Navbar({ onMobileMenuToggle = () => {} }) {
         {/* Desktop row */}
         <div className="hidden items-center justify-between md:flex">
           <Link to="/" className="flex items-center gap-3 rb-logo-gloss">
-            <img src="/assets/rb-logo.png" alt="RiddimBase" className="h-9 w-auto rb-logo-img" />
+            <img src="/assets/rb-logo.png" alt="RiddimBase" className="h-12 w-auto rb-logo-img" />
             <div className="hidden xl:block text-[11px] font-medium uppercase tracking-[0.18em] text-emerald-300/80">
               Home of Caribbean Beats
             </div>
