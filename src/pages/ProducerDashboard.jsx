@@ -498,8 +498,8 @@ export function ProducerDashboard() {
 
   return (
     <ProducerLayout>
-        <section className="bg-slate-950/95">
-          <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-8">
+        <section className="bg-slate-950/95 overflow-x-hidden">
+          <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-8 overflow-x-hidden">
             <div className="rb-panel sticky top-0 z-10 bg-slate-950/95 py-2">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
@@ -521,7 +521,7 @@ export function ProducerDashboard() {
             </div>
 
             {/* What's happening panel */}
-            <div className="mt-5 grid gap-4 md:grid-cols-[minmax(0,1.4fr),minmax(0,1fr)]">
+            <div className="mt-5 grid gap-4 md:grid-cols-3">
               <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 shadow-rb-gloss-panel">
                 <h2 className="text-sm font-semibold text-slate-100">
                   Share an update
@@ -658,7 +658,7 @@ export function ProducerDashboard() {
               </div>
             </div>
 
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 overflow-x-hidden">
             <StatCard label="Total earnings" value={`$${earnings.toFixed(2)}`} />
             <StatCard
               label="Available balance"
@@ -668,7 +668,7 @@ export function ProducerDashboard() {
             <StatCard label="Monthly sales" value={monthSales} />
           </div>
 
-          <div className="mt-6 grid gap-6 md:grid-cols-2">
+          <div className="mt-6 grid gap-6 md:grid-cols-2 overflow-x-hidden">
             <div className="rounded-2xl border border-white/10 bg-black/70 bg-rb-gloss-stripes bg-blend-soft-light p-4 shadow-rb-gloss-panel">
               <h2 className="text-sm font-semibold text-slate-100">
                 Audience & Reach
@@ -835,7 +835,7 @@ export function ProducerDashboard() {
             </div>
           )}
 
-          <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr,1fr]">
+          <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr,1fr] overflow-x-hidden">
             <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 shadow-rb-gloss-panel">
               <h2 className="text-sm font-semibold text-slate-100">Recent Sales</h2>
               <div className="mt-3 space-y-2 text-xs text-slate-300">
