@@ -42,7 +42,16 @@ export function UploadBeat() {
   const [untaggedUrl, setUntaggedUrl] = useState(null)
   const [bundleUrl, setBundleUrl] = useState(null)
   const [producerName, setProducerName] = useState('')
-  const [collaborators, setCollaborators] = useState([''])
+  const [collaborators, setCollaborators] = useState([])
+  const addCollaborator = () => setCollaborators(prev => [...prev, { userId: '', email: '', role: '', split: 0 }])
+  const updateCollaborator = (index, field, value) => {
+    const copy = [...collaborators]
+    copy[index][field] = value
+    setCollaborators(copy)
+  }
+  const removeCollaborator = (index) => setCollaborators(prev => prev.filter((_, i) => i !== index))
+  const totalSplit = collaborators.reduce((sum, c) => sum + Number(c.split || 0), 0)
+  const isValidSplit = Math.round(totalSplit) === 100 || collaborators.length === 0
   const [musicalKey, setMusicalKey] = useState('')
   const [uploadingBeat, setUploadingBeat] = useState(false)
   const [error, setError] = useState('')
@@ -133,8 +142,13 @@ export function UploadBeat() {
     }
     setUploadingBeat(true)
 
+    if (!isValidSplit) {
+      setError('Collaborator split percentages must total 100%.')
+      setUploadingBeat(false)
+      return
+    }
     const collaboratorString = collaborators
-      .map((c) => c.trim())
+      .map((c) => c.email || c.userId || '')
       .filter(Boolean)
       .join(', ')
 
@@ -208,6 +222,23 @@ export function UploadBeat() {
       }
     } catch (err) {
       console.warn('[UploadBeat] optional Supabase patch failed', err)
+    }
+
+    // 4) Persist collaborators via backend
+    try {
+      if (createdBeat?.id && collaborators.length > 0) {
+        const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001'
+        await fetch(`${base}/collab/set`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            beat_id: createdBeat.id,
+            collaborators: collaborators.map(c => ({ user_id: c.userId || null, email: c.email || null, role: c.role || null, split_percentage: Number(c.split || 0) }))
+          })
+        })
+      }
+    } catch (e) {
+      console.warn('[UploadBeat] collaborator save failed', e)
     }
 
     setUploadingBeat(false)
@@ -301,47 +332,54 @@ export function UploadBeat() {
                   </div>
                   <div className="mt-3">
                     <label className="text-[11px] font-semibold text-slate-300 flex items-center justify-between">
-                      Collaborators <span className="text-[10px] font-normal text-slate-500">(optional, co‑producers)</span>
+                      Collaborators <span className="text-[10px] font-normal text-slate-500">(optional)</span>
                     </label>
-                    <div className="mt-1 space-y-2">
-                      {collaborators.map((name, index) => (
-                        <div key={index} className="flex items-center gap-2">
+                    <div className="mt-2 space-y-2">
+                      {collaborators.map((c, index) => (
+                        <div key={index} className="grid grid-cols-1 gap-2 sm:grid-cols-4">
                           <input
-                            value={name}
-                            onChange={(e) => {
-                              const next = [...collaborators]
-                              next[index] = e.target.value
-                              setCollaborators(next)
-                            }}
-                            className="flex-1 rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
-                            placeholder={index === 0 ? 'e.g. Co‑producer name' : 'Another collaborator'}
+                            value={c.email}
+                            onChange={(e) => updateCollaborator(index, 'email', e.target.value)}
+                            className="rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                            placeholder="Email (for non‑user collaborator)"
                           />
-                          {index === collaborators.length - 1 && collaborators.length < 4 && (
+                          <input
+                            value={c.userId}
+                            onChange={(e) => updateCollaborator(index, 'userId', e.target.value)}
+                            className="rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                            placeholder="User ID (optional)"
+                          />
+                          <input
+                            value={c.role}
+                            onChange={(e) => updateCollaborator(index, 'role', e.target.value)}
+                            className="rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                            placeholder="Role (producer/engineer)"
+                          />
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              value={c.split}
+                              onChange={(e) => updateCollaborator(index, 'split', Number(e.target.value) || 0)}
+                              className="flex-1 rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                              placeholder="Split %"
+                            />
                             <button
                               type="button"
-                              onClick={() => setCollaborators((prev) => [...prev, ''])}
-                              className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-700/70 bg-slate-900/80 text-sm font-semibold text-slate-200 hover:border-emerald-400/70 hover:text-emerald-300"
-                              aria-label="Add collaborator"
-                            >
-                              +
-                            </button>
-                          )}
-                          {collaborators.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setCollaborators((prev) =>
-                                  prev.filter((_, i) => i !== index) || [''],
-                                )
-                              }
+                              onClick={() => removeCollaborator(index)}
                               className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-700/70 bg-slate-900/80 text-xs font-semibold text-slate-300 hover:border-rose-400/70 hover:text-rose-300"
                               aria-label="Remove collaborator"
                             >
                               ×
                             </button>
-                          )}
+                          </div>
                         </div>
                       ))}
+                      <div className="flex items-center justify-between">
+                        <button type="button" onClick={addCollaborator} className="rb-btn-outline">Add Collaborator</button>
+                        {collaborators.length > 0 && (
+                          <p className={`text-[11px] ${isValidSplit ? 'text-emerald-300' : 'text-rose-300'}`}>Total split: {totalSplit}% {isValidSplit ? '' : '(must equal 100%)'}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 <p className="text-[10px] text-slate-500">Choose a clear, searchable title, add a helpful description, and set an accurate genre for better discovery.</p>

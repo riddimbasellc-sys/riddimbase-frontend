@@ -11,7 +11,7 @@ import { computeProducerEarnings } from '../services/beatsService'
 import {
   loadPlayCountsForBeats,
 } from '../services/analyticsService'
-import { listUserPayouts, cancelPayout } from '../services/payoutsRepository'
+import { listUserPayouts, cancelPayout, createPayout } from '../services/payoutsRepository'
 import { useSales } from '../hooks/useSales'
 import { useBeats } from '../hooks/useBeats'
 import { followerCount, fetchFollowerProfiles } from '../services/socialService'
@@ -21,6 +21,7 @@ import { fetchProducerMetrics } from '../services/producerMetricsService'
 import { createBeat, deleteBeat as deleteBeatRemote } from '../services/beatsRepository'
 import { uploadArtwork, uploadBundle, uploadFeedAttachment } from '../services/storageService'
 import { createPost } from '../services/feedService'
+import { getCollaboratorWallet, listCollaboratorSplitEntries } from '../services/collabEarningsService'
 import ChatWidget from '../components/ChatWidget'
 
 const GENRES = [
@@ -74,6 +75,15 @@ export function ProducerDashboard() {
   const [statusEmojiOpen, setStatusEmojiOpen] = useState(false)
   const [chatCollapsed, setChatCollapsed] = useState(false)
   const [chatUnread, setChatUnread] = useState(0)
+  const [collabWallet, setCollabWallet] = useState(0)
+  const [collabSplits, setCollabSplits] = useState([])
+  const [collabLoading, setCollabLoading] = useState(false)
+  const [collabPayoutOpen, setCollabPayoutOpen] = useState(false)
+  const [collabMethodType, setCollabMethodType] = useState('paypal')
+  const [collabPaypalEmail, setCollabPaypalEmail] = useState('')
+  const [collabPayoutSubmitting, setCollabPayoutSubmitting] = useState(false)
+  const [collabPayoutAmount, setCollabPayoutAmount] = useState('')
+  const [collabToast, setCollabToast] = useState('')
 
   useEffect(() => {
     if (!loading && !user) navigate('/login')
@@ -84,6 +94,35 @@ export function ProducerDashboard() {
       ;(async () => {
         setPayouts(await listUserPayouts(user.id))
       })()
+    }
+  }, [user])
+
+  // Load collaborator wallet and recent split entries
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      if (!user) {
+        if (active) {
+          setCollabWallet(0)
+          setCollabSplits([])
+        }
+        return
+      }
+      setCollabLoading(true)
+      try {
+        const [wallet, splits] = await Promise.all([
+          getCollaboratorWallet(user.id),
+          listCollaboratorSplitEntries(user.id, { limit: 10 }),
+        ])
+        if (!active) return
+        setCollabWallet(wallet || 0)
+        setCollabSplits(Array.isArray(splits) ? splits : [])
+      } finally {
+        if (active) setCollabLoading(false)
+      }
+    })()
+    return () => {
+      active = false
     }
   }, [user])
 
@@ -947,6 +986,163 @@ export function ProducerDashboard() {
               </div>
             </div>
           </div>
+
+          {/* Collab Splits: wallet + recent entries */}
+          <div className="mt-8 grid gap-6 md:grid-cols-2">
+            <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 shadow-rb-gloss-panel">
+              <h2 className="text-sm font-semibold text-slate-100">Collab Splits</h2>
+              <p className="mt-1 text-[11px] text-slate-400">Your collaborator wallet balance.</p>
+              {collabToast && (
+                <div className="mt-2 rounded-lg border border-emerald-400/40 bg-emerald-500/10 p-2 text-[11px] text-emerald-300">
+                  {collabToast}
+                </div>
+              )}
+              <div className="mt-3">
+                <div className="rounded-xl border border-slate-800/80 bg-slate-950/80 p-4 flex items-center justify-between">
+                  <p className="text-xs text-slate-400">Wallet Balance</p>
+                  <p className="text-lg font-semibold text-emerald-300">${collabWallet.toFixed(2)}</p>
+                </div>
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    disabled={collabWallet <= 0}
+                    onClick={() => {
+                      setCollabPayoutAmount(String(collabWallet.toFixed(2)))
+                      setCollabPayoutOpen(true)
+                    }}
+                    className="w-full rounded-full bg-emerald-500 px-4 py-2 text-[12px] font-semibold text-slate-950 disabled:opacity-40"
+                  >
+                    Request Payout
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 shadow-rb-gloss-panel">
+              <h2 className="text-sm font-semibold text-slate-100">Recent Split Entries</h2>
+              <div className="mt-3 space-y-2 text-xs text-slate-300">
+                {collabLoading && (
+                  <p className="text-[11px] text-slate-500">Loading entries…</p>
+                )}
+                {!collabLoading && collabSplits.map((e) => {
+                  const beatTitle = beats.find((b) => b.id === e.beat_id)?.title || 'Beat'
+                  const dt = e.timestamp ? new Date(e.timestamp) : null
+                  const dateStr = dt ? dt.toLocaleDateString() : ''
+                  return (
+                    <div key={`${e.collaborator_id}-${e.beat_id}-${e.timestamp || ''}`} className="flex items-center justify-between rounded-xl border border-slate-800/80 bg-slate-950/80 p-3">
+                      <div>
+                        <p className="font-semibold text-slate-100">{beatTitle}</p>
+                        <p className="text-[11px] text-slate-400">{dateStr}</p>
+                      </div>
+                      <p className="font-semibold text-emerald-400">${Number(e.amount_earned || 0).toFixed(2)}</p>
+                    </div>
+                  )
+                })}
+                {!collabLoading && collabSplits.length === 0 && (
+                  <p className="text-[11px] text-slate-500">No split earnings yet.</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {collabPayoutOpen && (
+            <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 px-4">
+              <div className="w-full max-w-sm rounded-2xl border border-slate-800/80 bg-slate-950/95 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.85)] text-[12px]">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-slate-100">Request Collab Payout</h3>
+                  <button
+                    type="button"
+                    onClick={() => setCollabPayoutOpen(false)}
+                    className="text-[16px] leading-none text-slate-500 hover:text-slate-300"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <label className="text-[10px] font-semibold text-slate-400">Amount (USD)</label>
+                    <input
+                      value={collabPayoutAmount}
+                      onChange={(e) => setCollabPayoutAmount(e.target.value)}
+                      placeholder={String(collabWallet.toFixed(2))}
+                      className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-900/80 px-3 py-2 text-[12px] text-slate-100"
+                    />
+                    <p className="mt-1 text-[10px] text-slate-500">Max: ${collabWallet.toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold text-slate-400">Method</label>
+                    <select
+                      value={collabMethodType}
+                      onChange={(e) => setCollabMethodType(e.target.value)}
+                      className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-900/80 px-3 py-2 text-[12px] text-slate-100"
+                    >
+                      <option value="paypal">PayPal</option>
+                    </select>
+                  </div>
+                  {collabMethodType === 'paypal' && (
+                    <div>
+                      <label className="text-[10px] font-semibold text-slate-400">PayPal Email</label>
+                      <input
+                        value={collabPaypalEmail}
+                        onChange={(e) => setCollabPaypalEmail(e.target.value)}
+                        placeholder="you@paypal.com"
+                        className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-900/80 px-3 py-2 text-[12px] text-slate-100"
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="mt-4 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCollabPayoutOpen(false)}
+                    className="rounded-full border border-slate-700/80 px-4 py-1.5 text-[11px] font-medium text-slate-200 hover:bg-slate-800/80"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={collabPayoutSubmitting || !collabPaypalEmail || (parseFloat(collabPayoutAmount) || 0) <= 0 || (parseFloat(collabPayoutAmount) || 0) > collabWallet}
+                    onClick={async () => {
+                      if (!user) return
+                      const amt = parseFloat(collabPayoutAmount)
+                      if (!amt || amt <= 0 || amt > collabWallet) return
+                      setCollabPayoutSubmitting(true)
+                      try {
+                        const details = {
+                          firstName: user.user_metadata?.display_name || user.email,
+                          lastName: '',
+                          paypalEmail: collabPaypalEmail,
+                          address: {},
+                          source: 'collab-wallet'
+                        }
+                        await createPayout({
+                          userId: user.id,
+                          amount: amt,
+                          currency: 'USD',
+                          methodType: 'paypal',
+                          methodDetails: JSON.stringify(details)
+                        })
+                        // Refresh wallet and recent entries
+                        const [wallet, splits] = await Promise.all([
+                          getCollaboratorWallet(user.id),
+                          listCollaboratorSplitEntries(user.id, { limit: 10 }),
+                        ])
+                        setCollabWallet(wallet || 0)
+                        setCollabSplits(Array.isArray(splits) ? splits : [])
+                        setCollabToast('Payout request submitted')
+                        setTimeout(() => setCollabToast(''), 2500)
+                        setCollabPayoutOpen(false)
+                      } finally {
+                        setCollabPayoutSubmitting(false)
+                      }
+                    }}
+                    className="rounded-full bg-emerald-500 px-4 py-1.5 text-[11px] font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-60"
+                  >
+                    {collabPayoutSubmitting ? 'Submitting…' : 'Submit Request'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Direct Messages */}
           <div className="mt-8 rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 shadow-rb-gloss-panel">

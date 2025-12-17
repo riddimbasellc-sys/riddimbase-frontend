@@ -1,7 +1,7 @@
 import BackButton from '../components/BackButton'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { computeBeatQuote, processPayment, generateLicense } from '../services/paymentsService'
+import { computeBeatQuote, processPayment, generateLicense, recordBeatSaleSplit } from '../services/paymentsService'
 import { sendFreeDownloadEmail } from '../services/notificationService'
 import PayPalButtonsGroup from '../components/payments/PayPalButtonsGroup'
 import { fetchBeat as fetchBeatRemote } from '../services/beatsRepository'
@@ -102,6 +102,10 @@ export function Checkout() {
         producerName: beat.producer,
         orderId: res.id,
       })
+      // Record revenue split for collaborators
+      try {
+        await recordBeatSaleSplit({ saleId: res.id, beatId: beat.id, amount: quote.total, currency: quote.currency })
+      } catch {}
       setResult({ ...res, license: licenseRes })
       setTimeout(() => navigate('/artist/dashboard'), 3000)
     } else {
