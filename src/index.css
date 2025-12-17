@@ -137,30 +137,4 @@ html, body, #root {
   border-radius: 999px;
 }
 
-/* --- Brand logo styling --- */
-.rb-logo-gloss {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-.rb-logo-img {
-  display: block;
-  height: 2.25rem; /* default ~36px; override via Tailwind h-7/h-9 */
-  width: auto;
-  filter: drop-shadow(0 10px 28px rgba(0,0,0,0.55)) saturate(1.18) contrast(1.08);
-}
-.rb-logo-gloss::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: 0.75rem;
-  background: linear-gradient(
-    135deg,
-    rgba(255,255,255,0.30) 0%,
-    rgba(255,255,255,0.12) 28%,
-    rgba(255,255,255,0.06) 45%,
-    rgba(255,255,255,0.00) 62%
-  );
-  mix-blend-mode: overlay;
-}
+/* Brand logo utilities removed: reverting to original text brand rendering */
