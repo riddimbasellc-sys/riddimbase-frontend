@@ -344,18 +344,7 @@ export function ProducerDashboard() {
         url: publicUrl,
         type: file.type || 'file',
         name: file.name,
-          ) : (
-            <div className="mt-6 rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4">
-              <div className="flex items-center justify-between gap-3 mb-3">
-                <div>
-                  <h2 className="text-sm font-semibold text-slate-100">Your Soundkits</h2>
-                  <p className="text-[11px] text-slate-400">Upgrade to Producer Pro to upload and sell soundkits (drums, loops, samples).</p>
-                </div>
-                <a href="/subscribe/pro?kind=producer" className="rb-btn-primary text-[11px] px-4 py-1.5">Upgrade to Pro</a>
-              </div>
-              <p className="text-[11px] text-slate-500">Pro unlocks unlimited uploads, advanced analytics and boosted visibility.</p>
-            </div>
-          )}
+      })
     } catch (err) {
       alert(err.message || 'Failed to upload attachment.')
     } finally {
