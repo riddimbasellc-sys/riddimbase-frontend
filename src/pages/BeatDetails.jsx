@@ -558,7 +558,7 @@ export function BeatDetails() {
               ))}
             </div>
           )}
-          <div className="mt-4 space-y-3 max-h-64 overflow-y-auto">
+          <div className="mt-4 pr-1 space-y-3 max-h-32 overflow-y-auto">
             {comments.map((c) => (
               <div
                 key={c.id}

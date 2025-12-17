@@ -396,25 +396,27 @@ export default function Feed() {
                             </button>
                           </div>
                           {postComments[p.id] && postComments[p.id].length > 0 && (
-                            <div className="mt-3 space-y-1.5 border-t border-slate-800/70 pt-2">
-                              {postComments[p.id].map((c) => (
-                                <div key={c.id} className="flex items-start gap-2 text-[10px]">
-                                  <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-slate-800 text-[9px] font-semibold text-slate-100">
-                                    {c.displayName.slice(0, 2).toUpperCase()}
+                            <div className="mt-3 border-t border-slate-800/70 pt-2">
+                              <div className="space-y-1.5 max-h-24 overflow-y-auto pr-1">
+                                {postComments[p.id].map((c) => (
+                                  <div key={c.id} className="flex items-start gap-2 text-[10px]">
+                                    <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-slate-800 text-[9px] font-semibold text-slate-100">
+                                      {c.displayName.slice(0, 2).toUpperCase()}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="text-[10px] font-semibold text-slate-200">
+                                        {c.displayName}{' '}
+                                        <span className="text-slate-500">
+                                          · {timeAgo(c.createdAt)}
+                                        </span>
+                                      </p>
+                                      <p className="text-[10px] text-slate-200">
+                                        {c.content}
+                                      </p>
+                                    </div>
                                   </div>
-                                  <div className="min-w-0">
-                                    <p className="text-[10px] font-semibold text-slate-200">
-                                      {c.displayName}{' '}
-                                      <span className="text-slate-500">
-                                        · {timeAgo(c.createdAt)}
-                                      </span>
-                                    </p>
-                                    <p className="text-[10px] text-slate-200">
-                                      {c.content}
-                                    </p>
-                                  </div>
-                                </div>
-                              ))}
+                                ))}
+                              </div>
                             </div>
                           )}
                           {user && (
