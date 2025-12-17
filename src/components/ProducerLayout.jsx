@@ -22,8 +22,8 @@ export default function ProducerLayout({ title, subtitle, children, actions }) {
       <aside className={`fixed inset-y-0 left-0 z-40 w-60 transform bg-slate-950/95 border-r border-slate-900/80 transition-transform duration-300 md:static md:translate-x-0 ${open? 'translate-x-0':'-translate-x-full'}`}>
         <div className="flex h-full flex-col">
           <div className="px-5 pt-5 pb-4 border-b border-slate-900/80">
-            <Link to="/" className="inline-flex items-center rb-logo-gloss">
-              <img src="/assets/rb-logo.png" alt="RiddimBase" className="h-8 w-auto rb-logo-img" />
+            <Link to="/" className="flex items-center gap-2">
+              <span className="text-emerald-400 font-bold text-lg tracking-tight">RiddimBase</span>
             </Link>
           </div>
           <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
