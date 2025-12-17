@@ -489,16 +489,23 @@ export function ProducerDashboard() {
     <ProducerLayout>
         <section className="bg-slate-950/95">
           <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-8">
-            <div className="flex items-center gap-3">
-              <BackButton />
-              <div>
-              <h1 className="font-display text-xl font-semibold text-slate-50 sm:text-2xl">
-                My Dashboard
-              </h1>
-              <p className="mt-1 text-xs text-slate-400 sm:text-sm">
-                Welcome back, {displayName}. Track catalog, sales, ads and jobs in one
-                place.
-                </p>
+            <div className="rb-panel sticky top-0 z-10 bg-slate-950/95 py-2">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <BackButton />
+                  <div>
+                    <h1 className="font-display text-xl font-semibold text-slate-50 sm:text-2xl">
+                      My Dashboard
+                    </h1>
+                    <p className="mt-1 text-xs text-slate-400 sm:text-sm">
+                      Welcome back, {displayName}. Track catalog, sales, ads and jobs in one
+                      place.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Space reserved for quick actions on wide screens; wraps on mobile */}
+                </div>
               </div>
             </div>
 

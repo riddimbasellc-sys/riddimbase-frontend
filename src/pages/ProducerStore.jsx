@@ -205,8 +205,9 @@ export default function ProducerStore() {
   return (
     <section className="bg-slate-950/95 min-h-screen">
       <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-8">
-        <div className="flex items-center justify-between gap-3 sticky top-0 z-10 bg-slate-950/95 py-2 rb-panel">
-          <div className="flex items-center gap-3">
+        <div className="sticky top-0 z-10 bg-slate-950/95 rb-panel py-2">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
             <BackButton />
             <div>
               <h1 className="font-display text-xl font-semibold text-slate-50 sm:text-2xl">
@@ -216,8 +217,8 @@ export default function ProducerStore() {
                 Browse all beats from this producer.
               </p>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
             <input
               value={query}
               onChange={e=>setQuery(e.target.value)}
@@ -229,7 +230,7 @@ export default function ProducerStore() {
               <option value="">All genres</option>
               {['Dancehall','Trap Dancehall','Reggae','Afrobeat','Soca','Trap','Hip Hop','Drill'].map(g=> <option key={g}>{g}</option>)}
             </select>
-            <select value={sort} onChange={e=>setSort(e.target.value)} aria-label="Sort beats" className="rounded-full border border-slate-700/70 bg-slate-900/80 px-3 py[1.5] text-[12px] text-slate-100 rb-focus">
+              <select value={sort} onChange={e=>setSort(e.target.value)} aria-label="Sort beats" className="rounded-full border border-slate-700/70 bg-slate-900/80 px-3 py-1.5 text-[12px] text-slate-100 rb-focus">
               <option value="newest">Newest</option>
               <option value="oldest">Oldest</option>
               <option value="price_low">Price: Low → High</option>
@@ -244,6 +245,7 @@ export default function ProducerStore() {
             </div>
             <GridToggle />
             <button type="button" onClick={()=>setDrawerOpen(true)} className="md:hidden rb-btn-outline">Filters</button>
+            </div>
           </div>
         </div>
 
