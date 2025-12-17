@@ -82,6 +82,15 @@ export function TrendingBeatCard({ beat, onAddedToCart }) {
     }
   }
 
+  const handleFreeDownloadClick = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (addBeat) {
+      addBeat(beat.id, 'Basic')
+    }
+    window.location.href = '/cart'
+  }
+
   const handlePlayClick = (e) => {
     e.preventDefault()
     e.stopPropagation()
@@ -178,13 +187,11 @@ export function TrendingBeatCard({ beat, onAddedToCart }) {
           </button>
           <div className="ml-2 flex items-center gap-2">
             {beat.freeDownload && (
-              <a
-                href={`/checkout/${beat.id}?mode=free`}
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                }}
-                className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-600/80 bg-slate-900/80 text-[11px] text-slate-100 hover:border-emerald-400/70 hover:text-emerald-200"
+              <button
+                type="button"
+                onClick={handleFreeDownloadClick}
+                className="flex h-7 w-9 items-center justify-center rounded-xl border border-slate-600/80 bg-slate-900/90 text-[11px] text-slate-100 hover:border-emerald-400/70 hover:text-emerald-200"
+                aria-label="Free download"
                 title="Free download"
               >
                 <svg
@@ -200,7 +207,7 @@ export function TrendingBeatCard({ beat, onAddedToCart }) {
                   <path d="M6 11l6 6 6-6" />
                   <path d="M5 21h14" />
                 </svg>
-              </a>
+              </button>
             )}
             <span className="text-[10px] text-slate-400">{likes}</span>
           </div>

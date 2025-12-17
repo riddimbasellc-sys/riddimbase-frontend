@@ -304,10 +304,23 @@ export function BeatCard({
               <button
                 type="button"
                 onClick={handleFreeDownloadClick}
-                className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-2.5 py-1 font-semibold text-red-200 hover:bg-red-500/30"
+                className="inline-flex h-7 w-9 items-center justify-center rounded-xl border border-slate-600/80 bg-slate-900/90 text-slate-100 hover:border-emerald-400/70 hover:text-emerald-200"
+                aria-label="Free download"
                 title="Free download"
               >
-                <span>⬇️</span>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4"
+                >
+                  <path d="M12 3v14" />
+                  <path d="M6 11l6 6 6-6" />
+                  <path d="M5 21h14" />
+                </svg>
               </button>
             )}
           </div>
@@ -390,10 +403,23 @@ export function BeatCard({
               <button
                 type="button"
                 onClick={handleFreeDownloadClick}
-                className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-2.5 py-1 font-semibold text-red-200 hover:bg-red-500/30"
+                className="inline-flex h-7 w-9 items-center justify-center rounded-xl border border-slate-600/80 bg-slate-900/90 text-slate-100 hover:border-emerald-400/70 hover:text-emerald-200"
+                aria-label="Free download"
                 title="Free download"
               >
-                <span>⬇️</span>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4"
+                >
+                  <path d="M12 3v14" />
+                  <path d="M6 11l6 6 6-6" />
+                  <path d="M5 21h14" />
+                </svg>
               </button>
             )}
           </div>
@@ -537,10 +563,23 @@ export function BeatCard({
           <button
             type="button"
             onClick={handleFreeDownloadClick}
-            className="inline-flex items-center rounded-full border border-red-400/70 bg-red-500/10 px-3 py-1 text-[10px] font-semibold text-red-200 hover:bg-red-500/20"
+            className="inline-flex h-8 w-10 items-center justify-center rounded-xl border border-slate-600/80 bg-slate-900/90 text-slate-100 hover:border-emerald-400/70 hover:text-emerald-200"
+            aria-label="Free download"
             title="Free download"
           >
-            ⬇️ Free download
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-4 w-4"
+            >
+              <path d="M12 3v14" />
+              <path d="M6 11l6 6 6-6" />
+              <path d="M5 21h14" />
+            </svg>
           </button>
         </div>
       )}
