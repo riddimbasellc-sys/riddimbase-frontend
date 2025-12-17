@@ -61,13 +61,8 @@ export function Navbar({ onMobileMenuToggle = () => {} }) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h10" />
             </svg>
           </button>
-          <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-red-500 via-red-600 to-amber-400 shadow-rb-gloss-btn">
-              <span className="text-lg font-black tracking-tight text-white drop-shadow-rb-glow">RB</span>
-            </div>
-            <div className="font-display text-lg font-semibold tracking-tight">
-              RiddimBase
-            </div>
+          <Link to="/" className="flex items-center gap-2 rb-logo-gloss">
+            <img src="/assets/rb-logo.png" alt="RiddimBase" className="h-9 w-auto rb-logo-img" />
           </Link>
           <div className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center">
@@ -104,15 +99,10 @@ export function Navbar({ onMobileMenuToggle = () => {} }) {
 
         {/* Desktop row */}
         <div className="hidden items-center justify-between md:flex">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-red-500 via-red-600 to-amber-400 shadow-rb-gloss-btn">
-              <span className="text-lg font-black tracking-tight text-white drop-shadow-rb-glow">RB</span>
-            </div>
-            <div className="leading-tight">
-              <div className="font-display text-lg font-semibold tracking-tight">RiddimBase</div>
-              <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-emerald-300/80">
-                Home of Caribbean Beats
-              </div>
+          <Link to="/" className="flex items-center gap-3 rb-logo-gloss">
+            <img src="/assets/rb-logo.png" alt="RiddimBase" className="h-9 w-auto rb-logo-img" />
+            <div className="hidden xl:block text-[11px] font-medium uppercase tracking-[0.18em] text-emerald-300/80">
+              Home of Caribbean Beats
             </div>
           </Link>
           <nav className="flex items-center gap-6 text-sm font-medium text-slate-300">

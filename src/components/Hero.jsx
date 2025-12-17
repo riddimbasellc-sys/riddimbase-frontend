@@ -6,9 +6,14 @@ export function Hero() {
     <section className="border-b border-slate-900/70 bg-rb-trop-radial">
       <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4 py-8 md:flex-row md:items-center md:py-14">
         <div className="flex-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-rb-sun-gold drop-shadow-rb-glow">
-            RiddimBase • Home of Caribbean Beats
-          </p>
+          <div className="flex items-center gap-2">
+            <span className="rb-logo-gloss">
+              <img src="/assets/rb-logo.png" alt="RiddimBase" className="h-8 w-auto rb-logo-img" />
+            </span>
+            <p className="text-[10px] md:text-xs font-semibold uppercase tracking-[0.24em] text-rb-sun-gold drop-shadow-rb-glow">
+              Home of Caribbean Beats
+            </p>
+          </div>
           <h1 className="mt-3 font-display text-3xl font-semibold leading-tight text-slate-50 md:text-5xl">
             Discover & sell authentic{' '}
             <span className="bg-rb-trop-sunrise bg-clip-text text-transparent drop-shadow-rb-glow">

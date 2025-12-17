@@ -25,8 +25,8 @@ export function Footer() {
         {/* Top row: brand + socials */}
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-col gap-1 md:max-w-md">
-            <div className="font-semibold text-slate-100 text-sm drop-shadow-rb-glow">
-              RiddimBase
+            <div className="rb-logo-gloss">
+              <img src="/assets/rb-logo.png" alt="RiddimBase" className="h-7 w-auto rb-logo-img" />
             </div>
             <p className="text-[11px] leading-relaxed text-slate-400">
               The Caribbean beat marketplace for dancehall, reggae, soca, afrobeats & emerging hybrid genres.
