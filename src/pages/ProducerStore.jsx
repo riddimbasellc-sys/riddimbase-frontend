@@ -7,7 +7,6 @@ import { slugify } from '../utils/slugify'
 import { fetchBeatsByProducerId } from '../services/beatsRepository'
 import { getProducerProfile } from '../services/producerProfileService'
 import { supabase } from '../lib/supabaseClient'
-import { slugify } from '../utils/slugify'
 
 export default function ProducerStore() {
   const { producerId: producerIdParam } = useParams()
