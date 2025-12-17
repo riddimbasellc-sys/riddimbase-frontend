@@ -16,7 +16,7 @@ function mapPost(row, profileMap) {
     attachmentName: row.attachment_name || null,
     originalPostId: row.original_post_id || null,
     createdAt: row.created_at,
-    displayName: profile.display_name || emailName || 'Creator',
+    displayName: profile.display_name || emailName || 'User',
     avatarUrl: profile.avatar_url || null,
   }
 }
@@ -186,7 +186,8 @@ export async function addPostComment({ postId, userId, content }) {
     userId: data.user_id,
     content: data.content,
     createdAt: data.created_at,
-    displayName: profile?.display_name || profile?.email || 'User',
+    displayName:
+      (profile?.display_name || ((profile?.email || '').split('@')[0] || null)) || 'User',
     avatarUrl: profile?.avatar_url || null,
   }
 }
