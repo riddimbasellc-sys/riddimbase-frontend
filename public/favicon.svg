@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 768">
+  <defs>
+    <style>
+      .bg { fill: #0b0b0b; }
+      .note { fill: #ef2329; }
+    </style>
+  </defs>
+  <!-- Rounded square background -->
+  <rect class="bg" x="32" y="32" width="704" height="704" rx="160" ry="160" />
+  <!-- Stylized music note matching provided image -->
+  <path class="note" d="M492 118c24-5 48-9 72-14 15-3 30 9 30 24v418c0 49-28 84-74 101-41 15-95 14-129-21-38-39-34-106 11-140 14-11 31-17 48-21l72-16c15-3 26-16 26-31V243c0-12-11-22-24-20l-293 58c-11 2-19 12-19 23v307c0 49-28 84-74 101-41 15-95 14-129-21-38-39-34-106 11-140 14-11 31-17 48-21l72-16c15-3 26-16 26-31V168c0-14 10-27 24-30l280-56z" />
+</svg>
