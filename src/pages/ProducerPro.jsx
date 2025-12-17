@@ -92,7 +92,7 @@ export function ProducerPro() {
               <li key={x} className="flex items-start gap-2"><span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-emerald-400/90" /><span>{x}</span></li>
             ))}
           </ul>
-          <p className="mt-4 text-[10px] text-slate-500">Feature rollout is staged; some items are placeholders pending backend services.</p>
+          {/* Removed placeholder rollout note as requested */}
         </div>
       </div>
     </section>
