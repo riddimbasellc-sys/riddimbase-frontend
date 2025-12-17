@@ -89,6 +89,20 @@ export function TrendingBeatCard({ beat, onAddedToCart }) {
     setPlaying((prev) => !prev)
   }
 
+  // Keep local UI state in sync with actual audio element events
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    const onPlay = () => setPlaying(true)
+    const onPause = () => setPlaying(false)
+    audio.addEventListener('play', onPlay)
+    audio.addEventListener('pause', onPause)
+    return () => {
+      audio.removeEventListener('play', onPlay)
+      audio.removeEventListener('pause', onPause)
+    }
+  }, [audioRef])
+
   useEffect(() => {
     const audio = audioRef.current
     if (!audio) return

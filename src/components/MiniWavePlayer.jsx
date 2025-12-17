@@ -31,11 +31,17 @@ export function MiniWavePlayer({ src, beatId, producerId, height = 40, buttonRef
       setPlaying(false)
       clearIfCurrent(ws)
     }
+    const onPause = () => {
+      // External pauses should reflect in UI
+      setPlaying(false)
+    }
 
     ws.on('finish', onFinish)
+    ws.on('pause', onPause)
 
     return () => {
       ws.un('finish', onFinish)
+      ws.un('pause', onPause)
       ws.destroy()
       waveSurferRef.current = null
       hasRecordedRef.current = false

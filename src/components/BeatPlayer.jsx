@@ -40,17 +40,23 @@ export function BeatPlayer({ src, className = '', beatId, producerId }) {
       setProgress(ws.getDuration() || 0)
       clearIfCurrent(ws)
     }
+    const onPause = () => {
+      // External pauses (via playback bus) should reflect in UI
+      setPlaying(false)
+    }
 
     ws.on('ready', onReady)
     ws.on('audioprocess', onTime)
     ws.on('seek', onTime)
     ws.on('finish', onFinish)
+    ws.on('pause', onPause)
 
     return () => {
       ws.un('ready', onReady)
       ws.un('audioprocess', onTime)
       ws.un('seek', onTime)
       ws.un('finish', onFinish)
+      ws.un('pause', onPause)
       ws.destroy()
       waveSurferRef.current = null
       setPlaying(false)
