@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import WaveSurfer from 'wavesurfer.js'
 import { recordPlay } from '../services/analyticsService'
+import { ensureExclusive, clearIfCurrent } from '../utils/playbackBus'
 
 export function BeatPlayer({ src, className = '', beatId, producerId }) {
   const containerRef = useRef(null)
@@ -37,6 +38,7 @@ export function BeatPlayer({ src, className = '', beatId, producerId }) {
     const onFinish = () => {
       setPlaying(false)
       setProgress(ws.getDuration() || 0)
+      clearIfCurrent(ws)
     }
 
     ws.on('ready', onReady)
@@ -67,9 +69,12 @@ export function BeatPlayer({ src, className = '', beatId, producerId }) {
         recordPlay(beatId, producerId)
         hasRecordedRef.current = true
       }
+      // Enforce exclusive playback across the app.
+      ensureExclusive(ws)
       ws.play().catch(() => setPlaying(false))
     } else {
       ws.pause()
+      clearIfCurrent(ws)
     }
   }, [playing, beatId, producerId])
 

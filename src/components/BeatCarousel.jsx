@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, useRef } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import { Link } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
+import { ensureExclusive, clearIfCurrent } from '../utils/playbackBus'
 import { slugify } from '../utils/slugify'
 import useSupabaseUser from '../hooks/useSupabaseUser'
 import { toggleLike, likeCount, isLiked } from '../services/socialService'
@@ -92,6 +93,8 @@ export function TrendingBeatCard({ beat, onAddedToCart }) {
     const audio = audioRef.current
     if (!audio) return
     if (playing) {
+      // Enforce exclusive playback when starting this audio.
+      ensureExclusive(audio)
       audio
         .play()
         .catch(() => {
@@ -99,6 +102,7 @@ export function TrendingBeatCard({ beat, onAddedToCart }) {
         })
     } else {
       audio.pause()
+      clearIfCurrent(audio)
     }
   }, [playing])
 

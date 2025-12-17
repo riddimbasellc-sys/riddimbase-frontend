@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import WaveSurfer from 'wavesurfer.js'
 import { recordPlay } from '../services/analyticsService'
+import { ensureExclusive, clearIfCurrent } from '../utils/playbackBus'
 
 export function MiniWavePlayer({ src, beatId, producerId, height = 40, buttonRef }) {
   const containerRef = useRef(null)
@@ -28,6 +29,7 @@ export function MiniWavePlayer({ src, beatId, producerId, height = 40, buttonRef
 
     const onFinish = () => {
       setPlaying(false)
+      clearIfCurrent(ws)
     }
 
     ws.on('finish', onFinish)
@@ -50,9 +52,11 @@ export function MiniWavePlayer({ src, beatId, producerId, height = 40, buttonRef
         recordPlay(beatId, producerId)
         hasRecordedRef.current = true
       }
+      ensureExclusive(ws)
       ws.play().catch(() => setPlaying(false))
     } else {
       ws.pause()
+      clearIfCurrent(ws)
     }
   }, [playing, beatId, producerId])
 
