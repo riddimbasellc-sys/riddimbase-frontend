@@ -29,9 +29,20 @@ export function Cart() {
           {enriched.map(it => (
             <div key={it.beatId} className="rb-card p-4 space-y-3">
               <div className="flex items-start gap-4">
-                <div className="h-20 w-20 rounded-xl overflow-hidden bg-gradient-to-br from-emerald-500 via-emerald-400 to-orange-500 flex-shrink-0">
-                  <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-slate-950/80">RB</div>
-                </div>
+                {(() => {
+                  const cover = it.beat?.coverUrl || it.beat?.cover_url || null
+                  return (
+                    <div className="h-20 w-20 rounded-xl overflow-hidden border border-slate-800/70 bg-slate-900 flex-shrink-0">
+                      {cover ? (
+                        <img src={cover} alt={it.beat?.title || 'Beat artwork'} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="h-full w-full bg-gradient-to-br from-emerald-500 via-emerald-400 to-orange-500 flex items-center justify-center">
+                          <span className="text-[10px] font-semibold text-slate-950/80">RB</span>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-slate-50">{it.beat?.title || 'Beat unavailable'}</p>
                   <p className="text-[11px] text-slate-400">{it.beat?.producer} • {it.beat?.genre} • {it.beat?.bpm} BPM</p>
