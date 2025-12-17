@@ -109,75 +109,7 @@ export function MyJobs() {
                   <span className="rounded-full border border-emerald-400/50 bg-emerald-500/10 px-3 py-1 text-[10px] font-semibold text-emerald-200">{job.bids?.length || 0} proposals</span>
                 </div>
                 <p className="mt-2 line-clamp-3 text-[11px] text-slate-300">{job.description}</p>
-                {job.bids && job.bids.length > 0 && (
-                  <div className="mt-3 rounded-xl border border-slate-800/70 bg-slate-950/70 p-3 text-[11px] text-slate-200">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-semibold text-slate-100">
-                        Proposals ({job.bids.length})
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setExpandedJobId(expandedJobId === job.id ? null : job.id)
-                        }
-                        className="rounded-full border border-slate-600 px-3 py-1 text-[10px] text-slate-200 hover:border-emerald-400/70 hover:text-emerald-300"
-                      >
-                        {expandedJobId === job.id ? 'Hide proposals' : 'View proposals'}
-                      </button>
-                    </div>
-                    {expandedJobId === job.id && (
-                      <ul className="mt-2 space-y-2">
-                        {job.bids.map((bid) => (
-                          <li
-                            key={bid.id}
-                            className="rounded-lg border border-slate-800/80 bg-slate-900/80 p-2 flex flex-col gap-1"
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-emerald-300 font-semibold">
-                                ${Number(bid.amount || 0).toFixed(2)}
-                              </span>
-                              <span className="text-[9px] text-slate-500">
-                                {bid.createdAt
-                                  ? new Date(bid.createdAt).toLocaleDateString()
-                                  : ''}
-                              </span>
-                            </div>
-                            <p className="text-[10px] text-slate-300 line-clamp-2">
-                              {bid.message || 'No message provided.'}
-                            </p>
-                            <div className="mt-1 flex flex-wrap gap-2 text-[10px]">
-                              {job.status === 'open' && (
-                                <>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleAcceptProposal(job, bid)}
-                                    className="rounded-full border border-emerald-400/70 bg-emerald-500/10 px-3 py-1 font-semibold text-emerald-200 hover:bg-emerald-500/20"
-                                  >
-                                    Accept
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeclineProposal(job.id, bid.id)}
-                                    className="rounded-full border border-rose-500/70 bg-rose-500/10 px-3 py-1 font-semibold text-rose-200 hover:bg-rose-500/20"
-                                  >
-                                    Decline
-                                  </button>
-                                </>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => navigate('/producer/inbox')}
-                                className="rounded-full border border-slate-600 px-3 py-1 font-semibold text-slate-200 hover:bg-slate-800/80"
-                              >
-                                Contact provider
-                              </button>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                )}
+                {/* Proposals are viewed in Job Details. Keeping My Jobs clean and focused. */}
                 <div className="mt-3 rounded-xl border border-slate-800/60 bg-slate-950/60 p-3 text-[11px] text-slate-200 flex items-center justify-between">
                   <div>
                     <p className="font-semibold text-slate-100">Escrow Status</p>

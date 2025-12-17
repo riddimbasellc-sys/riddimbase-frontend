@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import useSupabaseUser from '../hooks/useSupabaseUser'
-import { queryJobRequests } from '../services/serviceJobRequestsService'
+import { queryJobRequests, listUserJobRequests } from '../services/serviceJobRequestsService'
 
 export function JobsBoard() {
   const { user } = useSupabaseUser()
@@ -20,6 +20,7 @@ export function JobsBoard() {
   const [minBudget] = useState('')
   const [maxBudget] = useState('')
   const [viewMode, setViewMode] = useState('grid')
+  const [myJobsCount, setMyJobsCount] = useState(0)
 
   useEffect(() => {
     load()
@@ -45,6 +46,19 @@ export function JobsBoard() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    // Show "My Jobs" only if the user has posted at least one job
+    ;(async () => {
+      if (!user) { setMyJobsCount(0); return }
+      try {
+        const { data } = await listUserJobRequests(user.id)
+        setMyJobsCount((data || []).length)
+      } catch {
+        setMyJobsCount(0)
+      }
+    })()
+  }, [user])
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   const catOptions = ['all', 'mixing', 'custom-beat', 'vocal-edit', 'remix']
@@ -166,6 +180,15 @@ export function JobsBoard() {
           >
             Post a Job
           </button>
+          {myJobsCount > 0 && (
+            <button
+              onClick={() => navigate('/jobs/my')}
+              className="rounded-full border border-emerald-400/60 bg-emerald-500/10 px-5 py-2 text-sm font-semibold text-emerald-200 hover:bg-emerald-500/20 transition"
+              title="View jobs you posted"
+            >
+              My Jobs
+            </button>
+          )}
         </div>
       </div>
       <div className="grid gap-4 rounded-xl border border-white/10 bg-black/70 bg-rb-gloss-stripes bg-blend-soft-light p-4 shadow-rb-gloss-panel md:grid-cols-3">
