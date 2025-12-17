@@ -364,7 +364,6 @@ export function ProducerProfile() {
                 to={`/producer/${producerId || producerIdParam}/store`}
                 className="mt-3 inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-[11px] font-semibold text-slate-950 hover:bg-emerald-400"
               >
-                <span>🏢</span>
                 <span>View Beat Store</span>
               </Link>
             </div>
