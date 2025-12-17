@@ -83,3 +83,56 @@ html, body, #root {
   border-color: var(--rb-card-accent);
   box-shadow: 0 0 0 1px rgba(255, 26, 26, 0.45), 0 0 28px rgba(255, 26, 26, 0.75);
 }
+
+/* --- Design system utilities (buttons, panels, badges, motion) --- */
+
+.rb-btn-primary {
+  @apply rounded-full bg-white px-5 py-2 text-xs font-semibold text-black shadow transition duration-200 ease-snappy hover:bg-slate-100;
+}
+
+.rb-btn-outline {
+  @apply rounded-full border border-white/15 bg-white/5 px-5 py-2 text-xs font-semibold text-slate-100 backdrop-blur transition duration-200 ease-snappy hover:border-white/40 hover:bg-white/10;
+}
+
+.rb-btn-danger {
+  @apply rounded-full bg-red-500 px-5 py-2 text-xs font-semibold text-white shadow transition duration-200 ease-snappy hover:bg-red-400;
+}
+
+.rb-panel {
+  @apply rounded-3xl border border-white/10 bg-black/70 bg-rb-gloss-stripes bg-blend-soft-light shadow-rb-gloss-panel;
+}
+
+.rb-card {
+  @apply rounded-2xl border border-slate-800/80 bg-slate-950/80 shadow-[0_18px_48px_rgba(0,0,0,0.6)];
+}
+
+.rb-badge {
+  @apply inline-flex items-center rounded-full border border-rb-fiery-red/60 bg-rb-fiery-red/10 px-3 py-1 text-[10px] font-semibold text-rb-sun-gold drop-shadow-rb-glow;
+}
+
+.rb-hover-lift {
+  @apply transition transform duration-200 ease-snappy hover:-translate-y-[2px] hover:brightness-105;
+}
+
+.rb-skeleton {
+  @apply animate-pulse rounded-xl bg-slate-800/60;
+}
+
+.rb-soft-scroll {
+  scroll-behavior: smooth;
+}
+
+/* Chips for active filters with close icon */
+.rb-chip {
+  @apply inline-flex items-center gap-1 rounded-full border border-slate-700/70 bg-slate-900/80 px-2 py-1 text-[10px] text-slate-200;
+}
+.rb-chip-close {
+  @apply text-slate-400 hover:text-slate-200;
+}
+
+/* Focus ring utility for keyboard navigation */
+.rb-focus:focus-visible {
+  outline: 2px solid #ef4444;
+  outline-offset: 2px;
+  border-radius: 999px;
+}
