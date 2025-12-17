@@ -4,6 +4,7 @@ import { useBeats } from '../hooks/useBeats'
 import BackButton from '../components/BackButton'
 import { getPlayCount, loadPlayCountsForBeats } from '../services/analyticsService'
 import { fetchCountsForBeats } from '../services/socialService'
+import { getSubscription, isPro as isProPlan } from '../services/subscriptionService'
 
 const TIER_LABEL = {
   1: 'Tier 1 • 3 days',
@@ -25,12 +26,17 @@ export function MyAds() {
   const [actionId, setActionId] = useState(null)
   const [counts, setCounts] = useState({ likeCounts: {}, favoriteCounts: {} })
   const [playsLoaded, setPlaysLoaded] = useState(false)
+  const [subscription, setSubscription] = useState(null)
+  const isPro = !!(subscription && isProPlan(subscription.planId))
 
   useEffect(() => {
     if (!user) return
     async function load() {
       setLoading(true)
       try {
+        // Load subscription to gate Pro-only controls
+        const sub = await getSubscription(user.id)
+        setSubscription(sub)
         const res = await fetch('/api/admin/boosts')
         if (!res.ok) throw new Error('Failed to load boosts')
         const payload = await res.json()
@@ -156,6 +162,13 @@ export function MyAds() {
             You haven&apos;t boosted any beats yet. Use the Boost button from your dashboard to start a campaign.
           </div>
         )}
+        {!loading && !isPro && (
+          <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4">
+            <p className="text-sm text-amber-200 font-semibold">Boosted ads are a Pro feature.</p>
+            <p className="mt-1 text-[12px] text-amber-100/90">Upgrade your plan to pause, delete, or re-run campaigns.</p>
+            <a href="/subscribe/pro?kind=producer" className="mt-3 inline-block rounded-full border border-amber-400/70 bg-amber-500/20 px-3 py-1 text-[12px] text-amber-100 hover:bg-amber-500/30">Upgrade to Pro</a>
+          </div>
+        )}
         {!loading && boosts.length > 0 && (
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="space-y-3">
@@ -199,17 +212,17 @@ export function MyAds() {
                         <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
                           <button
                             onClick={() => pauseBoost(b.id)}
-                            disabled={actionId === b.id}
+                            disabled={actionId === b.id || !isPro}
                             className="rounded-full border border-amber-400/70 bg-amber-500/10 px-3 py-1 text-amber-200 hover:bg-amber-500/20 disabled:opacity-60"
                           >
-                            {actionId === b.id ? 'Pausing…' : 'Pause'}
+                            {actionId === b.id ? 'Pausing…' : isPro ? 'Pause' : 'Pro required'}
                           </button>
                           <button
                             onClick={() => deleteBoost(b.id)}
-                            disabled={actionId === b.id}
+                            disabled={actionId === b.id || !isPro}
                             className="rounded-full border border-rose-500/70 bg-rose-500/10 px-3 py-1 text-rose-200 hover:bg-rose-500/20 disabled:opacity-60"
                           >
-                            {actionId === b.id ? 'Working…' : 'Delete'}
+                            {actionId === b.id ? 'Working…' : isPro ? 'Delete' : 'Pro required'}
                           </button>
                         </div>
                       </div>
@@ -259,17 +272,17 @@ export function MyAds() {
                         <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
                           <button
                             onClick={() => runAgain(b)}
-                            disabled={actionId === b.id}
+                            disabled={actionId === b.id || !isPro}
                             className="rounded-full border border-emerald-400/70 bg-emerald-500/10 px-3 py-1 text-emerald-200 hover:bg-emerald-500/20 disabled:opacity-60"
                           >
-                            {actionId === b.id ? 'Launching…' : 'Run again'}
+                            {actionId === b.id ? 'Launching…' : isPro ? 'Run again' : 'Pro required'}
                           </button>
                           <button
                             onClick={() => deleteBoost(b.id)}
-                            disabled={actionId === b.id}
+                            disabled={actionId === b.id || !isPro}
                             className="rounded-full border border-slate-700/80 bg-slate-800/80 px-3 py-1 text-slate-200 hover:bg-slate-700/80 disabled:opacity-60"
                           >
-                            Delete
+                            {isPro ? 'Delete' : 'Pro required'}
                           </button>
                         </div>
                       </div>
