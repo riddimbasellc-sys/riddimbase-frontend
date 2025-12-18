@@ -11,7 +11,7 @@ export function AdminCoupons() {
   const [type, setType] = useState('fixed')
   const [value, setValue] = useState('')
   const [maxRedemptions, setMaxRedemptions] = useState('')
-  const [planIds, setPlanIds] = useState([])
+  const [selectedTargets, setSelectedTargets] = useState([]) // keys like starter-monthly, pro-yearly, pro-producer
   const [plans, setPlans] = useState([])
 
   useEffect(() => {
@@ -33,19 +33,29 @@ export function AdminCoupons() {
   const create = async (e) => {
     e.preventDefault()
     if (!code || !value) return
+    // Translate selected checkbox keys into planTargets
+    const planTargets = selectedTargets.map(k => {
+      if (k === 'starter-monthly') return { planId: 'starter', billingCycle: 'monthly' }
+      if (k === 'starter-yearly') return { planId: 'starter', billingCycle: 'yearly' }
+      if (k === 'pro-monthly') return { planId: 'pro', billingCycle: 'monthly' }
+      if (k === 'pro-yearly') return { planId: 'pro', billingCycle: 'yearly' }
+      if (k === 'pro-producer') return { planId: 'pro', kind: 'producer' }
+      return null
+    }).filter(Boolean)
+
     await createCoupon({
       code,
       type,
       value: Number(value),
       maxRedemptions: Number(maxRedemptions || 0),
-      planIds,
+      planTargets,
     })
     const rows = await listCoupons()
     setItems(rows || [])
     setCode('')
     setValue('')
     setMaxRedemptions('')
-    setPlanIds([])
+    setSelectedTargets([])
   }
 
   return (
@@ -79,21 +89,43 @@ export function AdminCoupons() {
           <div className="flex flex-col">
             <label className="text-[10px] font-semibold text-slate-400">Plans (leave empty = all)</label>
             <div className="mt-1 grid grid-cols-2 gap-2 md:grid-cols-3">
-              {plans.map(p => {
-                const checked = planIds.includes(p.id)
-                return (
-                  <label key={p.id} className="flex items-center gap-2 text-[12px] text-slate-200">
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={(e)=>{
-                        setPlanIds(prev => e.target.checked ? [...prev, p.id] : prev.filter(id=>id!==p.id))
-                      }}
-                    />
-                    <span>{p.name}</span>
-                  </label>
-                )
-              })}
+              {(() => {
+                const nonFree = (plans || []).filter(p => p.id !== 'free')
+                const hasStarter = nonFree.some(p => p.id === 'starter')
+                const hasPro = nonFree.some(p => p.id === 'pro')
+                const options = []
+                if (hasStarter) {
+                  options.push(
+                    { key: 'starter-monthly', label: 'Monthly Starter' },
+                    { key: 'starter-yearly', label: 'Yearly Starter' },
+                  )
+                }
+                if (hasPro) {
+                  options.push(
+                    { key: 'pro-monthly', label: 'Monthly Pro' },
+                    { key: 'pro-yearly', label: 'Yearly Pro' },
+                    { key: 'pro-producer', label: 'Producer Pro' },
+                  )
+                }
+                return options.map(opt => {
+                  const checked = selectedTargets.includes(opt.key)
+                  return (
+                    <label key={opt.key} className="flex items-center gap-2 text-[12px] text-slate-200">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e)=>{
+                          setSelectedTargets(prev => {
+                            if (e.target.checked) return Array.from(new Set([...prev, opt.key]))
+                            return prev.filter(k => k !== opt.key)
+                          })
+                        }}
+                      />
+                      <span>{opt.label}</span>
+                    </label>
+                  )
+                })
+              })()}
             </div>
           </div>
           <div className="flex items-end">
@@ -105,7 +137,20 @@ export function AdminCoupons() {
             <div key={c.id} className="rounded-xl border border-slate-800/80 bg-slate-900/80 p-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between text-[12px]">
               <div>
                 <p className="font-semibold text-slate-100">{c.code}</p>
-                <p className="text-[10px] text-slate-400">{c.type==='fixed'?'$'+c.value: c.value+'%'} • { (c.planIds && c.planIds.length>0) ? `Plans: ${c.planIds.join(', ')}` : (c.planId ? `Plan: ${c.planId}` : 'All plans') } • Used {c.used}{c.maxRedemptions?'/'+c.maxRedemptions:''} • {c.active?'Active':'Disabled'}</p>
+                <p className="text-[10px] text-slate-400">
+                  {c.type==='fixed'?'$'+c.value: c.value+'%'} • {
+                    (c.targets && c.targets.length>0)
+                      ? `Plans: ${c.targets.map(t => {
+                          if (t.planId==='starter' && t.billingCycle==='monthly') return 'Monthly Starter'
+                          if (t.planId==='starter' && t.billingCycle==='yearly') return 'Yearly Starter'
+                          if (t.planId==='pro' && t.kind==='producer') return 'Producer Pro'
+                          if (t.planId==='pro' && t.billingCycle==='monthly') return 'Monthly Pro'
+                          if (t.planId==='pro' && t.billingCycle==='yearly') return 'Yearly Pro'
+                          return t.planId
+                        }).join(', ')}`
+                      : (c.planId ? `Plan: ${c.planId}` : 'All plans')
+                  } • Used {c.used}{c.maxRedemptions?'/'+c.maxRedemptions:''} • {c.active?'Active':'Disabled'}
+                </p>
               </div>
               <div className="flex gap-2 text-[10px]">
                 <button

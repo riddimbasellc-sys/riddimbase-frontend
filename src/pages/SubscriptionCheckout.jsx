@@ -101,6 +101,8 @@ export function SubscriptionCheckout() {
       code: couponCode,
       planId,
       amount: baseAmount,
+      billingCycle,
+      kind,
     })
     setCouponResult(res)
     if (res.valid) {
