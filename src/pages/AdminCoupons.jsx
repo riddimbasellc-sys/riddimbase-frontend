@@ -11,6 +11,8 @@ export function AdminCoupons() {
   const [type, setType] = useState('fixed')
   const [value, setValue] = useState('')
   const [maxRedemptions, setMaxRedemptions] = useState('')
+  const [perUserLimit, setPerUserLimit] = useState('')
+  const [expiresAt, setExpiresAt] = useState('')
   const [selectedTargets, setSelectedTargets] = useState([]) // keys like starter-monthly, pro-yearly, pro-producer
   const [plans, setPlans] = useState([])
 
@@ -48,6 +50,8 @@ export function AdminCoupons() {
       type,
       value: Number(value),
       maxRedemptions: Number(maxRedemptions || 0),
+      perUserLimit: Number(perUserLimit || 0) || null,
+      expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
       planTargets,
     })
     const rows = await listCoupons()
@@ -55,6 +59,8 @@ export function AdminCoupons() {
     setCode('')
     setValue('')
     setMaxRedemptions('')
+    setPerUserLimit('')
+    setExpiresAt('')
     setSelectedTargets([])
   }
 
@@ -85,6 +91,14 @@ export function AdminCoupons() {
           <div className="flex flex-col">
             <label className="text-[10px] font-semibold text-slate-400">Max Uses (0=∞)</label>
             <input value={maxRedemptions} onChange={e=>setMaxRedemptions(e.target.value)} type="number" min="0" step="1" className="mt-1 rounded-lg border border-slate-700/70 bg-slate-950/70 px-2 py-1.5 text-[12px] text-slate-100" />
+          </div>
+          <div className="flex flex-col">
+            <label className="text-[10px] font-semibold text-slate-400">Per-User Limit (0=∞)</label>
+            <input value={perUserLimit} onChange={e=>setPerUserLimit(e.target.value)} type="number" min="0" step="1" className="mt-1 rounded-lg border border-slate-700/70 bg-slate-950/70 px-2 py-1.5 text-[12px] text-slate-100" />
+          </div>
+          <div className="flex flex-col">
+            <label className="text-[10px] font-semibold text-slate-400">Expires At (optional)</label>
+            <input value={expiresAt} onChange={e=>setExpiresAt(e.target.value)} type="datetime-local" className="mt-1 rounded-lg border border-slate-700/70 bg-slate-950/70 px-2 py-1.5 text-[12px] text-slate-100" />
           </div>
           <div className="flex flex-col">
             <label className="text-[10px] font-semibold text-slate-400">Plans (leave empty = all)</label>
@@ -149,7 +163,7 @@ export function AdminCoupons() {
                           return t.planId
                         }).join(', ')}`
                       : (c.planId ? `Plan: ${c.planId}` : 'All plans')
-                  } • Used {c.used}{c.maxRedemptions?'/'+c.maxRedemptions:''} • {c.active?'Active':'Disabled'}
+                  } • Used {c.used}{c.maxRedemptions?'/'+c.maxRedemptions:''}{c.perUserLimit?` • Per-user ${c.perUserLimit}`:''}{c.expiresAt?` • Expires ${new Date(c.expiresAt).toLocaleString()}`:''} • {c.active?'Active':'Disabled'}
                 </p>
               </div>
               <div className="flex gap-2 text-[10px]">

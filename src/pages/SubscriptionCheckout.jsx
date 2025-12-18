@@ -103,6 +103,7 @@ export function SubscriptionCheckout() {
       amount: baseAmount,
       billingCycle,
       kind,
+      userId: user?.id || null,
     })
     setCouponResult(res)
     if (res.valid) {
@@ -122,7 +123,7 @@ export function SubscriptionCheckout() {
     if (!user) return
     setProcessing(true)
     try {
-      if (appliedCode) await markCouponUsed(appliedCode)
+      if (appliedCode) await markCouponUsed(appliedCode, user.id)
       if (paypalSubId) {
         try {
           await fetch('/api/subscriptions/activate', {
