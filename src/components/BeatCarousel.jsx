@@ -24,6 +24,7 @@ export function TrendingBeatCard({ beat, onAddedToCart }) {
   const slug = slugify(beat.title || '')
   const to = slug ? `/beat/${slug}` : `/beat/${beat.id}`
   const price = typeof beat.price === 'number' ? beat.price : Number(beat.price || 0)
+  const isFree = !!(beat.freeDownload || beat.free_download)
   const priceLabel = price.toFixed(2)
   const [liked, setLiked] = useState(false)
   const [likes, setLikes] = useState(0)
@@ -85,10 +86,8 @@ export function TrendingBeatCard({ beat, onAddedToCart }) {
   const handleFreeDownloadClick = (e) => {
     e.preventDefault()
     e.stopPropagation()
-    if (addBeat) {
-      addBeat(beat.id, 'Basic')
-    }
-    window.location.href = '/cart'
+    // Go straight to free checkout mode; cart is not required
+    window.location.href = `/checkout/${beat.id}?mode=free`
   }
 
   const handlePlayClick = (e) => {
@@ -186,7 +185,7 @@ export function TrendingBeatCard({ beat, onAddedToCart }) {
             <span>${priceLabel}</span>
           </button>
           <div className="ml-2 flex items-center gap-2">
-            {beat.freeDownload && (
+            {isFree && (
               <button
                 type="button"
                 onClick={handleFreeDownloadClick}
