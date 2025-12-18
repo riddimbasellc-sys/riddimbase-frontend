@@ -22,8 +22,10 @@ function mapRow(row) {
         }))
       : [],
     maxRedemptions: row.max_redemptions ?? null,
+    perUserLimit: row.per_user_limit ?? null,
     used: Number(row.used || 0),
     active: !!row.active,
+    expiresAt: row.expires_at || null,
     createdAt: row.created_at,
   }
 }
@@ -43,13 +45,15 @@ export async function listCoupons() {
 }
 
 // planTargets: optional array of { planId, billingCycle, kind }
-export async function createCoupon({ code, type, value, maxRedemptions, planId = null, planIds = [], planTargets = [] }) {
+export async function createCoupon({ code, type, value, maxRedemptions, perUserLimit = null, expiresAt = null, planId = null, planIds = [], planTargets = [] }) {
   const payload = {
     code: code.trim(),
     type,
     value,
     plan_id: planId || null,
     max_redemptions: maxRedemptions || null,
+    per_user_limit: perUserLimit || null,
+    expires_at: expiresAt || null,
   }
   try {
     const { data, error } = await supabase
@@ -100,12 +104,14 @@ export async function createCoupon({ code, type, value, maxRedemptions, planId =
       type: payload.type,
       value: payload.value,
       maxRedemptions: payload.max_redemptions,
+      perUserLimit: payload.per_user_limit,
       planId: payload.plan_id || null,
       targets: (planTargets && planTargets.length)
         ? planTargets
         : (planIds || []).filter(Boolean).map(pid => ({ planId: pid })),
       used: 0,
       active: true,
+      expiresAt: payload.expires_at || null,
       createdAt: new Date().toISOString(),
     }
     memoryCoupons = [temp, ...memoryCoupons]
@@ -148,7 +154,7 @@ export async function toggleCoupon(id) {
   }
 }
 
-export async function validateCoupon({ code, planId, amount, billingCycle = null, kind = null }) {
+export async function validateCoupon({ code, planId, amount, billingCycle = null, kind = null, userId = null }) {
   if (!code) return { valid: false, reason: 'No code' }
   const normalized = code.trim().toUpperCase()
 
@@ -163,6 +169,11 @@ export async function validateCoupon({ code, planId, amount, billingCycle = null
 
     const coupon = mapRow(data)
     if (!coupon.active) return { valid: false, reason: 'Inactive' }
+    if (coupon.expiresAt) {
+      const now = Date.now()
+      const exp = Date.parse(coupon.expiresAt)
+      if (!Number.isNaN(exp) && now > exp) return { valid: false, reason: 'Expired' }
+    }
     // Determine if coupon has any specific targets
     const targets = Array.isArray(coupon.targets) ? coupon.targets : []
     if (targets.length > 0) {
@@ -185,6 +196,23 @@ export async function validateCoupon({ code, planId, amount, billingCycle = null
       coupon.used >= coupon.maxRedemptions
     ) {
       return { valid: false, reason: 'Max redemptions reached' }
+    }
+
+    // Per-user limit enforcement
+    if (coupon.perUserLimit && coupon.perUserLimit > 0) {
+      if (!userId) return { valid: false, reason: 'User required' }
+      try {
+        const { data: red } = await supabase
+          .from('coupon_redemptions')
+          .select('used')
+          .eq('coupon_id', coupon.id)
+          .eq('user_id', userId)
+          .maybeSingle()
+        const usedByUser = Number(red?.used || 0)
+        if (usedByUser >= coupon.perUserLimit) {
+          return { valid: false, reason: 'Per-user limit reached' }
+        }
+      } catch {}
     }
 
     const base = Number(amount || 0)
@@ -210,7 +238,7 @@ export async function validateCoupon({ code, planId, amount, billingCycle = null
   }
 }
 
-export async function markCouponUsed(code) {
+export async function markCouponUsed(code, userId = null) {
   if (!code) return
   const normalized = code.trim().toUpperCase()
   try {
@@ -236,6 +264,22 @@ export async function markCouponUsed(code) {
     memoryCoupons = memoryCoupons.map((c) =>
       c.id === mapped.id ? mapped : c,
     )
+
+    // Also record per-user redemption count when provided
+    if (userId) {
+      try {
+        const { data: row } = await supabase
+          .from('coupon_redemptions')
+          .select('used')
+          .eq('coupon_id', mapped.id)
+          .eq('user_id', userId)
+          .maybeSingle()
+        const nextUserUsed = Number(row?.used || 0) + 1
+        await supabase
+          .from('coupon_redemptions')
+          .upsert({ coupon_id: mapped.id, user_id: userId, used: nextUserUsed, updated_at: new Date().toISOString() }, { onConflict: 'coupon_id,user_id' })
+      } catch {}
+    }
     return
   } catch {
     // Fallback: naive increment in memory only
@@ -244,5 +288,6 @@ export async function markCouponUsed(code) {
         ? { ...c, used: (c.used || 0) + 1 }
         : c,
     )
+    // Note: per-user local tracking omitted in fallback
   }
 }
