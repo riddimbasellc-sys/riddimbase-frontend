@@ -4,6 +4,7 @@ import BeatSelector from '../components/studio/BeatSelector'
 import RecorderControls from '../components/studio/RecorderControls'
 import WaveformCanvas from '../components/studio/WaveformCanvas'
 import StudioSidebar from '../components/studio/StudioSidebar'
+import TrackTimeline from '../components/studio/TrackTimeline'
 import useSupabaseUser from '../hooks/useSupabaseUser'
 import '../styles/recordingLab.css'
 
@@ -24,6 +25,11 @@ export function RecordingLab() {
   const [effects, setEffects] = useState({ reverb: false, delay: false, autotune: false })
   const [inputGain, setInputGain] = useState(1)
 
+  // Multitrack timeline state
+  const [snapToGrid, setSnapToGrid] = useState(true)
+  const [beatClip, setBeatClip] = useState(null) // { startSec, durationSec }
+  const [vocalTracks, setVocalTracks] = useState([]) // { id, name, clip: { startSec, durationSec, url } }
+
   const audioRef = useRef(null)
   const audioContextRef = useRef(null)
   const mediaStreamRef = useRef(null)
@@ -32,6 +38,7 @@ export function RecordingLab() {
   const monitorGainRef = useRef(null)
   const chunksRef = useRef([])
   const timerRef = useRef(null)
+  const recordStartRef = useRef(null)
 
   const [hasAudioSupport] = useState(() =>
     typeof window !== 'undefined' &&
@@ -48,6 +55,10 @@ export function RecordingLab() {
     el.volume = beatVolume
     el.addEventListener('ended', () => {
       setIsBeatPlaying(false)
+    })
+    el.addEventListener('loadedmetadata', () => {
+      const duration = Number.isFinite(el.duration) && el.duration > 0 ? el.duration : 60
+      setBeatClip((prev) => ({ startSec: prev?.startSec || 0, durationSec: duration }))
     })
     audioRef.current = el
   }
@@ -151,6 +162,25 @@ export function RecordingLab() {
           if (recordingUrl) URL.revokeObjectURL(recordingUrl)
           const url = URL.createObjectURL(blob)
           setRecordingUrl(url)
+          const startedAt = recordStartRef.current
+          const elapsed = startedAt ? (Date.now() - startedAt) / 1000 : timerSeconds
+          const durationSec = Math.max(elapsed || 0, 0.5)
+
+          // Add a new vocal track with this take clipped at t=0 on the timeline
+          setVocalTracks((prev) => {
+            const index = prev.length + 1
+            const id = `take-${index}`
+            const name = `Take ${index}`
+            return [
+              ...prev,
+              {
+                id,
+                name,
+                clip: { startSec: 0, durationSec, url },
+              },
+            ]
+          })
+
           setRecordState('recorded')
           // TODO: send blob to backend storage for saving sessions
         }
@@ -186,6 +216,7 @@ export function RecordingLab() {
     try {
       recorder.start()
       setRecordState('recording')
+      recordStartRef.current = Date.now()
       startTimer()
       if (selectedBeat && !isBeatPlaying) {
         toggleBeatPlay()
@@ -238,6 +269,23 @@ export function RecordingLab() {
 
   const handleToggleEffect = (key) => {
     setEffects((fx) => ({ ...fx, [key]: !fx[key] }))
+  }
+
+  const handleBeatClipChange = (startSec) => {
+    setBeatClip((prev) => (prev ? { ...prev, startSec } : { startSec, durationSec: 60 }))
+  }
+
+  const handleVocalClipChange = (trackId, startSec) => {
+    setVocalTracks((prev) =>
+      prev.map((t) => (t.id === trackId && t.clip ? { ...t, clip: { ...t.clip, startSec } } : t)),
+    )
+  }
+
+  const handleAddVocalTrack = () => {
+    setVocalTracks((prev) => {
+      const index = prev.length + 1
+      return [...prev, { id: `vocal-${index}`, name: `Vocal ${index}`, clip: null }]
+    })
   }
 
   useEffect(() => {
@@ -296,6 +344,16 @@ export function RecordingLab() {
 
           <div className="flex flex-col gap-4">
             <WaveformCanvas analyser={analyserRef.current} isActive={recordState === 'recording'} />
+            <TrackTimeline
+              beatClip={beatClip}
+              beatLabel={selectedBeat?.title || 'Beat Track'}
+              vocalTracks={vocalTracks}
+              snapToGrid={snapToGrid}
+              onToggleSnap={() => setSnapToGrid((v) => !v)}
+              onBeatClipChange={handleBeatClipChange}
+              onVocalClipChange={handleVocalClipChange}
+              onAddVocalTrack={handleAddVocalTrack}
+            />
             <RecorderControls
               recordState={recordState}
               onRecord={handleRecord}
