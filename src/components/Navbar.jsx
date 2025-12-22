@@ -42,6 +42,34 @@ export function Navbar({ onMobileMenuToggle = () => {} }) {
   return (
     <header className="sticky top-0 z-40 border-b border-slate-900/70 bg-slate-950/80 backdrop-blur-md shadow-rb-gloss-panel">
       <div className="mx-auto max-w-6xl px-4 py-3 md:py-4">
+        {/* Top studio navigation tabs */}
+        <div className="mb-2 flex items-center justify-center gap-2 md:gap-4">
+          <NavLink
+            to="/"
+            className={({ isActive }) =>
+              `px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.35em] transition-all duration-200 rounded-full border ${
+                isActive
+                  ? 'border-red-500/80 bg-red-500/10 text-red-200 shadow-[0_0_18px_rgba(248,113,113,0.55)]'
+                  : 'border-slate-800/80 bg-slate-900/80 text-slate-400 hover:border-red-500/70 hover:text-red-200 hover:bg-red-500/5 hover:-translate-y-0.5'
+              }`
+            }
+          >
+            RIDDIMS
+          </NavLink>
+          <NavLink
+            to="/studio"
+            className={({ isActive }) =>
+              `px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.35em] transition-all duration-200 rounded-full border ${
+                isActive
+                  ? 'border-red-500/80 bg-red-500/15 text-red-200 shadow-[0_0_18px_rgba(248,113,113,0.7)]'
+                  : 'border-slate-800/80 bg-slate-900/80 text-slate-400 hover:border-red-500/70 hover:text-red-200 hover:bg-red-500/5 hover:-translate-y-0.5'
+              }`
+            }
+          >
+            RECORDING LAB
+          </NavLink>
+        </div>
+
         {/* Mobile row: hamburger + centered logo */}
         <div className="flex items-center justify-between md:hidden">
           <button
