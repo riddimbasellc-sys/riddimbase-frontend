@@ -28,7 +28,10 @@ export function RecordingLab() {
   // Multitrack timeline state
   const [snapToGrid, setSnapToGrid] = useState(true)
   const [beatClip, setBeatClip] = useState(null) // { startSec, durationSec }
-  const [vocalTracks, setVocalTracks] = useState([]) // { id, name, clip: { startSec, durationSec, url } }
+  const [vocalTracks, setVocalTracks] = useState([]) // { id, name, muted, solo, clip: { startSec, durationSec, url } }
+  const [beatTrackState, setBeatTrackState] = useState({ muted: false, solo: false })
+  const [playheadSec, setPlayheadSec] = useState(0)
+  const [isTimelinePlaying, setIsTimelinePlaying] = useState(false)
 
   const audioRef = useRef(null)
   const audioContextRef = useRef(null)
@@ -39,6 +42,9 @@ export function RecordingLab() {
   const chunksRef = useRef([])
   const timerRef = useRef(null)
   const recordStartRef = useRef(null)
+  const timelineSourcesRef = useRef([])
+  const bufferCacheRef = useRef(new Map())
+  const timelineTimeoutRef = useRef(null)
 
   const [hasAudioSupport] = useState(() =>
     typeof window !== 'undefined' &&
@@ -66,6 +72,7 @@ export function RecordingLab() {
   const cleanupBeatAudio = () => {
     if (audioRef.current) {
       audioRef.current.pause()
+      try { audioRef.current.currentTime = 0 } catch {}
       audioRef.current.src = ''
       audioRef.current = null
     }
@@ -115,7 +122,7 @@ export function RecordingLab() {
       setMicStatus('pending')
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       const AudioContextClass = window.AudioContext || window.webkitAudioContext
-      const audioCtx = new AudioContextClass()
+      const audioCtx = audioContextRef.current || new AudioContextClass()
       const source = audioCtx.createMediaStreamSource(stream)
       const analyser = audioCtx.createAnalyser()
       analyser.fftSize = 2048
@@ -176,6 +183,8 @@ export function RecordingLab() {
               {
                 id,
                 name,
+                muted: false,
+                solo: false,
                 clip: { startSec: 0, durationSec, url },
               },
             ]
@@ -237,6 +246,14 @@ export function RecordingLab() {
         console.warn('[RecordingLab] stop record error', e)
       }
     }
+    // Also stop the beat when user stops recording
+    if (audioRef.current) {
+      try {
+        audioRef.current.pause()
+        audioRef.current.currentTime = 0
+      } catch {}
+    }
+    setIsBeatPlaying(false)
   }
 
   const handleReRecord = () => {
@@ -284,8 +301,139 @@ export function RecordingLab() {
   const handleAddVocalTrack = () => {
     setVocalTracks((prev) => {
       const index = prev.length + 1
-      return [...prev, { id: `vocal-${index}`, name: `Vocal ${index}`, clip: null }]
+      return [...prev, { id: `vocal-${index}`, name: `Vocal ${index}`, muted: false, solo: false, clip: null }]
     })
+  }
+
+  const handleToggleBeatMute = () => {
+    setBeatTrackState((s) => ({ ...s, muted: !s.muted }))
+  }
+
+  const handleToggleBeatSolo = () => {
+    setBeatTrackState((s) => ({ ...s, solo: !s.solo }))
+  }
+
+  const handleToggleVocalMute = (trackId) => {
+    setVocalTracks((prev) =>
+      prev.map((t) => (t.id === trackId ? { ...t, muted: !t.muted } : t)),
+    )
+  }
+
+  const handleToggleVocalSolo = (trackId) => {
+    setVocalTracks((prev) =>
+      prev.map((t) => (t.id === trackId ? { ...t, solo: !t.solo } : t)),
+    )
+  }
+
+  const ensurePlaybackContext = () => {
+    if (typeof window === 'undefined') return null
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContextClass()
+    }
+    return audioContextRef.current
+  }
+
+  const loadBuffer = async (url) => {
+    if (!url) return null
+    const ctx = ensurePlaybackContext()
+    if (!ctx) return null
+    const cache = bufferCacheRef.current
+    if (cache.has(url)) return cache.get(url)
+    try {
+      const res = await fetch(url)
+      const arr = await res.arrayBuffer()
+      const buf = await ctx.decodeAudioData(arr)
+      cache.set(url, buf)
+      return buf
+    } catch {
+      return null
+    }
+  }
+
+  const stopTimelinePlayback = () => {
+    if (timelineTimeoutRef.current) {
+      clearTimeout(timelineTimeoutRef.current)
+      timelineTimeoutRef.current = null
+    }
+    if (timelineSourcesRef.current.length) {
+      timelineSourcesRef.current.forEach((src) => {
+        try { src.stop() } catch {}
+      })
+      timelineSourcesRef.current = []
+    }
+    setIsTimelinePlaying(false)
+  }
+
+  const handleSeek = (sec) => {
+    setPlayheadSec(sec)
+  }
+
+  const handlePlayFromCursor = async () => {
+    if (!beatClip && vocalTracks.every((t) => !t.clip)) return
+    const ctx = ensurePlaybackContext()
+    if (!ctx) return
+
+    stopTimelinePlayback()
+    try {
+      await ctx.resume()
+    } catch {}
+
+    const anySolo = beatTrackState.solo || vocalTracks.some((t) => t.solo)
+
+    const tasks = []
+    if (beatClip && selectedBeat?.audioUrl && !beatTrackState.muted && (!anySolo || beatTrackState.solo)) {
+      tasks.push({
+        type: 'beat',
+        url: selectedBeat.audioUrl,
+        clip: beatClip,
+      })
+    }
+    vocalTracks.forEach((t) => {
+      if (!t.clip || t.muted) return
+      if (anySolo && !t.solo) return
+      tasks.push({ type: 'vocal', url: t.clip.url, clip: t.clip })
+    })
+
+    if (!tasks.length) return
+
+    const now = ctx.currentTime + 0.05
+    const sources = []
+    let maxEnd = 0
+
+    for (const task of tasks) {
+      const buffer = await loadBuffer(task.url)
+      if (!buffer) continue
+      const { startSec = 0, durationSec = buffer.duration } = task.clip || {}
+      const relStart = startSec - playheadSec
+      const clipEnd = startSec + durationSec
+      maxEnd = Math.max(maxEnd, clipEnd)
+      if (clipEnd <= playheadSec) continue
+
+      const offset = relStart < 0 ? -relStart : 0
+      const playDuration = Math.max(0.1, durationSec - offset)
+      const when = now + Math.max(relStart, 0)
+
+      const source = ctx.createBufferSource()
+      source.buffer = buffer
+      source.connect(ctx.destination)
+      try {
+        source.start(when, offset, playDuration)
+        sources.push(source)
+      } catch {}
+    }
+
+    if (!sources.length) return
+
+    timelineSourcesRef.current = sources
+    setIsTimelinePlaying(true)
+
+    if (maxEnd > playheadSec) {
+      const remaining = maxEnd - playheadSec
+      timelineTimeoutRef.current = setTimeout(() => {
+        stopTimelinePlayback()
+      }, remaining * 1000 + 500)
+    }
   }
 
   useEffect(() => {
@@ -305,6 +453,7 @@ export function RecordingLab() {
       if (audioContextRef.current) {
         audioContextRef.current.close()
       }
+      stopTimelinePlayback()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -347,12 +496,22 @@ export function RecordingLab() {
             <TrackTimeline
               beatClip={beatClip}
               beatLabel={selectedBeat?.title || 'Beat Track'}
+              beatTrackState={beatTrackState}
               vocalTracks={vocalTracks}
               snapToGrid={snapToGrid}
+              playheadSec={playheadSec}
+              isPlaying={isTimelinePlaying}
               onToggleSnap={() => setSnapToGrid((v) => !v)}
               onBeatClipChange={handleBeatClipChange}
               onVocalClipChange={handleVocalClipChange}
               onAddVocalTrack={handleAddVocalTrack}
+              onSeek={handleSeek}
+              onPlayFromCursor={handlePlayFromCursor}
+              onStopPlayback={stopTimelinePlayback}
+              onToggleBeatMute={handleToggleBeatMute}
+              onToggleBeatSolo={handleToggleBeatSolo}
+              onToggleVocalMute={handleToggleVocalMute}
+              onToggleVocalSolo={handleToggleVocalSolo}
             />
             <RecorderControls
               recordState={recordState}
