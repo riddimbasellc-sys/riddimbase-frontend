@@ -7,10 +7,12 @@ export default function TrackTimeline({
   beatClip,
   beatLabel,
   beatTrackState,
+  beatAudioUrl,
   vocalTracks,
   snapToGrid,
   playheadSec,
   isPlaying,
+  loopRegion,
   onToggleSnap,
   onBeatClipChange,
   onVocalClipChange,
@@ -22,9 +24,22 @@ export default function TrackTimeline({
   onToggleBeatSolo,
   onToggleVocalMute,
   onToggleVocalSolo,
+  onToggleLoopRegion,
+  onLoopSetStart,
+  onLoopSetEnd,
+  requestWaveform,
 }) {
   const containerRef = useRef(null)
   const dragRef = useRef(null)
+  const [waveforms, setWaveforms] = useState({})
+  const loadedWaveformsRef = useRef(new Set())
+
+  const hasLoopRegion =
+    !!loopRegion &&
+    loopRegion.enabled &&
+    typeof loopRegion.startSec === 'number' &&
+    typeof loopRegion.endSec === 'number' &&
+    loopRegion.endSec > loopRegion.startSec
 
   const timelineClips = useMemo(() => {
     const clips = []
@@ -36,6 +51,7 @@ export default function TrackTimeline({
         label: beatLabel || 'Beat',
         startSec: beatClip.startSec || 0,
         durationSec: beatClip.durationSec || 60,
+        url: beatAudioUrl || null,
         color: 'from-amber-400 to-red-500',
       })
     }
@@ -49,6 +65,7 @@ export default function TrackTimeline({
           label: t.name || `Take ${idx + 1}`,
           startSec: t.clip.startSec || 0,
           durationSec: t.clip.durationSec || 4,
+          url: t.clip.url || null,
           color: 'from-sky-400 to-emerald-400',
         })
       }
@@ -63,6 +80,27 @@ export default function TrackTimeline({
     )
     return Math.max(32, Math.ceil(maxEnd) + 4)
   }, [timelineClips])
+
+  useEffect(() => {
+    if (!requestWaveform) return
+    const urls = Array.from(
+      new Set(
+        timelineClips
+          .map((c) => c.url)
+          .filter((u) => typeof u === 'string' && u.length > 0),
+      ),
+    )
+    urls.forEach((url) => {
+      if (loadedWaveformsRef.current.has(url)) return
+      loadedWaveformsRef.current.add(url)
+      requestWaveform(url)
+        .then((data) => {
+          if (!data) return
+          setWaveforms((prev) => ({ ...prev, [url]: data }))
+        })
+        .catch(() => {})
+    })
+  }, [timelineClips, requestWaveform])
 
   useEffect(() => {
     const handleMove = (e) => {
@@ -127,6 +165,38 @@ export default function TrackTimeline({
           <p className="mt-0.5 text-xs text-slate-300">Align your beat and vocal takes on a simple timeline.</p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onToggleLoopRegion}
+            className={`rounded-full px-3 py-1 text-[10px] font-semibold transition ${
+              hasLoopRegion && loopRegion?.enabled
+                ? 'border border-emerald-400/80 bg-emerald-500/15 text-emerald-200'
+                : 'border border-slate-700/80 bg-slate-900 text-slate-300 hover:border-emerald-400/70'
+            }`}
+            title="Toggle loop region playback"
+          >
+            Loop: {hasLoopRegion && loopRegion?.enabled ? 'On' : 'Off'}
+          </button>
+          {onLoopSetStart && onLoopSetEnd && (
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => onLoopSetStart(playheadSec)}
+                className="rounded-full border border-slate-700/80 bg-slate-900 px-2 py-1 text-[10px] text-slate-300 hover:border-emerald-400/70"
+                title="Set loop start to current cursor position"
+              >
+                Set start
+              </button>
+              <button
+                type="button"
+                onClick={() => onLoopSetEnd(playheadSec)}
+                className="rounded-full border border-slate-700/80 bg-slate-900 px-2 py-1 text-[10px] text-slate-300 hover:border-emerald-400/70"
+                title="Set loop end to current cursor position"
+              >
+                Set end
+              </button>
+            </div>
+          )}
           <button
             type="button"
             onClick={isPlaying ? onStopPlayback : onPlayFromCursor}
@@ -247,44 +317,80 @@ export default function TrackTimeline({
                       onSeek?.(sec)
                     }}
                   >
-                  {/* Grid lines */}
-                  {Array.from({ length: totalSeconds + 1 }).map((_, sec) => (
-                    <div
-                      key={sec}
-                      className="absolute top-0 h-full border-l border-slate-900/80"
-                      style={{ left: sec * PIXELS_PER_SECOND }}
-                    />
-                  ))}
+                    {/* Loop region highlight */}
+                    {hasLoopRegion && (
+                      <div
+                        className="pointer-events-none absolute inset-y-1 rounded bg-emerald-500/5 ring-1 ring-emerald-400/40"
+                        style={{
+                          left: loopRegion.startSec * PIXELS_PER_SECOND,
+                          width: Math.max(
+                            (loopRegion.endSec - loopRegion.startSec) * PIXELS_PER_SECOND,
+                            4,
+                          ),
+                        }}
+                      >
+                        <div className="absolute inset-y-0 left-0 w-0.5 bg-emerald-400/80" />
+                        <div className="absolute inset-y-0 right-0 w-0.5 bg-emerald-400/80" />
+                      </div>
+                    )}
 
-                  {/* Clips in this lane */}
-                  {timelineClips
-                    .filter((c) => c.trackIndex === laneIndex)
-                    .map((clip) => {
-                      const left = clip.startSec * PIXELS_PER_SECOND
-                      const width = Math.max(clip.durationSec * PIXELS_PER_SECOND, 80)
-                      return (
-                        <button
-                          key={clip.id}
-                          type="button"
-                          onMouseDown={(e) => handleMouseDownClip(clip, e)}
-                          title={
-                            clip.type === 'beat'
-                              ? 'Drag to offset beat against vocals'
-                              : 'Drag to align this take on the grid'
-                          }
-                          className="group absolute flex h-10 items-center overflow-hidden rounded-md border border-slate-700/80 bg-gradient-to-r text-left text-[10px] text-slate-100 shadow-md transition-shadow hover:border-red-400/80 hover:shadow-[0_0_16px_rgba(248,113,113,0.5)]"
-                          style={{ left, width }}
-                        >
-                          <div className="h-full w-1 bg-gradient-to-b from-red-500 to-amber-400" />
-                          <div className="flex flex-1 flex-col px-2">
-                            <span className="truncate text-[10px] font-semibold">{clip.label}</span>
-                            <span className="mt-0.5 text-[9px] text-slate-300">
-                              {clip.type === 'beat' ? 'Beat track' : 'Vocal take'} · start {clip.startSec.toFixed(2)}s
-                            </span>
-                          </div>
-                        </button>
-                      )
-                    })}
+                    {/* Grid lines */}
+                    {Array.from({ length: totalSeconds + 1 }).map((_, sec) => (
+                      <div
+                        key={sec}
+                        className="absolute top-0 h-full border-l border-slate-900/80"
+                        style={{ left: sec * PIXELS_PER_SECOND }}
+                      />
+                    ))}
+
+                    {/* Clips in this lane */}
+                    {timelineClips
+                      .filter((c) => c.trackIndex === laneIndex)
+                      .map((clip) => {
+                        const left = clip.startSec * PIXELS_PER_SECOND
+                        const width = Math.max(clip.durationSec * PIXELS_PER_SECOND, 80)
+                        const wf = clip.url ? waveforms[clip.url] : null
+                        return (
+                          <button
+                            key={clip.id}
+                            type="button"
+                            onMouseDown={(e) => handleMouseDownClip(clip, e)}
+                            title={
+                              clip.type === 'beat'
+                                ? 'Drag to offset beat against vocals'
+                                : 'Drag to align this take on the grid'
+                            }
+                            className="group absolute flex h-10 items-center overflow-hidden rounded-md border border-slate-700/80 bg-gradient-to-r text-left text-[10px] text-slate-100 shadow-md transition-shadow hover:border-red-400/80 hover:shadow-[0_0_16px_rgba(248,113,113,0.5)]"
+                            style={{ left, width }}
+                          >
+                            <div className="h-full w-1 bg-gradient-to-b from-red-500 to-amber-400" />
+                            <div className="flex h-full flex-1 flex-col px-2 py-1">
+                              <div className="mb-0.5 flex h-4 items-end gap-[1px] opacity-80">
+                                {wf
+                                  ? Array.from({ length: wf.length }).map((_, i) => {
+                                      const v = wf[i]
+                                      const h = 6 + Math.min(22, (v || 0) * 80)
+                                      return (
+                                        <div
+                                          // eslint-disable-next-line react/no-array-index-key
+                                          key={i}
+                                          className="flex-1 rounded-sm bg-slate-100/80 group-hover:bg-red-200/90"
+                                          style={{ height: h }}
+                                        />
+                                      )
+                                    })
+                                  : (
+                                    <div className="h-full w-full rounded-sm bg-gradient-to-r from-slate-600/60 to-slate-400/60" />
+                                    )}
+                              </div>
+                              <span className="truncate text-[10px] font-semibold">{clip.label}</span>
+                              <span className="mt-0.5 text-[9px] text-slate-300">
+                                {clip.type === 'beat' ? 'Beat track' : 'Vocal take'} · start {clip.startSec.toFixed(2)}s
+                              </span>
+                            </div>
+                          </button>
+                        )
+                      })}
                 </div>
                 </div>
               )
