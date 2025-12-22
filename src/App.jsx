@@ -71,6 +71,7 @@ import Soundkits from './pages/Soundkits'
 import Feed from './pages/Feed'
 import { MultiCheckout } from './pages/MultiCheckout'
 import ProducerStore from './pages/ProducerStore'
+import RecordingLab from './pages/RecordingLab'
 
 function App() {
   const { isAdmin } = useAdminRole()
@@ -87,6 +88,7 @@ function App() {
         <Route path="/beats" element={<Beats />} />
         <Route path="/feed" element={<Feed />} />
         <Route path="/soundkits" element={<Soundkits />} />
+        <Route path="/studio" element={<RecordingLab />} />
         <Route path="/beat/:id" element={<BeatDetails />} />
         <Route path="/beat/:idSlug" element={<BeatDetails />} />
         <Route path="/boost/:beatId" element={<BoostBeat />} />
