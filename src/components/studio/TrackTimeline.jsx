@@ -6,12 +6,22 @@ const GRID_STEP_SEC = 0.25
 export default function TrackTimeline({
   beatClip,
   beatLabel,
+  beatTrackState,
   vocalTracks,
   snapToGrid,
+  playheadSec,
+  isPlaying,
   onToggleSnap,
   onBeatClipChange,
   onVocalClipChange,
   onAddVocalTrack,
+  onSeek,
+  onPlayFromCursor,
+  onStopPlayback,
+  onToggleBeatMute,
+  onToggleBeatSolo,
+  onToggleVocalMute,
+  onToggleVocalSolo,
 }) {
   const containerRef = useRef(null)
   const dragRef = useRef(null)
@@ -100,9 +110,9 @@ export default function TrackTimeline({
 
   const lanes = useMemo(() => {
     const base = []
-    if (beatClip) base.push({ id: 'beat-lane', label: beatLabel || 'Beat Track' })
+    if (beatClip) base.push({ id: 'beat-lane', label: beatLabel || 'Beat Track', kind: 'beat' })
     vocalTracks.forEach((t, idx) => {
-      base.push({ id: t.id, label: t.name || `Vocal ${idx + 1}` })
+      base.push({ id: t.id, label: t.name || `Vocal ${idx + 1}`, kind: 'vocal', trackId: t.id })
     })
     return base
   }, [beatClip, beatLabel, vocalTracks])
@@ -117,6 +127,18 @@ export default function TrackTimeline({
           <p className="mt-0.5 text-xs text-slate-300">Align your beat and vocal takes on a simple timeline.</p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={isPlaying ? onStopPlayback : onPlayFromCursor}
+            className={`rounded-full px-3 py-1 text-[10px] font-semibold transition ${
+              isPlaying
+                ? 'border border-emerald-500/70 bg-emerald-500/15 text-emerald-200'
+                : 'border border-slate-700/80 bg-slate-900 text-slate-200 hover:border-emerald-400/70'
+            }`}
+            title={isPlaying ? 'Stop timeline playback' : 'Play from current cursor position'}
+          >
+            {isPlaying ? 'Stop' : 'Play from cursor'}
+          </button>
           <button
             type="button"
             onClick={onAddVocalTrack}
@@ -157,16 +179,74 @@ export default function TrackTimeline({
                 <span className="mt-0.5 text-[9px] text-slate-500">{sec}</span>
               </div>
             ))}
+            {/* Playhead */}
+            <div
+              className="absolute inset-y-0 w-px bg-red-500/80 shadow-[0_0_10px_rgba(248,113,113,0.7)]"
+              style={{ left: playheadSec * PIXELS_PER_SECOND + 140 }}
+            />
           </div>
 
           {/* Tracks */}
           <div className="divide-y divide-slate-900/80">
-            {lanes.map((lane, laneIndex) => (
-              <div key={lane.id} className="flex items-stretch">
-                <div className="flex w-36 flex-shrink-0 items-center justify-between border-r border-slate-900/80 bg-slate-950/95 px-2 py-2 text-[10px] text-slate-400">
-                  <span className="truncate font-semibold text-slate-200">{lane.label}</span>
-                </div>
-                <div className="relative flex-1 bg-slate-950/90 py-2">
+            {lanes.map((lane, laneIndex) => {
+              const isBeatLane = lane.kind === 'beat'
+              const vTrack = !isBeatLane
+                ? vocalTracks.find((t) => t.id === lane.trackId)
+                : null
+              const muted = isBeatLane ? !!beatTrackState?.muted : !!vTrack?.muted
+              const solo = isBeatLane ? !!beatTrackState?.solo : !!vTrack?.solo
+              return (
+                <div key={lane.id} className="flex items-stretch">
+                  <div className="flex w-40 flex-shrink-0 items-center justify-between border-r border-slate-900/80 bg-slate-950/95 px-2 py-2 text-[10px] text-slate-400">
+                    <span className="mr-2 truncate font-semibold text-slate-200">{lane.label}</span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          isBeatLane
+                            ? onToggleBeatSolo?.()
+                            : onToggleVocalSolo?.(lane.trackId)
+                        }
+                        title="Solo this track"
+                        className={`h-5 w-5 rounded-full text-[9px] font-semibold ${
+                          solo
+                            ? 'bg-emerald-500/80 text-slate-950'
+                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                        }`}
+                      >
+                        S
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          isBeatLane
+                            ? onToggleBeatMute?.()
+                            : onToggleVocalMute?.(lane.trackId)
+                        }
+                        title="Mute this track"
+                        className={`h-5 w-5 rounded-full text-[9px] font-semibold ${
+                          muted
+                            ? 'bg-slate-600 text-slate-300'
+                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                        }`}
+                      >
+                        M
+                      </button>
+                    </div>
+                  </div>
+                  <div
+                    className="relative flex-1 bg-slate-950/90 py-2"
+                    onClick={(e) => {
+                      const bounds = e.currentTarget.getBoundingClientRect()
+                      const x = e.clientX - bounds.left
+                      let sec = x / PIXELS_PER_SECOND
+                      if (sec < 0) sec = 0
+                      if (snapToGrid) {
+                        sec = Math.round(sec / GRID_STEP_SEC) * GRID_STEP_SEC
+                      }
+                      onSeek?.(sec)
+                    }}
+                  >
                   {/* Grid lines */}
                   {Array.from({ length: totalSeconds + 1 }).map((_, sec) => (
                     <div
@@ -206,8 +286,9 @@ export default function TrackTimeline({
                       )
                     })}
                 </div>
-              </div>
-            ))}
+                </div>
+              )
+            })}
           </div>
         </div>
       </div>
