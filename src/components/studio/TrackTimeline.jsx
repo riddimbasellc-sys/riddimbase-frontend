@@ -400,6 +400,27 @@ export default function TrackTimeline({
                         const left = clip.startSec * pixelsPerSecond
                         const width = Math.max(clip.durationSec * pixelsPerSecond, 80)
                         const wf = clip.url ? waveforms[clip.url] : null
+                        let waveformPoints = null
+                        if (wf && wf.length > 1) {
+                          const len = wf.length
+                          const midY = 50
+                          const scale = 40
+                          const pts = []
+                          for (let i = 0; i < len; i += 1) {
+                            const x = (i / (len - 1)) * 100
+                            const v = wf[i] || 0
+                            const y = midY - Math.max(-45, Math.min(45, v * scale * 100))
+                            pts.push(`${x},${y}`)
+                          }
+                          // Mirror back for a filled waveform look
+                          for (let i = len - 1; i >= 0; i -= 1) {
+                            const x = (i / (len - 1)) * 100
+                            const v = wf[i] || 0
+                            const y = midY + Math.max(-45, Math.min(45, v * scale * 100))
+                            pts.push(`${x},${y}`)
+                          }
+                          waveformPoints = pts.join(' ')
+                        }
                         return (
                           <button
                             key={clip.id}
@@ -415,23 +436,21 @@ export default function TrackTimeline({
                           >
                             <div className="h-full w-1 bg-gradient-to-b from-red-500 to-amber-400" />
                             <div className="flex h-full flex-1 flex-col px-2 py-1">
-                              <div className="mb-0.5 flex h-4 items-end gap-[1px] opacity-80">
-                                {wf
-                                  ? Array.from({ length: wf.length }).map((_, i) => {
-                                      const v = wf[i]
-                                      const h = 6 + Math.min(22, (v || 0) * 80)
-                                      return (
-                                        <div
-                                          // eslint-disable-next-line react/no-array-index-key
-                                          key={i}
-                                          className="flex-1 rounded-sm bg-slate-100/80 group-hover:bg-red-200/90"
-                                          style={{ height: h }}
-                                        />
-                                      )
-                                    })
-                                  : (
-                                    <div className="h-full w-full rounded-sm bg-gradient-to-r from-slate-600/60 to-slate-400/60" />
-                                    )}
+                              <div className="mb-0.5 flex h-4 items-stretch opacity-80">
+                                {waveformPoints ? (
+                                  <svg
+                                    viewBox="0 0 100 100"
+                                    preserveAspectRatio="none"
+                                    className="h-full w-full text-slate-100/90 group-hover:text-red-200/90"
+                                  >
+                                    <polygon
+                                      points={waveformPoints}
+                                      className="fill-current"
+                                    />
+                                  </svg>
+                                ) : (
+                                  <div className="h-full w-full rounded-sm bg-gradient-to-r from-slate-600/60 to-slate-400/60" />
+                                )}
                               </div>
                               <span className="truncate text-[10px] font-semibold">{clip.label}</span>
                               <span className="mt-0.5 text-[9px] text-slate-300">
