@@ -10,7 +10,7 @@ export default function BeatSelector({ selectedBeat, onSelectBeat, isPlaying, on
   }, [beats])
 
   return (
-    <div className="studio-panel rounded-2xl border border-slate-800/80 p-4 text-[12px] text-slate-200">
+    <div className="studio-panel rounded-2xl border border-slate-800/80 p-3 text-[12px] text-slate-200">
       <div className="flex items-center justify-between gap-2">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Track</p>
@@ -19,8 +19,8 @@ export default function BeatSelector({ selectedBeat, onSelectBeat, isPlaying, on
         <span className="rounded-full border border-slate-700/70 px-2 py-0.5 text-[10px] text-slate-400">Recording Lab</span>
       </div>
 
-      <div className="mt-3 rounded-xl border border-slate-800/80 bg-slate-950/70 p-3 flex gap-3">
-        <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-slate-900/80">
+      <div className="mt-3 flex gap-3 rounded-xl border border-slate-800/80 bg-slate-950/70 p-2.5">
+        <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-slate-900/80">
           {selectedBeat?.coverUrl ? (
             <img src={selectedBeat.coverUrl} alt={selectedBeat.title} className="h-full w-full object-cover" />
           ) : (
@@ -93,20 +93,20 @@ export default function BeatSelector({ selectedBeat, onSelectBeat, isPlaying, on
                 key={b.id}
                 type="button"
                 onClick={() => onSelectBeat(b)}
-                className={`flex w-full items-center gap-3 rounded-lg border px-2 py-1.5 text-left text-[11px] transition ${
+                className={`group flex w-full items-center gap-2 rounded-lg border px-2 py-1 text-left text-[11px] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 ${
                   active
-                    ? 'border-red-500/60 bg-red-500/5 text-red-100'
-                    : 'border-slate-800/80 bg-slate-950/60 text-slate-300 hover:border-red-500/50 hover:bg-slate-900'
+                    ? 'border-red-500/60 bg-red-500/5 text-red-100 ring-1 ring-red-500/25'
+                    : 'border-slate-800/80 bg-slate-950/60 text-slate-300 hover:border-red-500/50 hover:bg-slate-900 hover:ring-1 hover:ring-red-500/20'
                 }`}
               >
-                <div className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-md bg-slate-900/80">
+                <div className="h-7 w-7 flex-shrink-0 overflow-hidden rounded-md bg-slate-900/80">
                   {b.coverUrl ? (
                     <img src={b.coverUrl} alt={b.title} className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-[9px] text-slate-500">RB</div>
                   )}
                 </div>
-                <div className="flex flex-1 flex-col">
+                <div className="flex min-w-0 flex-1 flex-col leading-tight">
                   <span className="truncate font-medium">{b.title}</span>
                   <span className="truncate text-[10px] text-slate-400">{b.producer || 'Unknown'} • {b.bpm || '--'} BPM</span>
                 </div>
