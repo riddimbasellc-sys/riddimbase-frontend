@@ -7,10 +7,15 @@ import StudioSidebar from '../components/studio/StudioSidebar'
 import TrackTimeline from '../components/studio/TrackTimeline'
 import VocalFxModal from '../components/studio/VocalFxModal'
 import useSupabaseUser from '../hooks/useSupabaseUser'
+import { supabase } from '../lib/supabaseClient'
 import '../styles/recordingLab.css'
 
 export function RecordingLab() {
   const { user } = useSupabaseUser()
+
+  const [savedSessions, setSavedSessions] = useState([]) // { id, name, updated_at, created_at }
+  const [selectedSessionId, setSelectedSessionId] = useState('')
+  const [sessionBusy, setSessionBusy] = useState(false)
 
   const [selectedBeat, setSelectedBeat] = useState(null)
   const [beatVolume, setBeatVolume] = useState(0.8)
@@ -20,6 +25,8 @@ export function RecordingLab() {
   const [recordState, setRecordState] = useState('idle') // idle | recording | recorded
   const [timerSeconds, setTimerSeconds] = useState(0)
   const [recordingUrl, setRecordingUrl] = useState(null)
+  const [recordingPublicUrl, setRecordingPublicUrl] = useState(null)
+  const [takeUploadState, setTakeUploadState] = useState('idle') // idle | uploading | saved | error
 
   const [monitorEnabled, setMonitorEnabled] = useState(false)
   const [inputGain, setInputGain] = useState(1)
@@ -104,7 +111,7 @@ export function RecordingLab() {
     })
     el.addEventListener('loadedmetadata', () => {
       const duration = Number.isFinite(el.duration) && el.duration > 0 ? el.duration : 60
-      setBeatClip((prev) => ({ startSec: prev?.startSec || 0, durationSec: duration }))
+      setBeatClip((prev) => ({ beatId: selectedBeat?.id, startSec: prev?.startSec || 0, durationSec: duration }))
     })
     audioRef.current = el
   }
@@ -125,11 +132,39 @@ export function RecordingLab() {
     if (selectedBeat && selectedBeat.audioUrl) {
       // Create a safe default clip immediately so arrangement playback works
       // even before the audio element metadata has loaded.
-      setBeatClip({ startSec: 0, durationSec: 60 })
+      setBeatClip((prev) => {
+        if (prev && prev.beatId === selectedBeat.id) return prev
+        return { beatId: selectedBeat.id, startSec: 0, durationSec: 60 }
+      })
       ensureBeatAudio()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBeat?.id])
+
+  useEffect(() => {
+    const run = async () => {
+      if (!user?.id) {
+        setSavedSessions([])
+        setSelectedSessionId('')
+        return
+      }
+      const { data, error } = await supabase
+        .from('studio_sessions')
+        .select('id,name,updated_at,created_at')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(100)
+
+      if (!error) {
+        setSavedSessions(Array.isArray(data) ? data : [])
+      } else {
+        console.warn('[RecordingLab] failed to load studio sessions', error)
+        setSavedSessions([])
+      }
+    }
+
+    run()
+  }, [user?.id])
 
   useEffect(() => {
     if (audioRef.current) {
@@ -206,19 +241,60 @@ export function RecordingLab() {
           if (recordingUrl) URL.revokeObjectURL(recordingUrl)
           const url = URL.createObjectURL(blob)
           setRecordingUrl(url)
+          setRecordingPublicUrl(null)
           const startedAt = recordStartRef.current
           const elapsed = startedAt ? (Date.now() - startedAt) / 1000 : timerSeconds
           const durationSec = Math.max(elapsed || 0, 0.5)
 
+          const apiBase = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:5001'
+          const takeId = `take-${Date.now()}`
+
+          const uploadTakeToBackend = async () => {
+            try {
+              setTakeUploadState('uploading')
+              const filename = `${takeId}.webm`
+              const contentType = blob.type || 'audio/webm'
+              const folder = user?.id ? `studio-takes/${user.id}` : 'studio-takes/guest'
+
+              const resp = await fetch(`${apiBase}/api/upload-url`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename, contentType, folder }),
+              })
+              if (!resp.ok) throw new Error('Failed to get upload URL')
+              const { uploadUrl, publicUrl } = await resp.json()
+              if (!uploadUrl || !publicUrl) throw new Error('Invalid upload URL response')
+
+              const put = await fetch(uploadUrl, {
+                method: 'PUT',
+                headers: { 'Content-Type': contentType },
+                body: blob,
+              })
+              if (!put.ok) throw new Error('Upload failed')
+
+              setRecordingPublicUrl(publicUrl)
+              setVocalTracks((prev) =>
+                prev.map((t) =>
+                  t.id === takeId
+                    ? { ...t, clip: { ...t.clip, url: publicUrl } }
+                    : t,
+                ),
+              )
+              setTakeUploadState('saved')
+            } catch (e) {
+              console.warn('[RecordingLab] take upload failed', e)
+              setTakeUploadState('error')
+            }
+          }
+
           // Add a new vocal track with this take clipped at t=0 on the timeline
           setVocalTracks((prev) => {
             const index = prev.length + 1
-            const id = `take-${index}`
             const name = `Take ${index}`
             return [
               ...prev,
               {
-                id,
+                id: takeId,
                 name,
                 muted: false,
                 solo: false,
@@ -227,10 +303,10 @@ export function RecordingLab() {
               },
             ]
           })
-          setSelectedVocalTrackId((prev) => prev || `take-${(vocalTracks?.length || 0) + 1}`)
+          setSelectedVocalTrackId(takeId)
 
           setRecordState('recorded')
-          // TODO: send blob to backend storage for saving sessions
+          uploadTakeToBackend()
         }
         mediaRecorderRef.current = recorder
       } catch (e) {
@@ -324,7 +400,10 @@ export function RecordingLab() {
   }
 
   const handleBeatClipChange = (startSec) => {
-    setBeatClip((prev) => (prev ? { ...prev, startSec } : { startSec, durationSec: 60 }))
+    setBeatClip((prev) => {
+      if (prev) return { ...prev, startSec }
+      return { beatId: selectedBeat?.id, startSec, durationSec: 60 }
+    })
   }
 
   const handleVocalClipChange = (trackId, startSec) => {
@@ -719,6 +798,164 @@ export function RecordingLab() {
   const hasRecording = !!recordingUrl
   const canPlayArrangement = !!selectedBeat?.audioUrl || vocalTracks.some((t) => !!t.clip)
 
+  const formatSessionLabel = (s) => {
+    const name = (s?.name || '').trim()
+    if (name) return name
+    const ts = s?.updated_at || s?.created_at
+    if (!ts) return 'Untitled session'
+    try {
+      return `Session · ${new Date(ts).toLocaleString()}`
+    } catch {
+      return 'Untitled session'
+    }
+  }
+
+  const buildSessionState = () => {
+    const hasLocalOnlyTakes = vocalTracks.some((t) =>
+      typeof t?.clip?.url === 'string' ? t.clip.url.startsWith('blob:') : false,
+    )
+    if (hasLocalOnlyTakes) {
+      // Local blob URLs can’t be restored after refresh.
+      // Keep saving anyway (user might have other tracks + beat + FX).
+      // eslint-disable-next-line no-alert
+      alert('Some takes are still local-only (not uploaded). They will not reload after refresh unless uploaded.')
+    }
+
+    return {
+      version: 1,
+      savedAt: new Date().toISOString(),
+      selectedBeatId: selectedBeat?.id || null,
+      beatVolume,
+      snapToGrid,
+      beatClip,
+      beatTrackState,
+      vocalTracks,
+      loopRegion,
+      playheadSec,
+      selectedVocalTrackId,
+    }
+  }
+
+  const fetchSessionsList = async () => {
+    if (!user?.id) return
+    const { data, error } = await supabase
+      .from('studio_sessions')
+      .select('id,name,updated_at,created_at')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false })
+      .limit(100)
+    if (!error) setSavedSessions(Array.isArray(data) ? data : [])
+  }
+
+  const handleSaveSession = async () => {
+    if (!user?.id) {
+      // eslint-disable-next-line no-alert
+      alert('Log in to save sessions.')
+      return
+    }
+
+    const existing = selectedSessionId
+      ? savedSessions.find((s) => s.id === selectedSessionId)
+      : null
+
+    const defaultName = (existing?.name || '').trim() || `Session ${new Date().toLocaleString()}`
+    // eslint-disable-next-line no-alert
+    const input = window.prompt('Session name (optional)', defaultName)
+    if (input === null) return
+    const name = input.trim() || defaultName
+
+    const payload = {
+      user_id: user.id,
+      name,
+      beat_id: selectedBeat?.id || null,
+      beat_snapshot: selectedBeat
+        ? {
+            id: selectedBeat.id,
+            title: selectedBeat.title,
+            audioUrl: selectedBeat.audioUrl,
+            coverUrl: selectedBeat.coverUrl,
+            bpm: selectedBeat.bpm,
+            producer: selectedBeat.producer,
+          }
+        : null,
+      state: buildSessionState(),
+    }
+
+    try {
+      setSessionBusy(true)
+      if (selectedSessionId) {
+        const { error } = await supabase
+          .from('studio_sessions')
+          .update(payload)
+          .eq('id', selectedSessionId)
+          .eq('user_id', user.id)
+        if (error) throw error
+      } else {
+        const { data, error } = await supabase
+          .from('studio_sessions')
+          .insert(payload)
+          .select('id')
+          .single()
+        if (error) throw error
+        if (data?.id) setSelectedSessionId(data.id)
+      }
+
+      await fetchSessionsList()
+    } catch (e) {
+      console.warn('[RecordingLab] save session failed', e)
+      // eslint-disable-next-line no-alert
+      alert('Failed to save session. (Check Supabase table + RLS + env vars.)')
+    } finally {
+      setSessionBusy(false)
+    }
+  }
+
+  const handleLoadSession = async (sessionId) => {
+    if (!user?.id) return
+    if (!sessionId) return
+    try {
+      setSessionBusy(true)
+      stopTimelinePlayback()
+      cleanupBeatAudio()
+
+      const { data, error } = await supabase
+        .from('studio_sessions')
+        .select('id,name,beat_snapshot,state')
+        .eq('id', sessionId)
+        .eq('user_id', user.id)
+        .single()
+      if (error) throw error
+
+      const state = data?.state || {}
+      const beatSnapshot = data?.beat_snapshot || null
+
+      setSelectedBeat(beatSnapshot && beatSnapshot.audioUrl ? beatSnapshot : null)
+      setBeatVolume(typeof state.beatVolume === 'number' ? state.beatVolume : 0.8)
+      setSnapToGrid(typeof state.snapToGrid === 'boolean' ? state.snapToGrid : true)
+      setBeatClip(state.beatClip || null)
+      setBeatTrackState(state.beatTrackState || { muted: false, solo: false })
+      setVocalTracks(Array.isArray(state.vocalTracks) ? state.vocalTracks : [])
+      setLoopRegion(state.loopRegion || { enabled: false, startSec: 0, endSec: 8 })
+      setPlayheadSec(typeof state.playheadSec === 'number' ? state.playheadSec : 0)
+      setSelectedVocalTrackId(state.selectedVocalTrackId || null)
+
+      setRecordState('idle')
+      setTimerSeconds(0)
+      if (recordingUrl) {
+        try { URL.revokeObjectURL(recordingUrl) } catch {}
+      }
+      setRecordingUrl(null)
+      setRecordingPublicUrl(null)
+      setTakeUploadState('idle')
+    } catch (e) {
+      console.warn('[RecordingLab] load session failed', e)
+      // eslint-disable-next-line no-alert
+      alert('Failed to load session.')
+    } finally {
+      setSessionBusy(false)
+    }
+  }
+
   return (
     <section className="studio-shell min-h-screen lg:h-screen lg:overflow-hidden">
       <div className="mx-auto flex h-full w-full max-w-7xl flex-col px-4 py-6">
@@ -728,7 +965,38 @@ export function RecordingLab() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-red-400">Recording Lab</p>
             <h1 className="font-display text-2xl font-semibold text-slate-50">In-browser vocal booth</h1>
           </div>
-          <span className="ml-auto rounded-full border border-red-500/70 bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-red-300">Beta</span>
+          <div className="ml-auto flex items-center gap-2">
+            <select
+              className="h-9 w-[220px] max-w-[52vw] rounded-xl border border-slate-800/80 bg-slate-950/80 px-3 text-[12px] text-slate-200"
+              value={selectedSessionId}
+              disabled={!user || sessionBusy}
+              onChange={(e) => {
+                const id = e.target.value
+                setSelectedSessionId(id)
+                if (id) handleLoadSession(id)
+              }}
+              title={user ? 'Saved sessions' : 'Log in to see saved sessions'}
+            >
+              <option value="">Saved sessions…</option>
+              {savedSessions.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {formatSessionLabel(s)}
+                </option>
+              ))}
+            </select>
+
+            <button
+              type="button"
+              onClick={handleSaveSession}
+              disabled={!user || sessionBusy}
+              className="h-9 rounded-xl border border-slate-800/80 bg-slate-900/60 px-3 text-[12px] font-semibold text-slate-100 hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+              title={user ? 'Save current session' : 'Log in to save sessions'}
+            >
+              {selectedSessionId ? 'Save' : 'Save session'}
+            </button>
+
+            <span className="rounded-full border border-red-500/70 bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-red-300">Beta</span>
+          </div>
         </div>
 
         {!hasAudioSupport && (
@@ -805,7 +1073,15 @@ export function RecordingLab() {
               <div className="flex-shrink-0 rounded-2xl border border-slate-800/80 bg-slate-950/80 p-4 text-[12px] text-slate-200">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Take 1</p>
-                  <span className="rounded-full border border-slate-700/80 px-2 py-0.5 text-[10px] text-slate-400">Local only · Draft</span>
+                  <span className="rounded-full border border-slate-700/80 px-2 py-0.5 text-[10px] text-slate-400">
+                    {takeUploadState === 'uploading'
+                      ? 'Uploading…'
+                      : takeUploadState === 'saved'
+                      ? 'Saved'
+                      : takeUploadState === 'error'
+                      ? 'Upload failed · Local'
+                      : 'Local only · Draft'}
+                  </span>
                 </div>
                 <p className="mt-1 text-sm font-semibold text-slate-50">Preview recording</p>
                 <audio
@@ -813,7 +1089,11 @@ export function RecordingLab() {
                   src={recordingUrl}
                   className="mt-3 w-full rounded-xl border border-slate-800/80 bg-slate-900/80 p-2"
                 />
-                <p className="mt-2 text-[10px] text-slate-500">TODO: Save takes to your RiddimBase account for later mixing and sharing.</p>
+                {recordingPublicUrl ? (
+                  <p className="mt-2 text-[10px] text-slate-500">Saved URL: {recordingPublicUrl}</p>
+                ) : (
+                  <p className="mt-2 text-[10px] text-slate-500">Takes upload to your storage when the backend is running.</p>
+                )}
               </div>
             )}
           </div>
