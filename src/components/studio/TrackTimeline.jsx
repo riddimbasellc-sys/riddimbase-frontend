@@ -9,6 +9,7 @@ export default function TrackTimeline({
   beatLabel,
   beatTrackState,
   beatAudioUrl,
+  bpm,
   vocalTracks,
   selectedVocalTrackId,
   snapToGrid,
@@ -37,6 +38,7 @@ export default function TrackTimeline({
   const [waveforms, setWaveforms] = useState({})
   const loadedWaveformsRef = useRef(new Set())
   const [zoom, setZoom] = useState(1)
+  const [showVolumeAutomation, setShowVolumeAutomation] = useState(true)
 
   const clampZoom = (value) => {
     return Math.min(4, Math.max(0.25, value || 1))
@@ -98,6 +100,16 @@ export default function TrackTimeline({
     () => totalSeconds * pixelsPerSecond,
     [totalSeconds, pixelsPerSecond],
   )
+
+  const beatsPerBar = 4
+  const secondsPerBeat = useMemo(() => {
+    const safeBpm = typeof bpm === 'number' && bpm > 0 ? bpm : null
+    return safeBpm ? 60 / safeBpm : null
+  }, [bpm])
+
+  const secondsPerBar = useMemo(() => {
+    return secondsPerBeat ? secondsPerBeat * beatsPerBar : null
+  }, [secondsPerBeat])
 
   useEffect(() => {
     if (!requestWaveform) return
@@ -226,6 +238,19 @@ export default function TrackTimeline({
     setZoomAnchored({ nextZoom: next, anchorTimeSec: anchorTime, anchorClientX: e.clientX })
   }
 
+  const [isScrubbing, setIsScrubbing] = useState(false)
+
+  const handleScrubAtEvent = (e) => {
+    const bounds = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX - bounds.left
+    let sec = x / pixelsPerSecond
+    if (sec < 0) sec = 0
+    if (snapToGrid) {
+      sec = Math.round(sec / GRID_STEP_SEC) * GRID_STEP_SEC
+    }
+    onSeek?.(sec)
+  }
+
   return (
     <div className="flex h-full flex-col rounded-2xl border border-slate-800/80 bg-slate-950/95 p-3 text-[11px] text-slate-300">
       <div className="mb-2 flex items-center justify-between gap-3">
@@ -234,8 +259,7 @@ export default function TrackTimeline({
           <p className="mt-0.5 text-xs text-slate-300">Align your beat and vocal takes on a simple timeline.</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="hidden items-center gap-1 rounded-full border border-slate-800/80 bg-slate-900/80 px-2 py-1 text-[9px] text-slate-400 md:flex">
-            <span className="mr-1 uppercase tracking-[0.18em] text-slate-500">Zoom</span>
+          <div className="hidden items-center gap-1 rounded-full border border-slate-800/80 bg-slate-900/80 px-1.5 py-1 text-[9px] text-slate-400 md:flex">
             <button
               type="button"
               onClick={handleZoomOut}
@@ -244,7 +268,7 @@ export default function TrackTimeline({
             >
               −
             </button>
-            <span className="w-8 text-center tabular-nums text-slate-300">{clampZoom(zoom).toFixed(2)}x</span>
+            <span className="w-6 text-center tabular-nums text-slate-500">{clampZoom(zoom).toFixed(1)}x</span>
             <button
               type="button"
               onClick={handleZoomIn}
@@ -256,47 +280,39 @@ export default function TrackTimeline({
           </div>
           <button
             type="button"
+            onClick={() => setShowVolumeAutomation((v) => !v)}
+            className={`hidden h-7 w-7 items-center justify-center rounded-full text-[11px] transition md:flex ${
+              showVolumeAutomation
+                ? 'border border-sky-500/70 bg-sky-500/15 text-sky-300'
+                : 'border border-slate-700/80 bg-slate-900 text-slate-400 hover:border-sky-500/70'
+            }`}
+            title="Toggle volume automation lanes"
+          >
+            ∿
+          </button>
+          <button
+            type="button"
             onClick={onToggleLoopRegion}
-            className={`rounded-full px-3 py-1 text-[10px] font-semibold transition ${
+            className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] transition ${
               hasLoopRegion && loopRegion?.enabled
                 ? 'border border-emerald-400/80 bg-emerald-500/15 text-emerald-200'
                 : 'border border-slate-700/80 bg-slate-900 text-slate-300 hover:border-emerald-400/70'
             }`}
             title="Toggle loop region playback"
           >
-            Loop: {hasLoopRegion && loopRegion?.enabled ? 'On' : 'Off'}
+            ⟳
           </button>
-          {onLoopSetStart && onLoopSetEnd && (
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => onLoopSetStart(playheadSec)}
-                className="rounded-full border border-slate-700/80 bg-slate-900 px-2 py-1 text-[10px] text-slate-300 hover:border-emerald-400/70"
-                title="Set loop start to current cursor position"
-              >
-                Set start
-              </button>
-              <button
-                type="button"
-                onClick={() => onLoopSetEnd(playheadSec)}
-                className="rounded-full border border-slate-700/80 bg-slate-900 px-2 py-1 text-[10px] text-slate-300 hover:border-emerald-400/70"
-                title="Set loop end to current cursor position"
-              >
-                Set end
-              </button>
-            </div>
-          )}
           <button
             type="button"
             onClick={isPlaying ? onStopPlayback : onPlayFromCursor}
-            className={`rounded-full px-3 py-1 text-[10px] font-semibold transition ${
+            className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] transition ${
               isPlaying
                 ? 'border border-emerald-500/70 bg-emerald-500/15 text-emerald-200'
                 : 'border border-slate-700/80 bg-slate-900 text-slate-200 hover:border-emerald-400/70'
             }`}
-            title={isPlaying ? 'Stop timeline playback' : 'Play from current cursor position'}
+            title={isPlaying ? 'Stop timeline playback' : 'Play arrangement (Spacebar)'}
           >
-            {isPlaying ? 'Stop' : 'Play from cursor'}
+            {isPlaying ? '⏹' : '▶'}
           </button>
           <button
             type="button"
@@ -309,14 +325,14 @@ export default function TrackTimeline({
           <button
             type="button"
             onClick={onToggleSnap}
-            className={`rounded-full px-3 py-1 text-[10px] font-semibold transition ${
+            className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] transition ${
               snapToGrid
                 ? 'border border-red-500/70 bg-red-500/15 text-red-200'
                 : 'border border-slate-700/80 bg-slate-900 text-slate-300 hover:border-red-400/70'
             }`}
             title="Toggle snap-to-grid for clip movement"
           >
-            Grid: {snapToGrid ? 'On' : 'Off'}
+            #
           </button>
         </div>
       </div>
@@ -331,16 +347,31 @@ export default function TrackTimeline({
           <div className="sticky top-0 z-30 flex h-7 border-b border-slate-800/80 bg-slate-950/95">
             <div className="sticky left-0 z-40 w-40 flex-shrink-0 border-r border-slate-900/80 bg-slate-950/95" />
             <div className="relative h-full" style={{ width: trackAreaWidth }}>
-              {Array.from({ length: totalSeconds + 1 }).map((_, sec) => (
-                <div
-                  key={sec}
-                  className="absolute bottom-0 flex flex-col items-center"
-                  style={{ left: sec * pixelsPerSecond }}
-                >
-                  <div className="h-3 border-l border-slate-700/70" />
-                  <span className="mt-0.5 text-[9px] text-slate-500">{sec}</span>
-                </div>
-              ))}
+              {secondsPerBar
+                ? Array.from({ length: Math.ceil(totalSeconds / secondsPerBar) + 1 }).map((_, barIndex) => {
+                    const t = barIndex * secondsPerBar
+                    const left = t * pixelsPerSecond
+                    return (
+                      <div
+                        key={barIndex}
+                        className="absolute bottom-0 flex flex-col items-center"
+                        style={{ left }}
+                      >
+                        <div className="h-3 border-l border-slate-600/80" />
+                        <span className="mt-0.5 text-[9px] text-slate-400">{barIndex + 1}</span>
+                      </div>
+                    )
+                  })
+                : Array.from({ length: totalSeconds + 1 }).map((_, sec) => (
+                    <div
+                      key={sec}
+                      className="absolute bottom-0 flex flex-col items-center"
+                      style={{ left: sec * pixelsPerSecond }}
+                    >
+                      <div className="h-3 border-l border-slate-700/70" />
+                      <span className="mt-0.5 text-[9px] text-slate-500">{sec}</span>
+                    </div>
+                  ))}
               <div
                 className="absolute inset-y-0 w-px bg-red-500/80 shadow-[0_0_10px_rgba(248,113,113,0.7)]"
                 style={{ left: playheadSec * pixelsPerSecond }}
@@ -407,17 +438,22 @@ export default function TrackTimeline({
                     </div>
                   </div>
                   <div
-                    className="relative bg-slate-950/90 py-2"
+                    className="relative bg-slate-950/90 py-2 transition-colors hover:bg-slate-900/90 cursor-pointer md:cursor-col-resize"
                     style={{ width: trackAreaWidth }}
-                    onClick={(e) => {
-                      const bounds = e.currentTarget.getBoundingClientRect()
-                      const x = e.clientX - bounds.left
-                      let sec = x / pixelsPerSecond
-                      if (sec < 0) sec = 0
-                      if (snapToGrid) {
-                        sec = Math.round(sec / GRID_STEP_SEC) * GRID_STEP_SEC
-                      }
-                      onSeek?.(sec)
+                    onMouseDown={(e) => {
+                      if (e.button !== 0) return
+                      setIsScrubbing(true)
+                      handleScrubAtEvent(e)
+                    }}
+                    onMouseMove={(e) => {
+                      if (!isScrubbing) return
+                      handleScrubAtEvent(e)
+                    }}
+                    onMouseUp={() => {
+                      setIsScrubbing(false)
+                    }}
+                    onMouseLeave={() => {
+                      setIsScrubbing(false)
                     }}
                   >
                     {/* Loop region highlight */}
@@ -438,13 +474,28 @@ export default function TrackTimeline({
                     )}
 
                     {/* Grid lines */}
-                    {Array.from({ length: totalSeconds + 1 }).map((_, sec) => (
-                      <div
-                        key={sec}
-                        className="absolute top-0 h-full border-l border-slate-900/80"
-                        style={{ left: sec * pixelsPerSecond }}
-                      />
-                    ))}
+                    {secondsPerBeat
+                      ? Array.from({ length: Math.ceil(totalSeconds / secondsPerBeat) + 1 }).map((_, idx) => {
+                          const t = idx * secondsPerBeat
+                          const left = t * pixelsPerSecond
+                          const isBar = secondsPerBar && idx % beatsPerBar === 0
+                          return (
+                            <div
+                              key={idx}
+                              className={`absolute top-0 h-full border-l ${
+                                isBar ? 'border-slate-800/90' : 'border-slate-900/70'
+                              }`}
+                              style={{ left }}
+                            />
+                          )
+                        })
+                      : Array.from({ length: totalSeconds + 1 }).map((_, sec) => (
+                          <div
+                            key={sec}
+                            className="absolute top-0 h-full border-l border-slate-900/80"
+                            style={{ left: sec * pixelsPerSecond }}
+                          />
+                        ))}
 
                     {/* Playhead across lanes */}
                     <div
@@ -529,6 +580,19 @@ export default function TrackTimeline({
                                 {clip.type === 'beat' ? 'Beat track' : 'Vocal take'} · start {clip.startSec.toFixed(2)}s
                               </span>
                             </div>
+                            {showVolumeAutomation && !isBeatLane && (
+                              <div className="mt-0.5 h-4 w-full rounded-sm bg-slate-900/80">
+                                <div className="relative flex h-full items-center px-1">
+                                  <div className="h-px w-full bg-slate-700/70" />
+                                  <div
+                                    className="absolute h-2 w-2 -translate-x-1/2 -translate-y-1/2 cursor-pointer rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.8)]"
+                                    style={{
+                                      left: '50%',
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            )}
                           </button>
                         )
                       })}
