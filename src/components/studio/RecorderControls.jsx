@@ -8,6 +8,8 @@ export default function RecorderControls({
   isBeatPlaying,
   onToggleBeat,
   timerSeconds,
+  isArrangementPlaying,
+  onToggleArrangementPlay,
 }) {
   const minutes = String(Math.floor(timerSeconds / 60)).padStart(2, '0')
   const seconds = String(timerSeconds % 60).padStart(2, '0')
@@ -74,21 +76,38 @@ export default function RecorderControls({
         >
           Re-record
         </button>
-        <div className="ml-auto flex items-center gap-2 text-[11px] text-slate-400">
-          <span>Beat</span>
-          <button
-            type="button"
-            disabled={!isBeatPlaying && !canRecord}
-            onClick={onToggleBeat}
-            title={isBeatPlaying ? 'Pause beat' : 'Play beat while monitoring'}
-            className={`rounded-full px-3 py-1 text-[11px] font-medium transition ${
-              isBeatPlaying
-                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/60'
-                : 'border border-slate-700/80 text-slate-300 hover:border-emerald-400/70'
-            }`}
-          >
-            {isBeatPlaying ? 'Pause' : 'Play'}
-          </button>
+        <div className="ml-auto flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
+          <div className="flex items-center gap-2">
+            <span>Arrangement</span>
+            <button
+              type="button"
+              onClick={onToggleArrangementPlay}
+              className={`rounded-full px-3 py-1 text-[11px] font-medium transition ${
+                isArrangementPlaying
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/60 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
+                  : 'border border-slate-700/80 text-slate-300 hover:border-emerald-400/70'
+              }`}
+              title="Play / pause the full arrangement (Spacebar)"
+            >
+              {isArrangementPlaying ? 'Pause' : 'Play'}
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <span>Beat</span>
+            <button
+              type="button"
+              disabled={!isBeatPlaying && !canRecord}
+              onClick={onToggleBeat}
+              title={isBeatPlaying ? 'Pause beat' : 'Play beat while monitoring'}
+              className={`rounded-full px-3 py-1 text-[11px] font-medium transition ${
+                isBeatPlaying
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/60'
+                  : 'border border-slate-700/80 text-slate-300 hover:border-emerald-400/70'
+              }`}
+            >
+              {isBeatPlaying ? 'Pause' : 'Play'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

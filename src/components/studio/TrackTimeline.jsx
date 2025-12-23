@@ -469,23 +469,6 @@ export default function TrackTimeline({
               )
             })}
           </div>
-          {/* Bottom transport */}
-          <div className="flex items-center justify-center border-t border-slate-900/80 bg-slate-950/95/80 py-2 text-[10px] text-slate-400">
-            <button
-              type="button"
-              onClick={isPlaying ? onStopPlayback : onPlayFromCursor}
-              className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-[11px] font-semibold tracking-wide shadow-sm transition ${{
-                true: 'bg-emerald-500 text-slate-950 shadow-[0_0_18px_rgba(16,185,129,0.55)]',
-                false: 'bg-slate-800 text-slate-100 hover:bg-slate-700',
-              }[isPlaying ? 'true' : 'false']}`}
-              title="Spacebar: play / pause arrangement"
-            >
-              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-950/80">
-                {isPlaying ? '❚❚' : '▶'}
-              </span>
-              <span>{isPlaying ? 'Pause arrangement (Space)' : 'Play arrangement (Space)'}</span>
-            </button>
-          </div>
         </div>
       </div>
     </div>
