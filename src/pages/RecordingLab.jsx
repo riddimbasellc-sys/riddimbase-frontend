@@ -17,6 +17,10 @@ export function RecordingLab() {
   const [selectedSessionId, setSelectedSessionId] = useState('')
   const [sessionBusy, setSessionBusy] = useState(false)
 
+  const [creditBalance, setCreditBalance] = useState(null)
+  const [creditLoading, setCreditLoading] = useState(false)
+  const [insufficientCredits, setInsufficientCredits] = useState(false)
+
   const [selectedBeat, setSelectedBeat] = useState(null)
   const [beatVolume, setBeatVolume] = useState(0.8)
   const [isBeatPlaying, setIsBeatPlaying] = useState(false)
@@ -140,6 +144,32 @@ export function RecordingLab() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBeat?.id])
+
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (!user?.id) {
+        setCreditBalance(null)
+        return
+      }
+      try {
+        setCreditLoading(true)
+        const apiBase = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:5001'
+        const res = await fetch(`${apiBase}/credits/balance`, {
+          headers: { 'x-user-id': user.id },
+        })
+        if (!res.ok) throw new Error('Failed to load credits')
+        const data = await res.json()
+        setCreditBalance(typeof data.balance === 'number' ? data.balance : 0)
+      } catch (e) {
+        console.warn('[RecordingLab] load credits failed', e)
+        setCreditBalance(null)
+      } finally {
+        setCreditLoading(false)
+      }
+    }
+
+    fetchBalance()
+  }, [user?.id])
 
   useEffect(() => {
     const run = async () => {
@@ -333,10 +363,48 @@ export function RecordingLab() {
   }
 
   const handleRecord = async () => {
+    if (!user?.id) {
+      // eslint-disable-next-line no-alert
+      alert('Log in to use the Recording Lab.')
+      return
+    }
+    if (typeof creditBalance === 'number' && creditBalance < 200) {
+      setInsufficientCredits(true)
+      // eslint-disable-next-line no-alert
+      alert('Insufficient credits. Each session costs 200 credits.')
+      return
+    }
     if (!hasAudioSupport) return
     if (recordState === 'recording') return
     const recorder = await ensureRecorder()
     if (!recorder) return
+    try {
+      const apiBase = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:5001'
+      const res = await fetch(`${apiBase}/credits/use`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': user.id,
+        },
+        body: JSON.stringify({ amount: 200 }),
+      })
+      if (res.status === 402) {
+        setInsufficientCredits(true)
+        const data = await res.json().catch(() => ({}))
+        if (typeof data.balance === 'number') setCreditBalance(data.balance)
+        // eslint-disable-next-line no-alert
+        alert('Insufficient credits. Please buy credits or upgrade your plan.')
+        return
+      }
+      if (!res.ok) throw new Error('Credit deduction failed')
+      const data = await res.json().catch(() => ({}))
+      if (typeof data.balance === 'number') setCreditBalance(data.balance)
+    } catch (e) {
+      console.warn('[RecordingLab] credit deduction failed', e)
+      // eslint-disable-next-line no-alert
+      alert('Could not verify credits. Please try again in a moment.')
+      return
+    }
     try {
       recorder.start()
       setRecordState('recording')
@@ -797,6 +865,7 @@ export function RecordingLab() {
   const canRecord = micStatus === 'granted' && hasAudioSupport
   const hasRecording = !!recordingUrl
   const canPlayArrangement = !!selectedBeat?.audioUrl || vocalTracks.some((t) => !!t.clip)
+  const hasEnoughCredits = typeof creditBalance === 'number' ? creditBalance >= 200 : true
 
   const formatSessionLabel = (s) => {
     const name = (s?.name || '').trim()
@@ -965,7 +1034,31 @@ export function RecordingLab() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-red-400">Recording Lab</p>
             <h1 className="font-display text-2xl font-semibold text-slate-50">In-browser vocal booth</h1>
           </div>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-3">
+            <div className="flex flex-col items-end text-[11px]">
+              <div className="flex items-center gap-2">
+                <span className="rounded-full border border-slate-700/80 bg-slate-950/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-300">
+                  {creditLoading
+                    ? 'Credits: …'
+                    : typeof creditBalance === 'number'
+                    ? `Credits: ${creditBalance.toLocaleString('en-US')}`
+                    : 'Credits: —'}
+                </span>
+                <a
+                  href="/studio-credits"
+                  className="rounded-full border border-emerald-500/70 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300 hover:bg-emerald-500/15"
+                >
+                  Buy Credits
+                </a>
+                <a
+                  href="/#pricing"
+                  className="rounded-full border border-sky-500/70 bg-sky-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-300 hover:bg-sky-500/15"
+                >
+                  Upgrade Plan
+                </a>
+              </div>
+              <p className="mt-1 text-[10px] text-slate-400">200 credits per recording session</p>
+            </div>
             <select
               className="h-9 w-[220px] max-w-[52vw] rounded-xl border border-slate-800/80 bg-slate-950/80 px-3 text-[12px] text-slate-200"
               value={selectedSessionId}

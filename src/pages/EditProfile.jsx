@@ -259,6 +259,43 @@ export function EditProfile() {
     } finally { setSavingYoutube(false) }
   }
 
+  const [creditHistory, setCreditHistory] = useState([])
+  const [creditHistoryLoading, setCreditHistoryLoading] = useState(false)
+  const [creditBalance, setCreditBalance] = useState(null)
+
+  useEffect(() => {
+    const run = async () => {
+      if (!user?.id) {
+        setCreditHistory([])
+        setCreditBalance(null)
+        return
+      }
+      try {
+        setCreditHistoryLoading(true)
+        const { data: balanceRows } = await supabase
+          .from('recording_credits')
+          .select('balance')
+          .eq('user_id', user.id)
+          .maybeSingle()
+        setCreditBalance(balanceRows?.balance ?? null)
+
+        const { data: historyRows } = await supabase
+          .from('recording_credit_history')
+          .select('id,delta,balance_after,reason,source,created_at')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(20)
+        setCreditHistory(Array.isArray(historyRows) ? historyRows : [])
+      } catch {
+        setCreditHistory([])
+      } finally {
+        setCreditHistoryLoading(false)
+      }
+    }
+
+    run()
+  }, [user?.id, savedStamp])
+
   if (loading) {
     return <p className="p-6 text-xs text-slate-400">Loading...</p>
   }
@@ -456,6 +493,59 @@ export function EditProfile() {
               })}
             </div>
             <p className="text-[10px] text-slate-500">Select genres that represent your catalog (max 6 recommended).</p>
+          </div>
+          {/* Recording Lab credits */}
+          <div className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xs font-semibold tracking-wide text-slate-200">Recording Lab Credits</h2>
+                <p className="mt-1 text-[11px] text-slate-400">
+                  Your Recording Lab credit balance and recent activity.
+                </p>
+              </div>
+              <div className="rounded-full border border-slate-700/80 bg-slate-950/80 px-3 py-1 text-[11px] font-semibold text-emerald-300">
+                {creditBalance == null ? (creditHistoryLoading ? 'Balance: …' : 'Balance: —') : `Balance: ${creditBalance.toLocaleString('en-US')}`}
+              </div>
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Recent credit activity
+              </p>
+              <div className="mt-2 max-h-64 space-y-1 overflow-y-auto rounded-xl border border-slate-800/80 bg-slate-950/80 p-2 text-[11px]">
+                {creditHistoryLoading && (
+                  <p className="text-slate-500">Loading history…</p>
+                )}
+                {!creditHistoryLoading && creditHistory.length === 0 && (
+                  <p className="text-slate-500">No credit activity yet.</p>
+                )}
+                {!creditHistoryLoading && creditHistory.map((row) => {
+                  const dt = row.created_at ? new Date(row.created_at) : null
+                  const isPositive = row.delta > 0
+                  return (
+                    <div
+                      key={row.id}
+                      className="flex items-center justify-between rounded-lg px-2 py-1 hover:bg-slate-900/80"
+                    >
+                      <div className="flex flex-col">
+                        <span className="text-slate-200">{row.reason || 'Activity'}</span>
+                        <span className="text-[10px] text-slate-500">
+                          {row.source || 'system'}
+                          {dt && ` • ${dt.toLocaleString()}`}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className={isPositive ? 'font-semibold text-emerald-300' : 'font-semibold text-red-300'}>
+                          {isPositive ? '+' : ''}{row.delta}
+                        </span>
+                        {typeof row.balance_after === 'number' && (
+                          <div className="text-[10px] text-slate-500">Bal: {row.balance_after}</div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
           </div>
           {error && <p className="text-[11px] text-rose-400">{error}</p>}
           <div className="flex items-center gap-4">
