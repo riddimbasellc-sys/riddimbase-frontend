@@ -72,6 +72,7 @@ import Feed from './pages/Feed'
 import { MultiCheckout } from './pages/MultiCheckout'
 import ProducerStore from './pages/ProducerStore'
 import RecordingLab from './pages/RecordingLab'
+import StudioCredits from './pages/StudioCredits'
 
 function App() {
   const { isAdmin } = useAdminRole()
@@ -89,6 +90,7 @@ function App() {
         <Route path="/feed" element={<Feed />} />
         <Route path="/soundkits" element={<Soundkits />} />
         <Route path="/studio" element={<RecordingLab />} />
+        <Route path="/studio-credits" element={<StudioCredits />} />
         <Route path="/beat/:id" element={<BeatDetails />} />
         <Route path="/beat/:idSlug" element={<BeatDetails />} />
         <Route path="/boost/:beatId" element={<BoostBeat />} />
