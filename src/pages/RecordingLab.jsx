@@ -5,6 +5,7 @@ import RecorderControls from '../components/studio/RecorderControls'
 import WaveformCanvas from '../components/studio/WaveformCanvas'
 import StudioSidebar from '../components/studio/StudioSidebar'
 import TrackTimeline from '../components/studio/TrackTimeline'
+import VocalFxModal from '../components/studio/VocalFxModal'
 import useSupabaseUser from '../hooks/useSupabaseUser'
 import '../styles/recordingLab.css'
 
@@ -22,16 +23,55 @@ export function RecordingLab() {
   const [recordingUrl, setRecordingUrl] = useState(null)
 
   const [monitorEnabled, setMonitorEnabled] = useState(false)
-  const [effects, setEffects] = useState({ reverb: false, delay: false, autotune: false })
   const [inputGain, setInputGain] = useState(1)
 
   // Multitrack timeline state
   const [snapToGrid, setSnapToGrid] = useState(true)
   const [beatClip, setBeatClip] = useState(null) // { startSec, durationSec }
-  const [vocalTracks, setVocalTracks] = useState([]) // { id, name, muted, solo, clip: { startSec, durationSec, url } }
+  const createDefaultVocalFx = () => ({
+    eq: {
+      enabled: false,
+      preset: 'flat',
+      lowGainDb: 0,
+      midGainDb: 0,
+      highGainDb: 0,
+    },
+    compressor: {
+      enabled: false,
+      preset: 'vocal-gentle',
+      threshold: -18,
+      ratio: 3,
+      attack: 0.01,
+      release: 0.25,
+    },
+    reverb: {
+      enabled: false,
+      preset: 'room',
+      mix: 0.2,
+      decay: 1.8,
+    },
+    delay: {
+      enabled: false,
+      preset: 'slap',
+      time: 0.28,
+      feedback: 0.3,
+      mix: 0.18,
+    },
+    autotune: {
+      enabled: false,
+      preset: 'natural',
+      key: 'C',
+      scale: 'major',
+      retuneSpeed: 0.5,
+      humanize: 0.3,
+    },
+  })
+
+  const [vocalTracks, setVocalTracks] = useState([]) // { id, name, muted, solo, clip, fx }
   const [beatTrackState, setBeatTrackState] = useState({ muted: false, solo: false })
   const [playheadSec, setPlayheadSec] = useState(0)
   const [isTimelinePlaying, setIsTimelinePlaying] = useState(false)
+  const [selectedVocalTrackId, setSelectedVocalTrackId] = useState(null)
 
   const audioRef = useRef(null)
   const audioContextRef = useRef(null)
@@ -187,9 +227,11 @@ export function RecordingLab() {
                 muted: false,
                 solo: false,
                 clip: { startSec: 0, durationSec, url },
+                fx: createDefaultVocalFx(),
               },
             ]
           })
+          setSelectedVocalTrackId((prev) => prev || `take-${(vocalTracks?.length || 0) + 1}`)
 
           setRecordState('recorded')
           // TODO: send blob to backend storage for saving sessions
@@ -285,10 +327,6 @@ export function RecordingLab() {
     }
   }
 
-  const handleToggleEffect = (key) => {
-    setEffects((fx) => ({ ...fx, [key]: !fx[key] }))
-  }
-
   const handleBeatClipChange = (startSec) => {
     setBeatClip((prev) => (prev ? { ...prev, startSec } : { startSec, durationSec: 60 }))
   }
@@ -302,8 +340,13 @@ export function RecordingLab() {
   const handleAddVocalTrack = () => {
     setVocalTracks((prev) => {
       const index = prev.length + 1
-      return [...prev, { id: `vocal-${index}`, name: `Vocal ${index}`, muted: false, solo: false, clip: null }]
+      const id = `vocal-${index}`
+      return [
+        ...prev,
+        { id, name: `Vocal ${index}`, muted: false, solo: false, clip: null, fx: createDefaultVocalFx() },
+      ]
     })
+    setSelectedVocalTrackId((prev) => prev)
   }
 
   const handleToggleBeatMute = () => {
@@ -380,6 +423,95 @@ export function RecordingLab() {
     }
   }
 
+  const applyVocalFxChain = (ctx, sourceNode, fx) => {
+    const safeFx = fx || {}
+    let current = sourceNode
+
+    const eqFx = safeFx.eq || {}
+    if (eqFx.enabled) {
+      const low = ctx.createBiquadFilter()
+      low.type = 'lowshelf'
+      low.frequency.value = 120
+      low.gain.value = eqFx.lowGainDb ?? 0
+
+      const mid = ctx.createBiquadFilter()
+      mid.type = 'peaking'
+      mid.frequency.value = 1500
+      mid.Q.value = 1
+      mid.gain.value = eqFx.midGainDb ?? 0
+
+      const high = ctx.createBiquadFilter()
+      high.type = 'highshelf'
+      high.frequency.value = 6000
+      high.gain.value = eqFx.highGainDb ?? 0
+
+      current.connect(low)
+      low.connect(mid)
+      mid.connect(high)
+      current = high
+    }
+
+    const compFx = safeFx.compressor || {}
+    if (compFx.enabled) {
+      const comp = ctx.createDynamicsCompressor()
+      if (typeof compFx.threshold === 'number') comp.threshold.value = compFx.threshold
+      if (typeof compFx.ratio === 'number') comp.ratio.value = compFx.ratio
+      if (typeof compFx.attack === 'number') comp.attack.value = compFx.attack
+      if (typeof compFx.release === 'number') comp.release.value = compFx.release
+      current.connect(comp)
+      current = comp
+    }
+
+    const dryGain = ctx.createGain()
+    dryGain.gain.value = 1
+    current.connect(dryGain)
+    dryGain.connect(ctx.destination)
+
+    const delayFx = safeFx.delay || {}
+    if (delayFx.enabled) {
+      const delay = ctx.createDelay(1)
+      delay.delayTime.value = Math.max(0.01, Math.min(0.9, delayFx.time ?? 0.28))
+
+      const feedback = ctx.createGain()
+      feedback.gain.value = Math.max(0, Math.min(0.9, delayFx.feedback ?? 0.3))
+
+      const wet = ctx.createGain()
+      wet.gain.value = Math.max(0, Math.min(1, delayFx.mix ?? 0.18))
+
+      current.connect(delay)
+      delay.connect(feedback)
+      feedback.connect(delay)
+      delay.connect(wet)
+      wet.connect(ctx.destination)
+    }
+
+    const reverbFx = safeFx.reverb || {}
+    if (reverbFx.enabled) {
+      const convolver = ctx.createConvolver()
+      const rate = ctx.sampleRate
+      const decay = Math.max(0.3, Math.min(4, reverbFx.decay ?? 1.8))
+      const length = Math.floor(rate * decay)
+      const ir = ctx.createBuffer(2, length, rate)
+      for (let ch = 0; ch < 2; ch += 1) {
+        const data = ir.getChannelData(ch)
+        for (let i = 0; i < length; i += 1) {
+          const t = i / length
+          data[i] = (Math.random() * 2 - 1) * (1 - t)
+        }
+      }
+      convolver.buffer = ir
+
+      const wet = ctx.createGain()
+      wet.gain.value = Math.max(0, Math.min(1, reverbFx.mix ?? 0.2))
+
+      current.connect(convolver)
+      convolver.connect(wet)
+      wet.connect(ctx.destination)
+    }
+
+    // Auto-Tune is UI-only for now; no DSP applied here yet.
+  }
+
   const getWaveformForUrl = async (url) => {
     if (!url) return null
     const cache = waveformCacheRef.current
@@ -422,6 +554,17 @@ export function RecordingLab() {
 
   const handleSeek = (sec) => {
     setPlayheadSec(sec)
+  }
+
+  const [fxEditor, setFxEditor] = useState(null) // { effectKey, trackId }
+
+  const handleSelectVocalTrack = (trackId) => {
+    setSelectedVocalTrackId(trackId)
+  }
+
+  const handleOpenEffect = (effectKey) => {
+    if (!selectedVocalTrackId) return
+    setFxEditor({ effectKey, trackId: selectedVocalTrackId })
   }
 
   const handleToggleArrangementPlay = () => {
@@ -468,7 +611,7 @@ export function RecordingLab() {
     vocalTracks.forEach((t) => {
       if (!t.clip || t.muted) return
       if (anySolo && !t.solo) return
-      tasks.push({ type: 'vocal', url: t.clip.url, clip: t.clip })
+      tasks.push({ type: 'vocal', url: t.clip.url, clip: t.clip, fx: t.fx })
     })
 
     if (!tasks.length) return
@@ -497,7 +640,11 @@ export function RecordingLab() {
 
       const source = ctx.createBufferSource()
       source.buffer = buffer
-      source.connect(ctx.destination)
+      if (task.type === 'vocal') {
+        applyVocalFxChain(ctx, source, task.fx)
+      } else {
+        source.connect(ctx.destination)
+      }
       try {
         source.start(when, offset, playDuration)
         sources.push(source)
@@ -610,6 +757,7 @@ export function RecordingLab() {
                 beatLabel={selectedBeat?.title || 'Beat Track'}
                 beatTrackState={beatTrackState}
                 vocalTracks={vocalTracks}
+                selectedVocalTrackId={selectedVocalTrackId}
                 snapToGrid={snapToGrid}
                 playheadSec={playheadSec}
                 isPlaying={isTimelinePlaying}
@@ -629,6 +777,7 @@ export function RecordingLab() {
                 onToggleLoopRegion={handleToggleLoopRegion}
                 onLoopSetStart={handleLoopSetStart}
                 onLoopSetEnd={handleLoopSetEnd}
+                onSelectVocalTrack={handleSelectVocalTrack}
                 requestWaveform={getWaveformForUrl}
               />
             </div>
@@ -667,12 +816,44 @@ export function RecordingLab() {
             onRequestMic={requestMic}
             monitorEnabled={monitorEnabled}
             onToggleMonitor={toggleMonitor}
-            effects={effects}
-            onToggleEffect={handleToggleEffect}
             inputGain={inputGain}
             onInputGainChange={handleInputGainChange}
+            selectedVocalTrackName={
+              selectedVocalTrackId
+                ? vocalTracks.find((t) => t.id === selectedVocalTrackId)?.name || selectedVocalTrackId
+                : null
+            }
+            selectedTrackFx={
+              selectedVocalTrackId
+                ? vocalTracks.find((t) => t.id === selectedVocalTrackId)?.fx || null
+                : null
+            }
+            onOpenEffect={handleOpenEffect}
           />
         </div>
+
+        {fxEditor && selectedVocalTrackId && (
+          <VocalFxModal
+            effectKey={fxEditor.effectKey}
+            trackName={
+              vocalTracks.find((t) => t.id === fxEditor.trackId)?.name || fxEditor.trackId
+            }
+            initialSettings={
+              vocalTracks.find((t) => t.id === fxEditor.trackId)?.fx?.[fxEditor.effectKey] || {}
+            }
+            onDiscard={() => setFxEditor(null)}
+            onApply={(settings) => {
+              setVocalTracks((prev) =>
+                prev.map((t) =>
+                  t.id === fxEditor.trackId
+                    ? { ...t, fx: { ...t.fx, [fxEditor.effectKey]: { ...t.fx?.[fxEditor.effectKey], ...settings } } }
+                    : t,
+                ),
+              )
+              setFxEditor(null)
+            }}
+          />
+        )}
       </div>
     </section>
   )
