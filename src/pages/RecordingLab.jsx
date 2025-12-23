@@ -424,6 +424,14 @@ export function RecordingLab() {
     setPlayheadSec(sec)
   }
 
+  const handleToggleArrangementPlay = () => {
+    if (isTimelinePlaying) {
+      stopTimelinePlayback()
+    } else {
+      handlePlayFromCursor()
+    }
+  }
+
   const handlePlayFromCursor = async () => {
     if (!beatClip && vocalTracks.every((t) => !t.clip)) return
     const ctx = ensurePlaybackContext()
@@ -560,8 +568,7 @@ export function RecordingLab() {
       }
       stopTimelinePlayback()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [isTimelinePlaying, recordState, recordingUrl])
 
   const canRecord = micStatus === 'granted' && hasAudioSupport
   const hasRecording = !!recordingUrl
@@ -635,6 +642,8 @@ export function RecordingLab() {
               isBeatPlaying={isBeatPlaying}
               onToggleBeat={toggleBeatPlay}
               timerSeconds={timerSeconds}
+              isArrangementPlaying={isTimelinePlaying}
+              onToggleArrangementPlay={handleToggleArrangementPlay}
             />
             {hasRecording && (
               <div className="rounded-2xl border border-slate-800/80 bg-slate-950/80 p-4 text-[12px] text-slate-200">
