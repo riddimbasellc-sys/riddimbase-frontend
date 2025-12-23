@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useBeats } from '../../hooks/useBeats'
 
-export default function BeatSelector({ selectedBeat, onSelectBeat, isPlaying, onTogglePlay, loopEnabled, onToggleLoop, volume, onVolumeChange }) {
+export default function BeatSelector({ selectedBeat, onSelectBeat, isPlaying, onTogglePlay, volume, onVolumeChange }) {
   const { beats, loading } = useBeats()
 
   const displayBeats = useMemo(() => {
@@ -47,19 +47,6 @@ export default function BeatSelector({ selectedBeat, onSelectBeat, isPlaying, on
               }`}
             >
               {isPlaying ? '❚❚' : '▶'}
-            </button>
-            <button
-              type="button"
-              onClick={onToggleLoop}
-              disabled={!selectedBeat}
-              title="Toggle loop"
-              className={`rounded-full px-3 py-1 text-[10px] font-medium transition ${
-                loopEnabled
-                  ? 'bg-slate-800/80 text-emerald-300 border border-emerald-500/60'
-                  : 'border border-slate-700/70 text-slate-400 hover:border-slate-500/80'
-              } ${!selectedBeat ? 'opacity-40 cursor-not-allowed' : ''}`}
-            >
-              Loop
             </button>
             <div className="ml-auto flex items-center gap-2">
               <span className="text-[10px] text-slate-400">Vol</span>
