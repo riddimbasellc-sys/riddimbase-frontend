@@ -45,6 +45,7 @@ export function RecordingLab() {
   const timelineSourcesRef = useRef([])
   const bufferCacheRef = useRef(new Map())
   const timelineTimeoutRef = useRef(null)
+  const waveformCacheRef = useRef(new Map())
 
   const [hasAudioSupport] = useState(() =>
     typeof window !== 'undefined' &&
@@ -325,6 +326,34 @@ export function RecordingLab() {
     )
   }
 
+  const [loopRegion, setLoopRegion] = useState({ enabled: false, startSec: 0, endSec: 8 })
+
+  const handleToggleLoopRegion = () => {
+    setLoopRegion((prev) => ({ ...prev, enabled: !prev.enabled }))
+  }
+
+  const handleLoopSetStart = (sec) => {
+    const safe = Number.isFinite(sec) && sec >= 0 ? sec : 0
+    setLoopRegion((prev) => {
+      const minLen = 0.5
+      let end = prev.endSec
+      if (!Number.isFinite(end) || end <= safe + minLen) {
+        end = safe + Math.max(minLen, 2)
+      }
+      return { ...prev, startSec: safe, endSec: end }
+    })
+  }
+
+  const handleLoopSetEnd = (sec) => {
+    const safe = Number.isFinite(sec) && sec >= 0 ? sec : 0
+    setLoopRegion((prev) => {
+      const minLen = 0.5
+      const start = Number.isFinite(prev.startSec) && prev.startSec >= 0 ? prev.startSec : 0
+      const end = Math.max(safe, start + minLen)
+      return { ...prev, startSec: start, endSec: end }
+    })
+  }
+
   const ensurePlaybackContext = () => {
     if (typeof window === 'undefined') return null
     const AudioContextClass = window.AudioContext || window.webkitAudioContext
@@ -349,6 +378,31 @@ export function RecordingLab() {
     } catch {
       return null
     }
+  }
+
+  const getWaveformForUrl = async (url) => {
+    if (!url) return null
+    const cache = waveformCacheRef.current
+    if (cache.has(url)) return cache.get(url)
+    const buffer = await loadBuffer(url)
+    if (!buffer) return null
+
+    const samples = 48
+    const channelData = buffer.getChannelData(0)
+    const blockSize = Math.max(1, Math.floor(channelData.length / samples))
+    const data = new Float32Array(samples)
+    for (let i = 0; i < samples; i += 1) {
+      const start = i * blockSize
+      const end = Math.min(start + blockSize, channelData.length)
+      let sum = 0
+      for (let j = start; j < end; j += 1) {
+        sum += Math.abs(channelData[j])
+      }
+      const avg = sum / Math.max(1, end - start)
+      data[i] = avg
+    }
+    cache.set(url, data)
+    return data
   }
 
   const stopTimelinePlayback = () => {
@@ -381,6 +435,19 @@ export function RecordingLab() {
 
     const anySolo = beatTrackState.solo || vocalTracks.some((t) => t.solo)
 
+    const loopActive =
+      loopRegion &&
+      loopRegion.enabled &&
+      typeof loopRegion.startSec === 'number' &&
+      typeof loopRegion.endSec === 'number' &&
+      loopRegion.endSec > loopRegion.startSec + 0.05
+
+    const startAt = loopActive
+      ? Math.max(0, loopRegion.startSec)
+      : Math.max(0, playheadSec)
+
+    const regionEndLimit = loopActive ? loopRegion.endSec : Infinity
+
     const tasks = []
     if (beatClip && selectedBeat?.audioUrl && !beatTrackState.muted && (!anySolo || beatTrackState.solo)) {
       tasks.push({
@@ -405,14 +472,19 @@ export function RecordingLab() {
       const buffer = await loadBuffer(task.url)
       if (!buffer) continue
       const { startSec = 0, durationSec = buffer.duration } = task.clip || {}
-      const relStart = startSec - playheadSec
+      const clipStart = startSec
       const clipEnd = startSec + durationSec
-      maxEnd = Math.max(maxEnd, clipEnd)
-      if (clipEnd <= playheadSec) continue
 
-      const offset = relStart < 0 ? -relStart : 0
-      const playDuration = Math.max(0.1, durationSec - offset)
+      const effectiveStart = Math.max(clipStart, startAt)
+      const effectiveEnd = Math.min(clipEnd, regionEndLimit)
+      if (effectiveEnd <= effectiveStart) continue
+
+      const relStart = effectiveStart - startAt
+      const offset = effectiveStart - clipStart
+      const playDuration = Math.max(0.1, effectiveEnd - effectiveStart)
       const when = now + Math.max(relStart, 0)
+
+      maxEnd = Math.max(maxEnd, effectiveEnd)
 
       const source = ctx.createBufferSource()
       source.buffer = buffer
@@ -428,11 +500,22 @@ export function RecordingLab() {
     timelineSourcesRef.current = sources
     setIsTimelinePlaying(true)
 
-    if (maxEnd > playheadSec) {
-      const remaining = maxEnd - playheadSec
+    if (maxEnd > startAt) {
+      const remaining = maxEnd - startAt
       timelineTimeoutRef.current = setTimeout(() => {
-        stopTimelinePlayback()
-      }, remaining * 1000 + 500)
+        if (
+          loopRegion &&
+          loopRegion.enabled &&
+          typeof loopRegion.startSec === 'number' &&
+          typeof loopRegion.endSec === 'number' &&
+          loopRegion.endSec > loopRegion.startSec + 0.05
+        ) {
+          setPlayheadSec(loopRegion.startSec)
+          handlePlayFromCursor()
+        } else {
+          stopTimelinePlayback()
+        }
+      }, remaining * 1000 + 300)
     }
   }
 
@@ -501,6 +584,8 @@ export function RecordingLab() {
               snapToGrid={snapToGrid}
               playheadSec={playheadSec}
               isPlaying={isTimelinePlaying}
+              beatAudioUrl={selectedBeat?.audioUrl}
+              loopRegion={loopRegion}
               onToggleSnap={() => setSnapToGrid((v) => !v)}
               onBeatClipChange={handleBeatClipChange}
               onVocalClipChange={handleVocalClipChange}
@@ -512,6 +597,10 @@ export function RecordingLab() {
               onToggleBeatSolo={handleToggleBeatSolo}
               onToggleVocalMute={handleToggleVocalMute}
               onToggleVocalSolo={handleToggleVocalSolo}
+              onToggleLoopRegion={handleToggleLoopRegion}
+              onLoopSetStart={handleLoopSetStart}
+              onLoopSetEnd={handleLoopSetEnd}
+              requestWaveform={getWaveformForUrl}
             />
             <RecorderControls
               recordState={recordState}
