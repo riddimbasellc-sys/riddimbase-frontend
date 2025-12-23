@@ -123,6 +123,9 @@ export function RecordingLab() {
     // When beat changes, rebuild audio element
     cleanupBeatAudio()
     if (selectedBeat && selectedBeat.audioUrl) {
+      // Create a safe default clip immediately so arrangement playback works
+      // even before the audio element metadata has loaded.
+      setBeatClip({ startSec: 0, durationSec: 60 })
       ensureBeatAudio()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -569,7 +572,9 @@ export function RecordingLab() {
   }
 
   const handlePlayFromCursor = async () => {
-    if (!beatClip && vocalTracks.every((t) => !t.clip)) return
+    const hasAnyVocalClip = vocalTracks.some((t) => !!t.clip)
+    const hasBeatAudio = !!selectedBeat?.audioUrl
+    if (!hasBeatAudio && !hasAnyVocalClip) return
     const ctx = ensurePlaybackContext()
     if (!ctx) return
 
@@ -594,11 +599,11 @@ export function RecordingLab() {
     const regionEndLimit = loopActive ? loopRegion.endSec : Infinity
 
     const tasks = []
-    if (beatClip && selectedBeat?.audioUrl && !beatTrackState.muted && (!anySolo || beatTrackState.solo)) {
+    if (hasBeatAudio && !beatTrackState.muted && (!anySolo || beatTrackState.solo)) {
       tasks.push({
         type: 'beat',
         url: selectedBeat.audioUrl,
-        clip: beatClip,
+        clip: beatClip || { startSec: 0 },
       })
     }
     vocalTracks.forEach((t) => {
