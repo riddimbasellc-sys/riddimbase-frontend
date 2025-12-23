@@ -717,6 +717,7 @@ export function RecordingLab() {
 
   const canRecord = micStatus === 'granted' && hasAudioSupport
   const hasRecording = !!recordingUrl
+  const canPlayArrangement = !!selectedBeat?.audioUrl || vocalTracks.some((t) => !!t.clip)
 
   return (
     <section className="studio-shell min-h-screen lg:h-screen lg:overflow-hidden">
@@ -785,10 +786,14 @@ export function RecordingLab() {
                 onRecord={handleRecord}
                 onStop={handleStop}
                 onReRecord={handleReRecord}
+                onRequestMic={requestMic}
+                onStopArrangement={stopTimelinePlayback}
                 canRecord={canRecord}
+                canPlay={canPlayArrangement}
                 hasRecording={hasRecording}
                 isBeatPlaying={isBeatPlaying}
                 onToggleBeat={toggleBeatPlay}
+                hasBeatSelected={!!selectedBeat}
                 timerSeconds={timerSeconds}
                 isArrangementPlaying={isTimelinePlaying}
                 onToggleArrangementPlay={handleToggleArrangementPlay}
