@@ -3,10 +3,14 @@ export default function RecorderControls({
   onRecord,
   onStop,
   onReRecord,
+  onRequestMic,
+  onStopArrangement,
   canRecord,
+  canPlay,
   hasRecording,
   isBeatPlaying,
   onToggleBeat,
+  hasBeatSelected,
   timerSeconds,
   isArrangementPlaying,
   onToggleArrangementPlay,
@@ -141,24 +145,31 @@ export default function RecorderControls({
         <div className="flex items-center gap-2">
           <TransportButton
             title={canRecord ? 'Record' : 'Enable microphone to record'}
-            disabled={!canRecord || recordState === 'recording'}
+            disabled={recordState === 'recording'}
             active={recordState === 'recording'}
             variant="record"
-            onClick={onRecord}
+            onClick={() => {
+              if (recordState === 'recording') return
+              if (canRecord) onRecord?.()
+              else onRequestMic?.()
+            }}
           >
             <IconRecord />
           </TransportButton>
           <TransportButton
-            title="Stop recording"
-            disabled={recordState !== 'recording'}
-            active={recordState === 'recording'}
-            onClick={onStop}
+            title={recordState === 'recording' ? 'Stop recording' : 'Stop playback'}
+            disabled={recordState !== 'recording' && !isArrangementPlaying}
+            active={recordState === 'recording' || isArrangementPlaying}
+            onClick={() => {
+              if (recordState === 'recording') onStop?.()
+              else onStopArrangement?.()
+            }}
           >
             <IconStop />
           </TransportButton>
           <TransportButton
             title={isArrangementPlaying ? 'Pause arrangement (Spacebar)' : 'Play arrangement (Spacebar)'}
-            disabled={false}
+            disabled={!canPlay}
             active={isArrangementPlaying}
             onClick={onToggleArrangementPlay}
           >
@@ -185,7 +196,7 @@ export default function RecorderControls({
           </TransportButton>
           <TransportButton
             title={isBeatPlaying ? 'Stop beat monitor' : 'Play beat monitor'}
-            disabled={!onToggleBeat}
+            disabled={!hasBeatSelected}
             active={!!isBeatPlaying}
             onClick={onToggleBeat}
           >
