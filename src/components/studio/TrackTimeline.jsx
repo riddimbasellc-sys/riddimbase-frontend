@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-const PIXELS_PER_SECOND = 40
+const BASE_PIXELS_PER_SECOND = 40
 const GRID_STEP_SEC = 0.25
 
 export default function TrackTimeline({
@@ -33,6 +33,16 @@ export default function TrackTimeline({
   const dragRef = useRef(null)
   const [waveforms, setWaveforms] = useState({})
   const loadedWaveformsRef = useRef(new Set())
+  const [zoom, setZoom] = useState(1)
+
+  const clampZoom = (value) => {
+    return Math.min(4, Math.max(0.25, value || 1))
+  }
+
+  const pixelsPerSecond = useMemo(
+    () => BASE_PIXELS_PER_SECOND * clampZoom(zoom),
+    [zoom],
+  )
 
   const hasLoopRegion =
     !!loopRegion &&
@@ -109,7 +119,7 @@ export default function TrackTimeline({
       const bounds = containerRef.current?.getBoundingClientRect()
       if (!bounds) return
       const deltaX = e.clientX - startX
-      const deltaSec = deltaX / PIXELS_PER_SECOND
+      const deltaSec = deltaX / pixelsPerSecond
       let nextStart = Math.max(0, (clip.startSec || 0) + deltaSec)
       if (snapToGrid) {
         nextStart = Math.max(0, Math.round(nextStart / GRID_STEP_SEC) * GRID_STEP_SEC)
@@ -155,7 +165,26 @@ export default function TrackTimeline({
     return base
   }, [beatClip, beatLabel, vocalTracks])
 
-  const minWidth = totalSeconds * PIXELS_PER_SECOND + 160
+  const minWidth = totalSeconds * pixelsPerSecond + 160
+
+  const handleZoomIn = () => {
+    setZoom((z) => clampZoom(z * 1.25))
+  }
+
+  const handleZoomOut = () => {
+    setZoom((z) => clampZoom(z / 1.25))
+  }
+
+  const handleWheelZoom = (e) => {
+    if (!e.ctrlKey && !e.metaKey) return
+    e.preventDefault()
+    const delta = e.deltaY
+    setZoom((z) => {
+      if (delta > 0) return clampZoom(z / 1.1)
+      if (delta < 0) return clampZoom(z * 1.1)
+      return z
+    })
+  }
 
   return (
     <div className="flex h-full flex-col rounded-2xl border border-slate-800/80 bg-slate-950/95 p-3 text-[11px] text-slate-300">
@@ -165,6 +194,26 @@ export default function TrackTimeline({
           <p className="mt-0.5 text-xs text-slate-300">Align your beat and vocal takes on a simple timeline.</p>
         </div>
         <div className="flex items-center gap-2">
+          <div className="hidden items-center gap-1 rounded-full border border-slate-800/80 bg-slate-900/80 px-2 py-1 text-[9px] text-slate-400 md:flex">
+            <span className="mr-1 uppercase tracking-[0.18em] text-slate-500">Zoom</span>
+            <button
+              type="button"
+              onClick={handleZoomOut}
+              className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700"
+              title="Zoom out (Ctrl + scroll down)"
+            >
+              −
+            </button>
+            <span className="w-8 text-center tabular-nums text-slate-300">{clampZoom(zoom).toFixed(2)}x</span>
+            <button
+              type="button"
+              onClick={handleZoomIn}
+              className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700"
+              title="Zoom in (Ctrl + scroll up)"
+            >
+              +
+            </button>
+          </div>
           <button
             type="button"
             onClick={onToggleLoopRegion}
@@ -235,6 +284,7 @@ export default function TrackTimeline({
       <div
         ref={containerRef}
         className="mt-1 flex-1 overflow-x-auto overflow-y-hidden rounded-xl border border-slate-800/80 bg-gradient-to-b from-slate-950/95 to-slate-950/98"
+        onWheel={handleWheelZoom}
       >
         <div className="relative h-full" style={{ minWidth }}>
           {/* Time ruler */}
@@ -243,7 +293,7 @@ export default function TrackTimeline({
               <div
                 key={sec}
                 className="absolute bottom-0 flex flex-col items-center"
-                style={{ left: sec * PIXELS_PER_SECOND + 140 }}
+                style={{ left: sec * pixelsPerSecond + 140 }}
               >
                 <div className="h-3 border-l border-slate-700/70" />
                 <span className="mt-0.5 text-[9px] text-slate-500">{sec}</span>
@@ -252,7 +302,7 @@ export default function TrackTimeline({
             {/* Playhead */}
             <div
               className="absolute inset-y-0 w-px bg-red-500/80 shadow-[0_0_10px_rgba(248,113,113,0.7)]"
-              style={{ left: playheadSec * PIXELS_PER_SECOND + 140 }}
+              style={{ left: playheadSec * pixelsPerSecond + 140 }}
             />
           </div>
 
@@ -309,7 +359,7 @@ export default function TrackTimeline({
                     onClick={(e) => {
                       const bounds = e.currentTarget.getBoundingClientRect()
                       const x = e.clientX - bounds.left
-                      let sec = x / PIXELS_PER_SECOND
+                      let sec = x / pixelsPerSecond
                       if (sec < 0) sec = 0
                       if (snapToGrid) {
                         sec = Math.round(sec / GRID_STEP_SEC) * GRID_STEP_SEC
@@ -322,9 +372,9 @@ export default function TrackTimeline({
                       <div
                         className="pointer-events-none absolute inset-y-1 rounded bg-emerald-500/5 ring-1 ring-emerald-400/40"
                         style={{
-                          left: loopRegion.startSec * PIXELS_PER_SECOND,
+                          left: loopRegion.startSec * pixelsPerSecond,
                           width: Math.max(
-                            (loopRegion.endSec - loopRegion.startSec) * PIXELS_PER_SECOND,
+                            (loopRegion.endSec - loopRegion.startSec) * pixelsPerSecond,
                             4,
                           ),
                         }}
@@ -339,7 +389,7 @@ export default function TrackTimeline({
                       <div
                         key={sec}
                         className="absolute top-0 h-full border-l border-slate-900/80"
-                        style={{ left: sec * PIXELS_PER_SECOND }}
+                        style={{ left: sec * pixelsPerSecond }}
                       />
                     ))}
 
@@ -347,8 +397,8 @@ export default function TrackTimeline({
                     {timelineClips
                       .filter((c) => c.trackIndex === laneIndex)
                       .map((clip) => {
-                        const left = clip.startSec * PIXELS_PER_SECOND
-                        const width = Math.max(clip.durationSec * PIXELS_PER_SECOND, 80)
+                        const left = clip.startSec * pixelsPerSecond
+                        const width = Math.max(clip.durationSec * pixelsPerSecond, 80)
                         const wf = clip.url ? waveforms[clip.url] : null
                         return (
                           <button
