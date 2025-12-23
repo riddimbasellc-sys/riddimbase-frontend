@@ -387,19 +387,20 @@ export function RecordingLab() {
     const buffer = await loadBuffer(url)
     if (!buffer) return null
 
-    const samples = 48
+    const samples = 96
     const channelData = buffer.getChannelData(0)
     const blockSize = Math.max(1, Math.floor(channelData.length / samples))
     const data = new Float32Array(samples)
     for (let i = 0; i < samples; i += 1) {
       const start = i * blockSize
       const end = Math.min(start + blockSize, channelData.length)
-      let sum = 0
+      let peak = 0
       for (let j = start; j < end; j += 1) {
-        sum += Math.abs(channelData[j])
+        const v = channelData[j]
+        const m = v < 0 ? -v : v
+        if (m > peak) peak = m
       }
-      const avg = sum / Math.max(1, end - start)
-      data[i] = avg
+      data[i] = peak
     }
     cache.set(url, data)
     return data
