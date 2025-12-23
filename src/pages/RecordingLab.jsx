@@ -15,7 +15,6 @@ export function RecordingLab() {
   const [selectedBeat, setSelectedBeat] = useState(null)
   const [beatVolume, setBeatVolume] = useState(0.8)
   const [isBeatPlaying, setIsBeatPlaying] = useState(false)
-  const [loopEnabled, setLoopEnabled] = useState(true)
 
   const [micStatus, setMicStatus] = useState('idle') // idle | pending | granted | denied
   const [recordState, setRecordState] = useState('idle') // idle | recording | recorded
@@ -98,7 +97,7 @@ export function RecordingLab() {
     if (!selectedBeat || !selectedBeat.audioUrl) return
     if (audioRef.current) return
     const el = new Audio(selectedBeat.audioUrl)
-    el.loop = loopEnabled
+    el.loop = true
     el.volume = beatVolume
     el.addEventListener('ended', () => {
       setIsBeatPlaying(false)
@@ -128,12 +127,6 @@ export function RecordingLab() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBeat?.id])
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.loop = loopEnabled
-    }
-  }, [loopEnabled])
 
   useEffect(() => {
     if (audioRef.current) {
@@ -745,8 +738,6 @@ export function RecordingLab() {
               onSelectBeat={setSelectedBeat}
               isPlaying={isBeatPlaying}
               onTogglePlay={toggleBeatPlay}
-              loopEnabled={loopEnabled}
-              onToggleLoop={() => setLoopEnabled((v) => !v)}
               volume={beatVolume}
               onVolumeChange={setBeatVolume}
             />
@@ -796,6 +787,8 @@ export function RecordingLab() {
                 timerSeconds={timerSeconds}
                 isArrangementPlaying={isTimelinePlaying}
                 onToggleArrangementPlay={handleToggleArrangementPlay}
+                isLoopEnabled={!!loopRegion?.enabled}
+                onToggleLoop={handleToggleLoopRegion}
               />
             </div>
             {hasRecording && (
