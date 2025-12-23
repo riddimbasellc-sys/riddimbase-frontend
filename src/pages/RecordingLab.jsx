@@ -562,7 +562,7 @@ export function RecordingLab() {
           </div>
         )}
 
-        <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.3fr)_minmax(0,0.9fr)]">
+        <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.8fr)_minmax(0,0.7fr)]">
           <BeatSelector
             selectedBeat={selectedBeat}
             onSelectBeat={setSelectedBeat}
@@ -575,8 +575,11 @@ export function RecordingLab() {
           />
 
           <div className="flex flex-col gap-4">
-            <WaveformCanvas analyser={analyserRef.current} isActive={recordState === 'recording'} />
-            <TrackTimeline
+            <div className="hidden md:block">
+              <WaveformCanvas analyser={analyserRef.current} isActive={recordState === 'recording'} />
+            </div>
+            <div className="flex-1 min-h-[380px] rounded-2xl bg-slate-950/80 p-1 shadow-[0_0_40px_rgba(15,23,42,0.9)]">
+              <TrackTimeline
               beatClip={beatClip}
               beatLabel={selectedBeat?.title || 'Beat Track'}
               beatTrackState={beatTrackState}
@@ -601,7 +604,8 @@ export function RecordingLab() {
               onLoopSetStart={handleLoopSetStart}
               onLoopSetEnd={handleLoopSetEnd}
               requestWaveform={getWaveformForUrl}
-            />
+              />
+            </div>
             <RecorderControls
               recordState={recordState}
               onRecord={handleRecord}
