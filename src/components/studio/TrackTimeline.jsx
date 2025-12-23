@@ -404,19 +404,23 @@ export default function TrackTimeline({
                         if (wf && wf.length > 1) {
                           const len = wf.length
                           const midY = 50
-                          const scale = 40
+                          const ampRange = 42
                           const pts = []
                           for (let i = 0; i < len; i += 1) {
                             const x = (i / (len - 1)) * 100
-                            const v = wf[i] || 0
-                            const y = midY - Math.max(-45, Math.min(45, v * scale * 100))
+                            const raw = wf[i] || 0
+                            const v = Math.min(1, raw * 1.5)
+                            const dy = v * ampRange
+                            const y = midY - dy
                             pts.push(`${x},${y}`)
                           }
                           // Mirror back for a filled waveform look
                           for (let i = len - 1; i >= 0; i -= 1) {
                             const x = (i / (len - 1)) * 100
-                            const v = wf[i] || 0
-                            const y = midY + Math.max(-45, Math.min(45, v * scale * 100))
+                            const raw = wf[i] || 0
+                            const v = Math.min(1, raw * 1.5)
+                            const dy = v * ampRange
+                            const y = midY + dy
                             pts.push(`${x},${y}`)
                           }
                           waveformPoints = pts.join(' ')
