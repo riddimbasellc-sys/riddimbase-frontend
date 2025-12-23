@@ -47,11 +47,6 @@ export default function TrackTimeline({
     [zoom],
   )
 
-  const trackAreaWidth = useMemo(
-    () => totalSeconds * pixelsPerSecond,
-    [totalSeconds, pixelsPerSecond],
-  )
-
   const hasLoopRegion =
     !!loopRegion &&
     loopRegion.enabled &&
@@ -98,6 +93,11 @@ export default function TrackTimeline({
     )
     return Math.max(32, Math.ceil(maxEnd) + 4)
   }, [timelineClips])
+
+  const trackAreaWidth = useMemo(
+    () => totalSeconds * pixelsPerSecond,
+    [totalSeconds, pixelsPerSecond],
+  )
 
   useEffect(() => {
     if (!requestWaveform) return
