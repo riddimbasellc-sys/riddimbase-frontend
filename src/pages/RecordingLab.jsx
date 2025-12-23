@@ -77,8 +77,8 @@ export function RecordingLab() {
     },
   })
 
-  const [vocalTracks, setVocalTracks] = useState([]) // { id, name, muted, solo, clip, fx }
-  const [beatTrackState, setBeatTrackState] = useState({ muted: false, solo: false })
+  const [vocalTracks, setVocalTracks] = useState([]) // { id, name, muted, solo, volume, clip, fx }
+  const [beatTrackState, setBeatTrackState] = useState({ muted: false, solo: false, volume: 1 })
   const [playheadSec, setPlayheadSec] = useState(0)
   const [isTimelinePlaying, setIsTimelinePlaying] = useState(false)
   const [selectedVocalTrackId, setSelectedVocalTrackId] = useState(null)
@@ -96,6 +96,11 @@ export function RecordingLab() {
   const bufferCacheRef = useRef(new Map())
   const timelineTimeoutRef = useRef(null)
   const waveformCacheRef = useRef(new Map())
+  const playheadAnimFrameRef = useRef(null)
+  const playbackStartWallTimeRef = useRef(null)
+  const playbackStartSecRef = useRef(0)
+  const playbackEndSecRef = useRef(null)
+  const isTimelinePlayingRef = useRef(false)
 
   const [hasAudioSupport] = useState(() =>
     typeof window !== 'undefined' &&
@@ -103,6 +108,45 @@ export function RecordingLab() {
     navigator.mediaDevices &&
     typeof navigator.mediaDevices.getUserMedia === 'function',
   )
+
+  const stopPlayheadAnimation = () => {
+    if (playheadAnimFrameRef.current) {
+      try {
+        cancelAnimationFrame(playheadAnimFrameRef.current)
+      } catch {}
+      playheadAnimFrameRef.current = null
+    }
+    playbackStartWallTimeRef.current = null
+    playbackEndSecRef.current = null
+  }
+
+  const startPlayheadAnimation = (startSec, endSec) => {
+    stopPlayheadAnimation()
+    playbackStartWallTimeRef.current =
+      typeof performance !== 'undefined' ? performance.now() : Date.now()
+    playbackStartSecRef.current = typeof startSec === 'number' ? startSec : 0
+    playbackEndSecRef.current =
+      typeof endSec === 'number' && Number.isFinite(endSec) ? endSec : null
+
+    const loop = () => {
+      if (!isTimelinePlayingRef.current) return
+      const base = playbackStartWallTimeRef.current
+      if (base == null) return
+      const now = typeof performance !== 'undefined' ? performance.now() : Date.now()
+      const elapsedSec = Math.max(0, (now - base) / 1000)
+      let next = playbackStartSecRef.current + elapsedSec
+      if (playbackEndSecRef.current != null) {
+        if (next >= playbackEndSecRef.current) {
+          setPlayheadSec(playbackEndSecRef.current)
+          return
+        }
+      }
+      setPlayheadSec(next)
+      playheadAnimFrameRef.current = requestAnimationFrame(loop)
+    }
+
+    playheadAnimFrameRef.current = requestAnimationFrame(loop)
+  }
 
   const ensureBeatAudio = () => {
     if (!selectedBeat || !selectedBeat.audioUrl) return
@@ -486,7 +530,7 @@ export function RecordingLab() {
       const id = `vocal-${index}`
       return [
         ...prev,
-        { id, name: `Vocal ${index}`, muted: false, solo: false, clip: null, fx: createDefaultVocalFx() },
+        { id, name: `Vocal ${index}`, muted: false, solo: false, volume: 1, clip: null, fx: createDefaultVocalFx() },
       ]
     })
     setSelectedVocalTrackId((prev) => prev)
@@ -566,9 +610,10 @@ export function RecordingLab() {
     }
   }
 
-  const applyVocalFxChain = (ctx, sourceNode, fx) => {
+  const applyVocalFxChain = (ctx, sourceNode, fx, destinationNode) => {
     const safeFx = fx || {}
     let current = sourceNode
+    const destination = destinationNode || ctx.destination
 
     const eqFx = safeFx.eq || {}
     if (eqFx.enabled) {
@@ -608,7 +653,7 @@ export function RecordingLab() {
     const dryGain = ctx.createGain()
     dryGain.gain.value = 1
     current.connect(dryGain)
-    dryGain.connect(ctx.destination)
+    dryGain.connect(destination)
 
     const delayFx = safeFx.delay || {}
     if (delayFx.enabled) {
@@ -625,7 +670,7 @@ export function RecordingLab() {
       delay.connect(feedback)
       feedback.connect(delay)
       delay.connect(wet)
-      wet.connect(ctx.destination)
+      wet.connect(destination)
     }
 
     const reverbFx = safeFx.reverb || {}
@@ -649,7 +694,7 @@ export function RecordingLab() {
 
       current.connect(convolver)
       convolver.connect(wet)
-      wet.connect(ctx.destination)
+      wet.connect(destination)
     }
 
     // Auto-Tune is UI-only for now; no DSP applied here yet.
@@ -692,6 +737,7 @@ export function RecordingLab() {
       })
       timelineSourcesRef.current = []
     }
+    stopPlayheadAnimation()
     setIsTimelinePlaying(false)
   }
 
@@ -751,12 +797,19 @@ export function RecordingLab() {
         type: 'beat',
         url: selectedBeat.audioUrl,
         clip: beatClip || { startSec: 0 },
+        volume: typeof beatTrackState.volume === 'number' ? beatTrackState.volume : 1,
       })
     }
     vocalTracks.forEach((t) => {
       if (!t.clip || t.muted) return
       if (anySolo && !t.solo) return
-      tasks.push({ type: 'vocal', url: t.clip.url, clip: t.clip, fx: t.fx })
+      tasks.push({
+        type: 'vocal',
+        url: t.clip.url,
+        clip: t.clip,
+        fx: t.fx,
+        volume: typeof t.volume === 'number' ? t.volume : 1,
+      })
     })
 
     if (!tasks.length) return
@@ -785,11 +838,15 @@ export function RecordingLab() {
 
       const source = ctx.createBufferSource()
       source.buffer = buffer
+      const volume = typeof task.volume === 'number' ? task.volume : 1
+      const gainNode = ctx.createGain()
+      gainNode.gain.value = Math.max(0, Math.min(2, volume))
       if (task.type === 'vocal') {
-        applyVocalFxChain(ctx, source, task.fx)
+        applyVocalFxChain(ctx, source, task.fx, gainNode)
       } else {
-        source.connect(ctx.destination)
+        source.connect(gainNode)
       }
+      gainNode.connect(ctx.destination)
       try {
         source.start(when, offset, playDuration)
         sources.push(source)
@@ -800,6 +857,12 @@ export function RecordingLab() {
 
     timelineSourcesRef.current = sources
     setIsTimelinePlaying(true)
+
+    if (maxEnd > startAt) {
+      startPlayheadAnimation(startAt, maxEnd)
+    } else {
+      startPlayheadAnimation(startAt)
+    }
 
     if (maxEnd > startAt) {
       const remaining = maxEnd - startAt
@@ -821,6 +884,7 @@ export function RecordingLab() {
   }
 
   useEffect(() => {
+    isTimelinePlayingRef.current = isTimelinePlaying
     const handleKeyDown = (e) => {
       if (e.key === ' ' || e.code === 'Space') {
         const target = e.target
@@ -859,6 +923,7 @@ export function RecordingLab() {
         audioContextRef.current.close()
       }
       stopTimelinePlayback()
+      stopPlayheadAnimation()
     }
   }, [isTimelinePlaying, recordState, recordingUrl])
 
@@ -1002,8 +1067,20 @@ export function RecordingLab() {
       setBeatVolume(typeof state.beatVolume === 'number' ? state.beatVolume : 0.8)
       setSnapToGrid(typeof state.snapToGrid === 'boolean' ? state.snapToGrid : true)
       setBeatClip(state.beatClip || null)
-      setBeatTrackState(state.beatTrackState || { muted: false, solo: false })
-      setVocalTracks(Array.isArray(state.vocalTracks) ? state.vocalTracks : [])
+      setBeatTrackState(state.beatTrackState || { muted: false, solo: false, volume: 1 })
+      setVocalTracks(
+        Array.isArray(state.vocalTracks)
+          ? state.vocalTracks.map((t, idx) => ({
+              id: t.id || `vocal-${idx + 1}`,
+              name: t.name || `Vocal ${idx + 1}`,
+              muted: !!t.muted,
+              solo: !!t.solo,
+              volume: typeof t.volume === 'number' ? t.volume : 1,
+              clip: t.clip || null,
+              fx: t.fx || createDefaultVocalFx(),
+            }))
+          : [],
+      )
       setLoopRegion(state.loopRegion || { enabled: false, startSec: 0, endSec: 8 })
       setPlayheadSec(typeof state.playheadSec === 'number' ? state.playheadSec : 0)
       setSelectedVocalTrackId(state.selectedVocalTrackId || null)
@@ -1122,6 +1199,7 @@ export function RecordingLab() {
                 playheadSec={playheadSec}
                 isPlaying={isTimelinePlaying}
                 beatAudioUrl={selectedBeat?.audioUrl}
+                bpm={selectedBeat?.bpm}
                 loopRegion={loopRegion}
                 onToggleSnap={() => setSnapToGrid((v) => !v)}
                 onBeatClipChange={handleBeatClipChange}
