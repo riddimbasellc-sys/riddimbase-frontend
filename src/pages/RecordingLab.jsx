@@ -521,7 +521,28 @@ export function RecordingLab() {
   }
 
   useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === ' ' || e.code === 'Space') {
+        const target = e.target
+        const tag = target && target.tagName
+        const isTypingField =
+          tag === 'INPUT' ||
+          tag === 'TEXTAREA' ||
+          target.isContentEditable
+        if (isTypingField) return
+        e.preventDefault()
+        if (isTimelinePlaying) {
+          stopTimelinePlayback()
+        } else {
+          handlePlayFromCursor()
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
     return () => {
+      window.removeEventListener('keydown', handleKeyDown)
       stopTimer()
       if (mediaRecorderRef.current && recordState === 'recording') {
         try { mediaRecorderRef.current.stop() } catch {}
