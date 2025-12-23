@@ -721,9 +721,9 @@ export function RecordingLab() {
   const hasRecording = !!recordingUrl
 
   return (
-    <section className="studio-shell">
-      <div className="mx-auto max-w-6xl px-4 py-8">
-        <div className="flex items-center gap-3">
+    <section className="studio-shell min-h-screen lg:h-screen lg:overflow-hidden">
+      <div className="mx-auto flex h-full w-full max-w-7xl flex-col px-4 py-6">
+        <div className="flex flex-shrink-0 items-center gap-3">
           <BackButton />
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-red-400">Recording Lab</p>
@@ -738,20 +738,22 @@ export function RecordingLab() {
           </div>
         )}
 
-        <div className="mt-6 grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)_320px]">
-          <BeatSelector
-            selectedBeat={selectedBeat}
-            onSelectBeat={setSelectedBeat}
-            isPlaying={isBeatPlaying}
-            onTogglePlay={toggleBeatPlay}
-            loopEnabled={loopEnabled}
-            onToggleLoop={() => setLoopEnabled((v) => !v)}
-            volume={beatVolume}
-            onVolumeChange={setBeatVolume}
-          />
+        <div className="mt-6 grid flex-1 min-h-0 gap-4 lg:grid-cols-[320px_minmax(0,1fr)_320px]">
+          <div className="min-h-0">
+            <BeatSelector
+              selectedBeat={selectedBeat}
+              onSelectBeat={setSelectedBeat}
+              isPlaying={isBeatPlaying}
+              onTogglePlay={toggleBeatPlay}
+              loopEnabled={loopEnabled}
+              onToggleLoop={() => setLoopEnabled((v) => !v)}
+              volume={beatVolume}
+              onVolumeChange={setBeatVolume}
+            />
+          </div>
 
-          <div className="flex flex-col gap-4">
-            <div className="flex-1 min-h-[460px] rounded-2xl border border-slate-800/80 bg-slate-950/80 p-4 text-[12px] text-slate-200">
+          <div className="flex min-h-0 flex-col gap-4">
+            <div className="flex-1 min-h-0 rounded-2xl border border-slate-800/80 bg-slate-950/80 p-4 text-[12px] text-slate-200">
               <TrackTimeline
                 beatClip={beatClip}
                 beatLabel={selectedBeat?.title || 'Beat Track'}
@@ -781,21 +783,23 @@ export function RecordingLab() {
                 requestWaveform={getWaveformForUrl}
               />
             </div>
-            <RecorderControls
-              recordState={recordState}
-              onRecord={handleRecord}
-              onStop={handleStop}
-              onReRecord={handleReRecord}
-              canRecord={canRecord}
-              hasRecording={hasRecording}
-              isBeatPlaying={isBeatPlaying}
-              onToggleBeat={toggleBeatPlay}
-              timerSeconds={timerSeconds}
-              isArrangementPlaying={isTimelinePlaying}
-              onToggleArrangementPlay={handleToggleArrangementPlay}
-            />
+            <div className="flex-shrink-0">
+              <RecorderControls
+                recordState={recordState}
+                onRecord={handleRecord}
+                onStop={handleStop}
+                onReRecord={handleReRecord}
+                canRecord={canRecord}
+                hasRecording={hasRecording}
+                isBeatPlaying={isBeatPlaying}
+                onToggleBeat={toggleBeatPlay}
+                timerSeconds={timerSeconds}
+                isArrangementPlaying={isTimelinePlaying}
+                onToggleArrangementPlay={handleToggleArrangementPlay}
+              />
+            </div>
             {hasRecording && (
-              <div className="rounded-2xl border border-slate-800/80 bg-slate-950/80 p-4 text-[12px] text-slate-200">
+              <div className="flex-shrink-0 rounded-2xl border border-slate-800/80 bg-slate-950/80 p-4 text-[12px] text-slate-200">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Take 1</p>
                   <span className="rounded-full border border-slate-700/80 px-2 py-0.5 text-[10px] text-slate-400">Local only · Draft</span>
@@ -811,25 +815,27 @@ export function RecordingLab() {
             )}
           </div>
 
-          <StudioSidebar
-            micStatus={micStatus}
-            onRequestMic={requestMic}
-            monitorEnabled={monitorEnabled}
-            onToggleMonitor={toggleMonitor}
-            inputGain={inputGain}
-            onInputGainChange={handleInputGainChange}
-            selectedVocalTrackName={
-              selectedVocalTrackId
-                ? vocalTracks.find((t) => t.id === selectedVocalTrackId)?.name || selectedVocalTrackId
-                : null
-            }
-            selectedTrackFx={
-              selectedVocalTrackId
-                ? vocalTracks.find((t) => t.id === selectedVocalTrackId)?.fx || null
-                : null
-            }
-            onOpenEffect={handleOpenEffect}
-          />
+          <div className="min-h-0">
+            <StudioSidebar
+              micStatus={micStatus}
+              onRequestMic={requestMic}
+              monitorEnabled={monitorEnabled}
+              onToggleMonitor={toggleMonitor}
+              inputGain={inputGain}
+              onInputGainChange={handleInputGainChange}
+              selectedVocalTrackName={
+                selectedVocalTrackId
+                  ? vocalTracks.find((t) => t.id === selectedVocalTrackId)?.name || selectedVocalTrackId
+                  : null
+              }
+              selectedTrackFx={
+                selectedVocalTrackId
+                  ? vocalTracks.find((t) => t.id === selectedVocalTrackId)?.fx || null
+                  : null
+              }
+              onOpenEffect={handleOpenEffect}
+            />
+          </div>
         </div>
 
         {fxEditor && selectedVocalTrackId && (
