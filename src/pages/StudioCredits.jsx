@@ -1,0 +1,173 @@
+import { useEffect, useState } from 'react'
+import BackButton from '../components/BackButton'
+import useSupabaseUser from '../hooks/useSupabaseUser'
+
+function StudioCredits() {
+  const { user } = useSupabaseUser()
+  const [balance, setBalance] = useState(null)
+  const [packs, setPacks] = useState([])
+  const [plans, setPlans] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [buyingPackId, setBuyingPackId] = useState('')
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+
+  const apiBase = import.meta?.env?.VITE_API_BASE_URL || 'https://riddimbasellc-server.onrender.com'
+
+  useEffect(() => {
+    const run = async () => {
+      if (!user?.id) return
+      try {
+        setLoading(true)
+        setError('')
+        const res = await fetch(`${apiBase}/credits/balance`, {
+          headers: { 'x-user-id': user.id },
+        })
+        if (!res.ok) throw new Error('Failed to load balance')
+        const data = await res.json()
+        if (typeof data.balance === 'number') setBalance(data.balance)
+        if (Array.isArray(data.packs)) setPacks(data.packs)
+        if (Array.isArray(data.plans)) setPlans(data.plans)
+      } catch (e) {
+        setError(e.message || 'Unable to load credits')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    run()
+  }, [user?.id])
+
+  const handleBuyPack = async (packId) => {
+    if (!user?.id) {
+      // eslint-disable-next-line no-alert
+      alert('Log in to buy credits.')
+      return
+    }
+    try {
+      setBuyingPackId(packId)
+      setError('')
+      setMessage('')
+      const res = await fetch(`${apiBase}/credits/add`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user.id, packId }),
+      })
+      if (!res.ok) throw new Error('Failed to add credits')
+      const data = await res.json().catch(() => ({}))
+      if (typeof data.balance === 'number') setBalance(data.balance)
+      setMessage('Credits added to your account. (Wire this to your PayPal success webhook in production.)')
+    } catch (e) {
+      setError(e.message || 'Unable to add credits')
+    } finally {
+      setBuyingPackId('')
+    }
+  }
+
+  const formatPrice = (n) => {
+    if (n == null) return ''
+    const num = Number(n)
+    if (!Number.isFinite(num)) return ''
+    return `$${num.toFixed(2)}`
+  }
+
+  if (!user) {
+    return (
+      <section className="min-h-screen bg-slate-950/95">
+        <div className="mx-auto max-w-5xl px-4 py-10 text-slate-100">
+          <BackButton />
+          <h1 className="mt-4 font-display text-2xl font-semibold">Studio Credits</h1>
+          <p className="mt-2 text-sm text-slate-300">Log in to view your Recording Lab balance and buy credits.</p>
+        </div>
+      </section>
+    )
+  }
+
+  return (
+    <section className="min-h-screen bg-slate-950/95">
+      <div className="mx-auto max-w-5xl px-4 py-10 text-slate-100">
+        <div className="flex items-center gap-3">
+          <BackButton />
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-emerald-400">Recording Lab</p>
+            <h1 className="font-display text-2xl font-semibold">Studio Credits</h1>
+            <p className="mt-1 text-[12px] text-slate-300">Top up credits for the in-browser Recording Lab. Each session uses 200 credits.</p>
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-6 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1.7fr)]">
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Your balance</p>
+              <p className="mt-2 text-3xl font-semibold text-emerald-300">
+                {loading && balance == null ? '…' : balance != null ? balance.toLocaleString('en-US') : '—'}
+              </p>
+              <p className="mt-1 text-[11px] text-slate-400">200 credits per Recording Lab session.</p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 text-[11px] text-slate-300">
+              <p className="font-semibold uppercase tracking-[0.18em] text-slate-400">Studio plans</p>
+              {plans.length === 0 && (
+                <p className="mt-2 text-slate-500">Studio Lite (2000 credits / month) and Studio Pro (6000 credits / month) can be sold via your existing pricing page. Link plans there to your PayPal subscriptions and call /subscriptions/sync on renewal.</p>
+              )}
+              {plans.length > 0 && (
+                <ul className="mt-2 space-y-1">
+                  {plans.map((p) => (
+                    <li key={p.id} className="flex items-center justify-between">
+                      <span>{p.name}</span>
+                      <span className="text-slate-400">{formatPrice(p.monthlyPriceUsd || p.monthly)} / mo · {p.monthlyCredits || p.monthly_credits} credits</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <a
+                href="/#pricing"
+                className="mt-3 inline-flex items-center justify-center rounded-full border border-sky-500/70 bg-sky-500/10 px-3 py-1.5 text-[11px] font-semibold text-sky-300 hover:bg-sky-500/15"
+              >
+                View membership plans
+              </a>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Credit packs</p>
+              {message && <span className="text-[10px] text-emerald-300">{message}</span>}
+              {error && !message && <span className="text-[10px] text-rose-300">{error}</span>}
+            </div>
+            <div className="grid gap-3 md:grid-cols-3 text-[12px]">
+              {(packs.length ? packs : [
+                { id: 'pack_500', credits: 500, priceUsd: 5 },
+                { id: 'pack_1200', credits: 1200, priceUsd: 10 },
+                { id: 'pack_3000', credits: 3000, priceUsd: 20 },
+              ]).map((pack) => (
+                <div
+                  key={pack.id}
+                  className="flex flex-col rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 shadow-rb-gloss-panel"
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Pack</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-50">{pack.credits?.toLocaleString('en-US') || pack.credits} credits</p>
+                  <p className="mt-1 text-[11px] text-slate-400">{formatPrice(pack.priceUsd)}</p>
+                  <div className="mt-4 flex-1" />
+                  <button
+                    type="button"
+                    disabled={!!buyingPackId}
+                    onClick={() => handleBuyPack(pack.id)}
+                    className="mt-2 rounded-full bg-emerald-500 px-3 py-1.5 text-[11px] font-semibold text-slate-950 disabled:opacity-50"
+                  >
+                    {buyingPackId === pack.id ? 'Adding…' : 'Buy pack'}
+                  </button>
+                  <p className="mt-1 text-[10px] text-slate-500">Hook this button to your PayPal checkout and call the same /credits/add API after payment succeeds.</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+export default StudioCredits
