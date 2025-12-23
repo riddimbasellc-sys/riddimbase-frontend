@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react'
 import BackButton from '../components/BackButton'
 import useSupabaseUser from '../hooks/useSupabaseUser'
+import PayPalButtonsGroup from '../components/payments/PayPalButtonsGroup'
+
+const DEFAULT_PACKS = [
+  { id: 'pack_500', credits: 500, priceUsd: 5 },
+  { id: 'pack_1200', credits: 1200, priceUsd: 10 },
+  { id: 'pack_3000', credits: 3000, priceUsd: 20 },
+]
 
 function StudioCredits() {
   const { user } = useSupabaseUser()
@@ -9,6 +16,7 @@ function StudioCredits() {
   const [plans, setPlans] = useState([])
   const [loading, setLoading] = useState(false)
   const [buyingPackId, setBuyingPackId] = useState('')
+  const [selectedPackId, setSelectedPackId] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
@@ -38,14 +46,20 @@ function StudioCredits() {
     run()
   }, [user?.id])
 
-  const handleBuyPack = async (packId) => {
-    if (!user?.id) {
-      // eslint-disable-next-line no-alert
-      alert('Log in to buy credits.')
-      return
-    }
+  useEffect(() => {
+    const available = packs.length ? packs : DEFAULT_PACKS
+    if (!available.length) return
+    setSelectedPackId((prev) => prev || available[0].id)
+  }, [packs])
+
+  const availablePacks = packs.length ? packs : DEFAULT_PACKS
+  const selectedPack = availablePacks.find((p) => p.id === selectedPackId) ||
+    (availablePacks.length ? availablePacks[0] : null)
+
+  const handlePayPalSuccess = async ({ orderId }) => {
+    if (!user?.id || !selectedPack) return
     try {
-      setBuyingPackId(packId)
+      setBuyingPackId(selectedPack.id)
       setError('')
       setMessage('')
       const res = await fetch(`${apiBase}/credits/add`, {
@@ -53,17 +67,36 @@ function StudioCredits() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userId: user.id, packId }),
+        body: JSON.stringify({
+          userId: user.id,
+          packId: selectedPack.id,
+          meta: {
+            paypal_order_id: orderId,
+            packCredits: selectedPack.credits,
+            packPriceUsd: selectedPack.priceUsd,
+          },
+        }),
       })
-      if (!res.ok) throw new Error('Failed to add credits')
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}))
+        throw new Error(payload.error || 'Failed to add credits after PayPal')
+      }
       const data = await res.json().catch(() => ({}))
       if (typeof data.balance === 'number') setBalance(data.balance)
-      setMessage('Credits added to your account. (Wire this to your PayPal success webhook in production.)')
+      setMessage('Payment successful. Credits added to your account.')
     } catch (e) {
-      setError(e.message || 'Unable to add credits')
+      // eslint-disable-next-line no-console
+      console.error('[studio-credits] PayPal success handling error', e)
+      setError(e.message || 'Unable to add credits after PayPal payment.')
     } finally {
       setBuyingPackId('')
     }
+  }
+
+  const handlePayPalError = (err) => {
+    // eslint-disable-next-line no-console
+    console.error('[studio-credits] PayPal error', err)
+    setError(err?.message || 'PayPal payment failed or was cancelled.')
   }
 
   const formatPrice = (n) => {
@@ -138,11 +171,7 @@ function StudioCredits() {
               {error && !message && <span className="text-[10px] text-rose-300">{error}</span>}
             </div>
             <div className="grid gap-3 md:grid-cols-3 text-[12px]">
-              {(packs.length ? packs : [
-                { id: 'pack_500', credits: 500, priceUsd: 5 },
-                { id: 'pack_1200', credits: 1200, priceUsd: 10 },
-                { id: 'pack_3000', credits: 3000, priceUsd: 20 },
-              ]).map((pack) => (
+              {availablePacks.map((pack) => (
                 <div
                   key={pack.id}
                   className="flex flex-col rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 shadow-rb-gloss-panel"
@@ -154,15 +183,35 @@ function StudioCredits() {
                   <button
                     type="button"
                     disabled={!!buyingPackId}
-                    onClick={() => handleBuyPack(pack.id)}
-                    className="mt-2 rounded-full bg-emerald-500 px-3 py-1.5 text-[11px] font-semibold text-slate-950 disabled:opacity-50"
+                    onClick={() => setSelectedPackId(pack.id)}
+                    className={`mt-2 rounded-full px-3 py-1.5 text-[11px] font-semibold disabled:opacity-50 ${
+                      selectedPackId === pack.id
+                        ? 'bg-emerald-400 text-slate-950'
+                        : 'bg-slate-800 text-slate-100 hover:bg-slate-700'
+                    }`}
                   >
-                    {buyingPackId === pack.id ? 'Adding…' : 'Buy pack'}
+                    {selectedPackId === pack.id ? 'Selected' : 'Select pack'}
                   </button>
-                  <p className="mt-1 text-[10px] text-slate-500">Hook this button to your PayPal checkout and call the same /credits/add API after payment succeeds.</p>
+                  <p className="mt-1 text-[10px] text-slate-500">Choose a pack, then pay securely via PayPal below. Credits are added automatically after payment.</p>
                 </div>
               ))}
             </div>
+            {selectedPack && (
+              <div className="mt-4 space-y-2">
+                <p className="text-[11px] text-slate-400">
+                  Pay {formatPrice(selectedPack.priceUsd)} for{' '}
+                  {selectedPack.credits?.toLocaleString('en-US') || selectedPack.credits} credits with PayPal:
+                </p>
+                <PayPalButtonsGroup
+                  amount={selectedPack.priceUsd}
+                  currency="USD"
+                  description={`Studio credits pack: ${selectedPack.credits} credits`}
+                  payerEmail={user?.email || ''}
+                  onSuccess={handlePayPalSuccess}
+                  onError={handlePayPalError}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
