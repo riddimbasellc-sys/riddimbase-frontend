@@ -3,10 +3,11 @@ export default function StudioSidebar({
   onRequestMic,
   monitorEnabled,
   onToggleMonitor,
-  effects,
-  onToggleEffect,
   inputGain,
   onInputGainChange,
+  selectedVocalTrackName,
+  selectedTrackFx,
+  onOpenEffect,
 }) {
   const micLabel =
     micStatus === 'granted'
@@ -81,27 +82,33 @@ export default function StudioSidebar({
         </div>
 
         <div className="rounded-xl border border-slate-800/80 bg-slate-950/80 p-3 space-y-2">
-          <p className="text-[11px] font-semibold text-slate-300">Vocal effects</p>
-          {[{ key: 'reverb', label: 'Reverb' }, { key: 'delay', label: 'Delay' }, { key: 'autotune', label: 'Auto-Tune (placeholder)' }].map((fx) => {
-            const active = !!effects[fx.key]
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[11px] font-semibold text-slate-300">Vocal effects</p>
+            <span className="truncate text-[10px] text-slate-500">
+              {selectedVocalTrackName ? `Track: ${selectedVocalTrackName}` : 'Select a vocal track'}
+            </span>
+          </div>
+          {[{ key: 'eq', label: 'EQ' }, { key: 'reverb', label: 'Reverb' }, { key: 'delay', label: 'Delay' }, { key: 'compressor', label: 'Compressor' }, { key: 'autotune', label: 'Auto-Tune' }].map((fx) => {
+            const active = !!selectedTrackFx?.[fx.key]?.enabled
             return (
               <button
                 key={fx.key}
                 type="button"
-                onClick={() => onToggleEffect(fx.key)}
-                title={`${fx.label} (visual toggle; processing TODO)`}
+                onClick={() => onOpenEffect?.(fx.key)}
+                disabled={!selectedVocalTrackName}
+                title={selectedVocalTrackName ? `${fx.label} settings` : 'Select a vocal track to edit FX'}
                 className={`mt-1 flex w-full items-center justify-between rounded-lg border px-3 py-1.5 text-[11px] transition ${
                   active
-                    ? 'border-red-500/70 bg-red-500/10 text-red-100'
+                    ? 'border-red-500/70 bg-red-500/10 text-red-100 shadow-[0_0_10px_rgba(248,113,113,0.5)]'
                     : 'border-slate-700/70 bg-slate-950 text-slate-300 hover:border-red-500/60'
-                }`}
+                } ${!selectedVocalTrackName ? 'cursor-not-allowed opacity-60' : ''}`}
               >
                 <span>{fx.label}</span>
                 <span className={`h-2.5 w-2.5 rounded-full ${active ? 'bg-red-500 shadow-[0_0_10px_rgba(248,113,113,0.9)]' : 'bg-slate-600'}`} />
               </button>
             )
           })}
-          <p className="mt-2 text-[10px] text-slate-500">FX are visual toggles for now. Backend DSP routing coming soon.</p>
+          <p className="mt-2 text-[10px] text-slate-500">Click an effect to open presets & settings for the selected vocal track.</p>
         </div>
       </div>
     </div>

@@ -9,6 +9,7 @@ export default function TrackTimeline({
   beatTrackState,
   beatAudioUrl,
   vocalTracks,
+  selectedVocalTrackId,
   snapToGrid,
   playheadSec,
   isPlaying,
@@ -27,6 +28,7 @@ export default function TrackTimeline({
   onToggleLoopRegion,
   onLoopSetStart,
   onLoopSetEnd,
+  onSelectVocalTrack,
   requestWaveform,
 }) {
   const containerRef = useRef(null)
@@ -315,9 +317,19 @@ export default function TrackTimeline({
                 : null
               const muted = isBeatLane ? !!beatTrackState?.muted : !!vTrack?.muted
               const solo = isBeatLane ? !!beatTrackState?.solo : !!vTrack?.solo
+              const isSelectedVocalLane = !isBeatLane && lane.trackId === selectedVocalTrackId
               return (
                 <div key={lane.id} className="flex items-stretch">
-                  <div className="flex w-40 flex-shrink-0 items-center justify-between border-r border-slate-900/80 bg-slate-950/95 px-2 py-2 text-[10px] text-slate-400">
+                  <div
+                    className={`flex w-40 flex-shrink-0 items-center justify-between border-r border-slate-900/80 px-2 py-2 text-[10px] text-slate-400 ${
+                      isSelectedVocalLane
+                        ? 'bg-slate-900/95 shadow-[0_0_0_1px_rgba(248,113,113,0.7)]'
+                        : 'bg-slate-950/95'
+                    }`}
+                    onClick={() => {
+                      if (!isBeatLane) onSelectVocalTrack?.(lane.trackId)
+                    }}
+                  >
                     <span className="mr-2 truncate font-semibold text-slate-200">{lane.label}</span>
                     <div className="flex items-center gap-1">
                       <button
@@ -429,13 +441,22 @@ export default function TrackTimeline({
                           <button
                             key={clip.id}
                             type="button"
-                            onMouseDown={(e) => handleMouseDownClip(clip, e)}
+                            onMouseDown={(e) => {
+                              if (clip.type === 'vocal') {
+                                onSelectVocalTrack?.(clip.id)
+                              }
+                              handleMouseDownClip(clip, e)
+                            }}
                             title={
                               clip.type === 'beat'
                                 ? 'Drag to offset beat against vocals'
                                 : 'Drag to align this take on the grid'
                             }
-                            className="group absolute flex h-10 items-center overflow-hidden rounded-md border border-slate-700/80 bg-gradient-to-r text-left text-[10px] text-slate-100 shadow-md transition-shadow hover:border-red-400/80 hover:shadow-[0_0_16px_rgba(248,113,113,0.5)]"
+                            className={`group absolute flex h-10 items-center overflow-hidden rounded-md border bg-gradient-to-r text-left text-[10px] text-slate-100 shadow-md transition-shadow hover:border-red-400/80 hover:shadow-[0_0_16px_rgba(248,113,113,0.5)] ${
+                              isSelectedVocalLane && clip.type === 'vocal'
+                                ? 'border-red-400/80'
+                                : 'border-slate-700/80'
+                            }`}
                             style={{ left, width }}
                           >
                             <div className="h-full w-1 bg-gradient-to-b from-red-500 to-amber-400" />
