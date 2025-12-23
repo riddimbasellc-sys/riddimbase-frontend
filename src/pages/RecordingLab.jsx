@@ -738,7 +738,7 @@ export function RecordingLab() {
           </div>
         )}
 
-        <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.8fr)_minmax(0,0.7fr)]">
+        <div className="mt-6 grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)_320px]">
           <BeatSelector
             selectedBeat={selectedBeat}
             onSelectBeat={setSelectedBeat}
