@@ -575,10 +575,7 @@ export function RecordingLab() {
           />
 
           <div className="flex flex-col gap-4">
-            <div className="hidden md:block">
-              <WaveformCanvas analyser={analyserRef.current} isActive={recordState === 'recording'} />
-            </div>
-            <div className="flex-1 min-h-[380px] rounded-2xl bg-slate-950/80 p-1 shadow-[0_0_40px_rgba(15,23,42,0.9)]">
+            <div className="flex-1 min-h-[460px] rounded-2xl bg-slate-950/80 p-1 shadow-[0_0_40px_rgba(15,23,42,0.9)]">
               <TrackTimeline
               beatClip={beatClip}
               beatLabel={selectedBeat?.title || 'Beat Track'}
