@@ -604,32 +604,32 @@ export function RecordingLab() {
           />
 
           <div className="flex flex-col gap-4">
-            <div className="flex-1 min-h-[460px] rounded-2xl bg-slate-950/80 p-1 shadow-[0_0_40px_rgba(15,23,42,0.9)]">
+            <div className="flex-1 min-h-[460px] rounded-2xl border border-slate-800/80 bg-slate-950/80 p-4 text-[12px] text-slate-200">
               <TrackTimeline
-              beatClip={beatClip}
-              beatLabel={selectedBeat?.title || 'Beat Track'}
-              beatTrackState={beatTrackState}
-              vocalTracks={vocalTracks}
-              snapToGrid={snapToGrid}
-              playheadSec={playheadSec}
-              isPlaying={isTimelinePlaying}
-              beatAudioUrl={selectedBeat?.audioUrl}
-              loopRegion={loopRegion}
-              onToggleSnap={() => setSnapToGrid((v) => !v)}
-              onBeatClipChange={handleBeatClipChange}
-              onVocalClipChange={handleVocalClipChange}
-              onAddVocalTrack={handleAddVocalTrack}
-              onSeek={handleSeek}
-              onPlayFromCursor={handlePlayFromCursor}
-              onStopPlayback={stopTimelinePlayback}
-              onToggleBeatMute={handleToggleBeatMute}
-              onToggleBeatSolo={handleToggleBeatSolo}
-              onToggleVocalMute={handleToggleVocalMute}
-              onToggleVocalSolo={handleToggleVocalSolo}
-              onToggleLoopRegion={handleToggleLoopRegion}
-              onLoopSetStart={handleLoopSetStart}
-              onLoopSetEnd={handleLoopSetEnd}
-              requestWaveform={getWaveformForUrl}
+                beatClip={beatClip}
+                beatLabel={selectedBeat?.title || 'Beat Track'}
+                beatTrackState={beatTrackState}
+                vocalTracks={vocalTracks}
+                snapToGrid={snapToGrid}
+                playheadSec={playheadSec}
+                isPlaying={isTimelinePlaying}
+                beatAudioUrl={selectedBeat?.audioUrl}
+                loopRegion={loopRegion}
+                onToggleSnap={() => setSnapToGrid((v) => !v)}
+                onBeatClipChange={handleBeatClipChange}
+                onVocalClipChange={handleVocalClipChange}
+                onAddVocalTrack={handleAddVocalTrack}
+                onSeek={handleSeek}
+                onPlayFromCursor={handlePlayFromCursor}
+                onStopPlayback={stopTimelinePlayback}
+                onToggleBeatMute={handleToggleBeatMute}
+                onToggleBeatSolo={handleToggleBeatSolo}
+                onToggleVocalMute={handleToggleVocalMute}
+                onToggleVocalSolo={handleToggleVocalSolo}
+                onToggleLoopRegion={handleToggleLoopRegion}
+                onLoopSetStart={handleLoopSetStart}
+                onLoopSetEnd={handleLoopSetEnd}
+                requestWaveform={getWaveformForUrl}
               />
             </div>
             <RecorderControls
