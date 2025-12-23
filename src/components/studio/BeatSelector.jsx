@@ -10,7 +10,7 @@ export default function BeatSelector({ selectedBeat, onSelectBeat, isPlaying, on
   }, [beats])
 
   return (
-    <div className="studio-panel rounded-2xl border border-slate-800/80 p-3 text-[12px] text-slate-200">
+    <div className="studio-panel flex h-full min-h-0 flex-col rounded-2xl border border-slate-800/80 p-3 text-[12px] text-slate-200">
       <div className="flex items-center justify-between gap-2">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Track</p>
@@ -79,9 +79,9 @@ export default function BeatSelector({ selectedBeat, onSelectBeat, isPlaying, on
         </div>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 flex min-h-0 flex-1 flex-col">
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Beats</p>
-        <div className="max-h-52 space-y-1 overflow-y-auto pr-1">
+        <div className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
           {loading && <p className="text-[11px] text-slate-500">Loading beats…</p>}
           {!loading && displayBeats.length === 0 && (
             <p className="text-[11px] text-slate-500">No beats available yet.</p>

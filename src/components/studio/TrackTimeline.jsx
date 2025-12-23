@@ -285,10 +285,10 @@ export default function TrackTimeline({
 
       <div
         ref={containerRef}
-        className="mt-1 flex-1 overflow-x-auto overflow-y-hidden rounded-xl border border-slate-800/80 bg-gradient-to-b from-slate-950/95 to-slate-950/98"
+        className="mt-1 flex-1 overflow-x-auto overflow-y-auto rounded-xl border border-slate-800/80 bg-gradient-to-b from-slate-950/95 to-slate-950/98"
         onWheel={handleWheelZoom}
       >
-        <div className="relative h-full" style={{ minWidth }}>
+        <div className="relative min-h-full" style={{ minWidth }}>
           {/* Time ruler */}
           <div className="relative h-6 border-b border-slate-800/80 bg-slate-950/95">
             {Array.from({ length: totalSeconds + 1 }).map((_, sec) => (

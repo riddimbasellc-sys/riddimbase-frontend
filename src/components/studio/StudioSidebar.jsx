@@ -17,7 +17,7 @@ export default function StudioSidebar({
       : 'Enable microphone'
 
   return (
-    <div className="studio-panel rounded-2xl border border-slate-800/80 p-4 text-[12px] text-slate-200">
+    <div className="studio-panel flex h-full min-h-0 flex-col rounded-2xl border border-slate-800/80 p-4 text-[12px] text-slate-200">
       <div className="flex items-center justify-between gap-2">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Studio</p>
@@ -25,7 +25,7 @@ export default function StudioSidebar({
         </div>
       </div>
 
-      <div className="mt-4 space-y-4">
+      <div className="mt-4 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1">
         <div className="rounded-xl border border-slate-800/80 bg-slate-950/80 p-3">
           <p className="text-[11px] font-semibold text-slate-300">Input device</p>
           <p className="mt-1 text-[11px] text-slate-500">Default system microphone</p>
