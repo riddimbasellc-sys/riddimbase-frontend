@@ -641,6 +641,38 @@ export function RecordingLab() {
     )
   }
 
+  const handleBeatClipResize = (edge, startSec, durationSec) => {
+    const safeStart = Math.max(0, Number.isFinite(startSec) ? startSec : 0)
+    const safeDur = Math.max(0.05, Number.isFinite(durationSec) ? durationSec : 0.05)
+    setBeatClip((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        startSec: safeStart,
+        durationSec: safeDur,
+      }
+    })
+  }
+
+  const handleVocalClipResize = (trackId, edge, startSec, durationSec) => {
+    const safeStart = Math.max(0, Number.isFinite(startSec) ? startSec : 0)
+    const safeDur = Math.max(0.05, Number.isFinite(durationSec) ? durationSec : 0.05)
+    setVocalTracks((prev) =>
+      prev.map((t) =>
+        t.id === trackId && t.clip
+          ? {
+              ...t,
+              clip: {
+                ...t.clip,
+                startSec: safeStart,
+                durationSec: safeDur,
+              },
+            }
+          : t,
+      ),
+    )
+  }
+
   const handleAddVocalTrack = () => {
     setVocalTracks((prev) => {
       const index = prev.length + 1
@@ -1389,6 +1421,8 @@ export function RecordingLab() {
                 onToggleSnap={() => setSnapToGrid((v) => !v)}
                 onBeatClipChange={handleBeatClipChange}
                 onVocalClipChange={handleVocalClipChange}
+                onBeatClipResize={handleBeatClipResize}
+                onVocalClipResize={handleVocalClipResize}
                 onAddVocalTrack={handleAddVocalTrack}
                 onSeek={handleSeek}
                 onPlayFromCursor={handlePlayFromCursor}
