@@ -115,34 +115,10 @@ export default function TrackTimeline({
   }, [bpm])
 
   const secondsPerBar = useMemo(() => {
-  const handleMouseDownClip = (clip, e) => {
-    e.preventDefault()
+    return secondsPerBeat ? secondsPerBeat * beatsPerBar : null
+  }, [secondsPerBeat])
 
-    const startX = e.clientX
-    const initialStart = clip.startSec || 0
-
-    const handleMove = (evt) => {
-      const deltaX = evt.clientX - startX
-      const deltaSec = deltaX / pixelsPerSecond
-      let nextStart = Math.max(0, initialStart + deltaSec)
-      if (snapToGrid) {
-        nextStart = Math.max(0, Math.round(nextStart / GRID_STEP_SEC) * GRID_STEP_SEC)
-      }
-      if (clip.type === 'beat') {
-        onBeatClipChange?.(nextStart)
-      } else {
-        onVocalClipChange?.(clip.id, nextStart)
-      }
-    }
-
-    const handleUp = () => {
-      window.removeEventListener('mousemove', handleMove)
-      window.removeEventListener('mouseup', handleUp)
-    }
-
-    window.addEventListener('mousemove', handleMove)
-    window.addEventListener('mouseup', handleUp)
-  }, [onBeatClipChange, onVocalClipChange, onBeatClipResize, onVocalClipResize, snapToGrid, pixelsPerSecond])
+  const clipBoundsRef = useRef(new Map())
 
   const handleMouseDownClip = (clip, e) => {
     e.preventDefault()
