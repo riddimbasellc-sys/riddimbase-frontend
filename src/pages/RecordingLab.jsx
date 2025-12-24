@@ -248,6 +248,15 @@ export function RecordingLab() {
     }
   }, [beatVolume])
 
+  useEffect(() => {
+    if (!audioRef.current) return
+    const base = Math.max(0, Math.min(1, beatVolume))
+    const next = beatTrackState.muted ? 0 : base
+    try {
+      audioRef.current.volume = next
+    } catch {}
+  }, [beatTrackState.muted, beatVolume])
+
   const toggleBeatPlay = () => {
     if (!selectedBeat) return
     ensureBeatAudio()
