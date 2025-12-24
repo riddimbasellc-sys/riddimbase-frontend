@@ -27,6 +27,8 @@ export default function TrackTimeline({
   onToggleBeatSolo,
   onToggleVocalMute,
   onToggleVocalSolo,
+  onBeatVolumeChange,
+  onVocalVolumeChange,
   onToggleLoopRegion,
   onLoopSetStart,
   onLoopSetEnd,
@@ -388,53 +390,91 @@ export default function TrackTimeline({
                 : null
               const muted = isBeatLane ? !!beatTrackState?.muted : !!vTrack?.muted
               const solo = isBeatLane ? !!beatTrackState?.solo : !!vTrack?.solo
+              const volume = isBeatLane
+                ? typeof beatTrackState?.volume === 'number'
+                  ? beatTrackState.volume
+                  : 1
+                : typeof vTrack?.volume === 'number'
+                ? vTrack.volume
+                : 1
               const isSelectedVocalLane = !isBeatLane && lane.trackId === selectedVocalTrackId
               return (
                 <div key={lane.id} className="flex items-stretch">
                   <div
-                    className={`sticky left-0 z-20 flex w-40 flex-shrink-0 items-center justify-between border-r border-slate-900/80 px-2 py-2 text-[10px] text-slate-400 ${
+                    className={`sticky left-0 z-20 flex w-40 flex-shrink-0 flex-col justify-between border-r border-slate-900/80 px-2 py-1.5 text-[10px] text-slate-400 ${
                       isSelectedVocalLane
                         ? 'bg-slate-900/95 shadow-[0_0_0_1px_rgba(248,113,113,0.7)]'
                         : 'bg-slate-950/95'
                     }`}
-                    onClick={() => {
-                      if (!isBeatLane) onSelectVocalTrack?.(lane.trackId)
-                    }}
                   >
-                    <span className="mr-2 truncate font-semibold text-slate-200">{lane.label}</span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          isBeatLane
-                            ? onToggleBeatSolo?.()
-                            : onToggleVocalSolo?.(lane.trackId)
-                        }
-                        title="Solo this track"
-                        className={`h-5 w-5 rounded-full text-[9px] font-semibold ${
-                          solo
-                            ? 'bg-emerald-500/80 text-slate-950'
-                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                        }`}
-                      >
-                        S
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          isBeatLane
-                            ? onToggleBeatMute?.()
-                            : onToggleVocalMute?.(lane.trackId)
-                        }
-                        title="Mute this track"
-                        className={`h-5 w-5 rounded-full text-[9px] font-semibold ${
-                          muted
-                            ? 'bg-slate-600 text-slate-300'
-                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                        }`}
-                      >
-                        M
-                      </button>
+                    <div
+                      className="flex items-center justify-between gap-2 cursor-pointer"
+                      onClick={() => {
+                        if (!isBeatLane) onSelectVocalTrack?.(lane.trackId)
+                      }}
+                    >
+                      <span className="mr-1 truncate font-semibold text-slate-200">{lane.label}</span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            isBeatLane
+                              ? onToggleBeatSolo?.()
+                              : onToggleVocalSolo?.(lane.trackId)
+                          }}
+                          title="Solo this track"
+                          className={`h-5 w-5 rounded-full text-[9px] font-semibold ${
+                            solo
+                              ? 'bg-emerald-500/80 text-slate-950'
+                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                          }`}
+                        >
+                          S
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            isBeatLane
+                              ? onToggleBeatMute?.()
+                              : onToggleVocalMute?.(lane.trackId)
+                          }}
+                          title="Mute this track"
+                          className={`h-5 w-5 rounded-full text-[9px] font-semibold ${
+                            muted
+                              ? 'bg-slate-600 text-slate-300'
+                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                          }`}
+                        >
+                          M
+                        </button>
+                      </div>
+                    </div>
+                    <div className="mt-1 flex items-center gap-1">
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-800/80">
+                        <div
+                          className="h-full rounded-full bg-emerald-400/80"
+                          style={{ width: `${Math.max(0, Math.min(1.5, volume)) * 66.6}%` }}
+                        />
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1.5"
+                        step="0.01"
+                        value={Number.isFinite(volume) ? volume : 1}
+                        onChange={(e) => {
+                          const next = parseFloat(e.target.value)
+                          if (Number.isNaN(next)) return
+                          if (isBeatLane) {
+                            onBeatVolumeChange?.(next)
+                          } else {
+                            onVocalVolumeChange?.(lane.trackId, next)
+                          }
+                        }}
+                        className="h-3 w-16 cursor-pointer accent-emerald-400/90"
+                      />
                     </div>
                   </div>
                   <div
