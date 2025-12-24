@@ -953,26 +953,28 @@ export function RecordingLab() {
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isTimelinePlaying, recordState, recordingUrl])
+
+  useEffect(() => {
+    return () => {
       stopTimer()
       if (mediaRecorderRef.current && recordState === 'recording') {
         try { mediaRecorderRef.current.stop() } catch {}
       }
-      if (recordingUrl) URL.revokeObjectURL(recordingUrl)
+      if (recordingUrl) {
+        try { URL.revokeObjectURL(recordingUrl) } catch {}
+      }
       if (audioRef.current) {
-        audioRef.current.pause()
+        try { audioRef.current.pause() } catch {}
         audioRef.current.src = ''
       }
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach((t) => t.stop())
       }
       if (audioContextRef.current) {
-        audioContextRef.current.close()
+        try { audioContextRef.current.close() } catch {}
       }
-    }
-  }, [isTimelinePlaying, recordState, recordingUrl])
-
-  useEffect(() => {
-    return () => {
       stopTimelinePlayback()
       stopPlayheadAnimation()
     }
