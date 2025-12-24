@@ -155,7 +155,7 @@ export function RecordingLab() {
     if (audioRef.current) return
     const el = new Audio(selectedBeat.audioUrl)
     el.loop = true
-    el.volume = beatVolume
+    el.volume = Math.max(0, Math.min(1, beatVolume))
     el.addEventListener('ended', () => {
       setIsBeatPlaying(false)
     })
@@ -244,7 +244,7 @@ export function RecordingLab() {
 
   useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.volume = beatVolume
+      audioRef.current.volume = Math.max(0, Math.min(1, beatVolume))
     }
   }, [beatVolume])
 
