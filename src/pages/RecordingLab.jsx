@@ -1313,6 +1313,14 @@ export function RecordingLab() {
                 requestWaveform={getWaveformForUrl}
               />
             </div>
+            {hasAudioSupport && (
+              <div className="flex-shrink-0">
+                <WaveformCanvas
+                  analyser={analyserRef.current}
+                  isActive={recordState === 'recording'}
+                />
+              </div>
+            )}
             <div className="flex-shrink-0">
               <RecorderControls
                 recordState={recordState}
