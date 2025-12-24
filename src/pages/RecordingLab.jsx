@@ -1281,6 +1281,22 @@ export function RecordingLab() {
                 onToggleBeatSolo={handleToggleBeatSolo}
                 onToggleVocalMute={handleToggleVocalMute}
                 onToggleVocalSolo={handleToggleVocalSolo}
+                onBeatVolumeChange={(value) => {
+                  const v = Number.isFinite(value) ? value : 1
+                  setBeatTrackState((s) => ({ ...s, volume: v }))
+                  setBeatVolume(v)
+                  if (audioRef.current) {
+                    try {
+                      audioRef.current.volume = Math.max(0, Math.min(1, v))
+                    } catch {}
+                  }
+                }}
+                onVocalVolumeChange={(trackId, value) => {
+                  const v = Number.isFinite(value) ? value : 1
+                  setVocalTracks((prev) =>
+                    prev.map((t) => (t.id === trackId ? { ...t, volume: v } : t)),
+                  )
+                }}
                 onToggleLoopRegion={handleToggleLoopRegion}
                 onLoopSetStart={handleLoopSetStart}
                 onLoopSetEnd={handleLoopSetEnd}
