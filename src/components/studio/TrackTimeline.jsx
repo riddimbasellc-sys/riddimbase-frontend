@@ -114,13 +114,13 @@ export default function TrackTimeline({
   const secondsPerBeat = useMemo(() => {
     const safeBpm = typeof bpm === 'number' && bpm > 0 ? bpm : null
     return safeBpm ? 60 / safeBpm : null
-
-  const clipBoundsRef = useRef(new Map())
   }, [bpm])
 
   const secondsPerBar = useMemo(() => {
     return secondsPerBeat ? secondsPerBeat * beatsPerBar : null
   }, [secondsPerBeat])
+
+  const clipBoundsRef = useRef(new Map())
 
   useEffect(() => {
     if (!requestWaveform) return
