@@ -661,27 +661,27 @@ export default function TrackTimeline({
                               }}
                             />
                             <div className="h-full w-1 bg-gradient-to-b from-red-500 to-amber-400" />
-                            <div className="flex h-full flex-1 flex-col px-2 py-1">
-                              <div className="mb-0.5 flex h-4 items-stretch opacity-80">
-                                {waveformPoints ? (
-                                  <svg
-                                    viewBox="0 0 100 100"
-                                    preserveAspectRatio="none"
-                                    className="h-full w-full text-slate-100/90 group-hover:text-red-200/90"
-                                  >
-                                    <polygon
-                                      points={waveformPoints}
-                                      className="fill-current"
-                                    />
-                                  </svg>
-                                ) : (
-                                  <div className="h-full w-full rounded-sm bg-gradient-to-r from-slate-600/60 to-slate-400/60" />
-                                )}
+                            <div className="relative flex h-full flex-1 flex-col overflow-hidden px-2 py-1">
+                              {waveformPoints ? (
+                                <svg
+                                  viewBox="0 0 100 100"
+                                  preserveAspectRatio="none"
+                                  className="pointer-events-none absolute inset-1 h-[calc(100%-0.5rem)] w-full text-slate-100/80 opacity-80 group-hover:text-red-200/90"
+                                >
+                                  <polygon
+                                    points={waveformPoints}
+                                    className="fill-current"
+                                  />
+                                </svg>
+                              ) : (
+                                <div className="pointer-events-none absolute inset-1 h-[calc(100%-0.5rem)] w-full rounded-sm bg-gradient-to-r from-slate-600/60 to-slate-400/60" />
+                              )}
+                              <div className="relative z-10 flex flex-1 flex-col justify-center">
+                                <span className="truncate text-[10px] font-semibold">{clip.label}</span>
+                                <span className="mt-0.5 text-[9px] text-slate-300">
+                                  {clip.type === 'beat' ? 'Beat track' : 'Vocal take'} · start {clip.startSec.toFixed(2)}s
+                                </span>
                               </div>
-                              <span className="truncate text-[10px] font-semibold">{clip.label}</span>
-                              <span className="mt-0.5 text-[9px] text-slate-300">
-                                {clip.type === 'beat' ? 'Beat track' : 'Vocal take'} · start {clip.startSec.toFixed(2)}s
-                              </span>
                             </div>
                             {showVolumeAutomation && !isBeatLane && (
                               <div className="mt-0.5 h-4 w-full rounded-sm bg-slate-900/80">
