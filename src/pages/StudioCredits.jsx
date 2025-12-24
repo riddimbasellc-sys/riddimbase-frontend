@@ -139,29 +139,6 @@ function StudioCredits() {
               </p>
               <p className="mt-1 text-[11px] text-slate-400">200 credits per Recording Lab session.</p>
             </div>
-
-            <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 text-[11px] text-slate-300">
-              <p className="font-semibold uppercase tracking-[0.18em] text-slate-400">Studio plans</p>
-              {plans.length === 0 && (
-                <p className="mt-2 text-slate-500">Studio Lite (2000 credits / month) and Studio Pro (6000 credits / month) can be sold via your existing pricing page. Link plans there to your PayPal subscriptions and call /subscriptions/sync on renewal.</p>
-              )}
-              {plans.length > 0 && (
-                <ul className="mt-2 space-y-1">
-                  {plans.map((p) => (
-                    <li key={p.id} className="flex items-center justify-between">
-                      <span>{p.name}</span>
-                      <span className="text-slate-400">{formatPrice(p.monthlyPriceUsd || p.monthly)} / mo · {p.monthlyCredits || p.monthly_credits} credits</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <a
-                href="/#pricing"
-                className="mt-3 inline-flex items-center justify-center rounded-full border border-sky-500/70 bg-sky-500/10 px-3 py-1.5 text-[11px] font-semibold text-sky-300 hover:bg-sky-500/15"
-              >
-                View membership plans
-              </a>
-            </div>
           </div>
 
           <div className="space-y-3">
