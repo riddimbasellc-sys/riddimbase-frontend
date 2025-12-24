@@ -142,32 +142,35 @@ export default function TrackTimeline({
 
     window.addEventListener('mousemove', handleMove)
     window.addEventListener('mouseup', handleUp)
-  }
-
-    const handleUp = () => {
-      dragRef.current = null
-      resizeRef.current = null
-      window.removeEventListener('mousemove', handleMove)
-      window.removeEventListener('mouseup', handleUp)
-    }
-
-    if (dragRef.current || resizeRef.current) {
-      window.addEventListener('mousemove', handleMove)
-      window.addEventListener('mouseup', handleUp)
-    }
-
-    return () => {
-      window.removeEventListener('mousemove', handleMove)
-      window.removeEventListener('mouseup', handleUp)
-    }
   }, [onBeatClipChange, onVocalClipChange, onBeatClipResize, onVocalClipResize, snapToGrid, pixelsPerSecond])
 
   const handleMouseDownClip = (clip, e) => {
     e.preventDefault()
-    dragRef.current = {
-      clip,
-      startX: e.clientX,
+
+    const startX = e.clientX
+    const initialStart = clip.startSec || 0
+
+    const handleMove = (evt) => {
+      const deltaX = evt.clientX - startX
+      const deltaSec = deltaX / pixelsPerSecond
+      let nextStart = Math.max(0, initialStart + deltaSec)
+      if (snapToGrid) {
+        nextStart = Math.max(0, Math.round(nextStart / GRID_STEP_SEC) * GRID_STEP_SEC)
+      }
+      if (clip.type === 'beat') {
+        onBeatClipChange?.(nextStart)
+      } else {
+        onVocalClipChange?.(clip.id, nextStart)
+      }
     }
+
+    const handleUp = () => {
+      window.removeEventListener('mousemove', handleMove)
+      window.removeEventListener('mouseup', handleUp)
+    }
+
+    window.addEventListener('mousemove', handleMove)
+    window.addEventListener('mouseup', handleUp)
   }
 
   const lanes = useMemo(() => {
