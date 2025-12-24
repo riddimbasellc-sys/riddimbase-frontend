@@ -98,6 +98,11 @@ export function RecordingLab() {
   const bufferCacheRef = useRef(new Map())
   const timelineTimeoutRef = useRef(null)
   const waveformCacheRef = useRef(new Map())
+  const [liveRecordingWaveforms, setLiveRecordingWaveforms] = useState({})
+  const liveRecordingSamplesRef = useRef([])
+  const liveRecordingAnimFrameRef = useRef(null)
+  const liveRecordingLastUpdateRef = useRef(0)
+  const currentRecordingIdRef = useRef(null)
   const playheadAnimFrameRef = useRef(null)
   const playbackStartWallTimeRef = useRef(null)
   const playbackStartSecRef = useRef(0)
@@ -332,7 +337,7 @@ export function RecordingLab() {
           const durationSec = Math.max(elapsed || 0, 0.5)
 
           const apiBase = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:5001'
-          const takeId = `take-${Date.now()}`
+          const takeId = currentRecordingIdRef.current || `take-${Date.now()}`
 
           const uploadTakeToBackend = async () => {
             try {
@@ -361,7 +366,7 @@ export function RecordingLab() {
               setVocalTracks((prev) =>
                 prev.map((t) =>
                   t.id === takeId
-                    ? { ...t, clip: { ...t.clip, url: publicUrl } }
+                    ? { ...t, clip: { ...(t.clip || {}), url: publicUrl } }
                     : t,
                 ),
               )
@@ -372,23 +377,14 @@ export function RecordingLab() {
             }
           }
 
-          // Add a new vocal track with this take clipped at t=0 on the timeline
-          setVocalTracks((prev) => {
-            const index = prev.length + 1
-            const name = `Take ${index}`
-            return [
-              ...prev,
-              {
-                id: takeId,
-                name,
-                muted: false,
-                solo: false,
-                clip: { startSec: 0, durationSec, url },
-                fx: createDefaultVocalFx(),
-              },
-            ]
-          })
-          setSelectedVocalTrackId(takeId)
+          // Finalize duration for the in-progress recording clip
+          setVocalTracks((prev) =>
+            prev.map((t) =>
+              t.id === takeId && t.clip
+                ? { ...t, clip: { ...t.clip, durationSec: durationSec || t.clip.durationSec || 0.5 } }
+                : t,
+            ),
+          )
 
           setRecordState('recorded')
           uploadTakeToBackend()
@@ -416,6 +412,94 @@ export function RecordingLab() {
       timerRef.current = null
     }
   }
+
+  useEffect(() => {
+    if (recordState !== 'recording') {
+      if (liveRecordingAnimFrameRef.current) {
+        try {
+          cancelAnimationFrame(liveRecordingAnimFrameRef.current)
+        } catch {}
+        liveRecordingAnimFrameRef.current = null
+      }
+      liveRecordingSamplesRef.current = []
+      return
+    }
+
+    const analyser = analyserRef.current
+    const trackId = currentRecordingIdRef.current
+    if (!analyser || !trackId) return
+
+    const bufferLength = analyser.frequencyBinCount
+    const dataArray = new Uint8Array(bufferLength)
+
+    const loop = () => {
+      const a = analyserRef.current
+      const id = currentRecordingIdRef.current
+      if (!a || !id || recordState !== 'recording') {
+        return
+      }
+
+      a.getByteTimeDomainData(dataArray)
+      let peak = 0
+      for (let i = 0; i < bufferLength; i += 1) {
+        const v = dataArray[i] / 128 - 1
+        const mag = v < 0 ? -v : v
+        if (mag > peak) peak = mag
+      }
+      liveRecordingSamplesRef.current.push(peak)
+
+      const now = typeof performance !== 'undefined' ? performance.now() : Date.now()
+      const last = liveRecordingLastUpdateRef.current || 0
+      if (!last || now - last > 200) {
+        liveRecordingLastUpdateRef.current = now
+
+        const samples = liveRecordingSamplesRef.current
+        const target = 96
+        const len = samples.length
+        if (len > 0) {
+          const blockSize = Math.max(1, Math.floor(len / target))
+          const arr = new Float32Array(target)
+          for (let i = 0; i < target; i += 1) {
+            const start = i * blockSize
+            const end = Math.min(start + blockSize, len)
+            let max = 0
+            for (let j = start; j < end; j += 1) {
+              const m = samples[j]
+              if (m > max) max = m
+            }
+            arr[i] = max
+          }
+
+          setLiveRecordingWaveforms((prev) => ({ ...prev, [id]: arr }))
+
+          const startedAt = recordStartRef.current
+          if (startedAt) {
+            const elapsed = Math.max(0, (Date.now() - startedAt) / 1000)
+            setVocalTracks((prev) =>
+              prev.map((t) =>
+                t.id === id && t.clip
+                  ? { ...t, clip: { ...t.clip, durationSec: elapsed } }
+                  : t,
+              ),
+            )
+          }
+        }
+      }
+
+      liveRecordingAnimFrameRef.current = requestAnimationFrame(loop)
+    }
+
+    liveRecordingAnimFrameRef.current = requestAnimationFrame(loop)
+
+    return () => {
+      if (liveRecordingAnimFrameRef.current) {
+        try {
+          cancelAnimationFrame(liveRecordingAnimFrameRef.current)
+        } catch {}
+        liveRecordingAnimFrameRef.current = null
+      }
+    }
+  }, [recordState])
 
   const handleRecord = async () => {
     if (!user?.id) {
@@ -461,6 +545,28 @@ export function RecordingLab() {
       return
     }
     try {
+      const takeId = `take-${Date.now()}`
+      const startSec = Number.isFinite(playheadSec) && playheadSec >= 0 ? playheadSec : 0
+      currentRecordingIdRef.current = takeId
+      setVocalTracks((prev) => {
+        const index = prev.length + 1
+        const name = `Take ${index}`
+        return [
+          ...prev,
+          {
+            id: takeId,
+            name,
+            muted: false,
+            solo: false,
+            volume: 1,
+            clip: { startSec, durationSec: 0, url: null },
+            fx: createDefaultVocalFx(),
+          },
+        ]
+      })
+      setSelectedVocalTrackId(takeId)
+      setTakeUploadState('idle')
+      liveRecordingSamplesRef.current = []
       recorder.start()
       setRecordState('recording')
       recordStartRef.current = Date.now()
@@ -1279,6 +1385,7 @@ export function RecordingLab() {
                 beatAudioUrl={selectedBeat?.audioUrl}
                 bpm={selectedBeat?.bpm}
                 loopRegion={loopRegion}
+                liveRecordingWaveforms={liveRecordingWaveforms}
                 onToggleSnap={() => setSnapToGrid((v) => !v)}
                 onBeatClipChange={handleBeatClipChange}
                 onVocalClipChange={handleVocalClipChange}
@@ -1313,14 +1420,6 @@ export function RecordingLab() {
                 requestWaveform={getWaveformForUrl}
               />
             </div>
-            {hasAudioSupport && (
-              <div className="flex-shrink-0">
-                <WaveformCanvas
-                  analyser={analyserRef.current}
-                  isActive={recordState === 'recording'}
-                />
-              </div>
-            )}
             <div className="flex-shrink-0">
               <RecorderControls
                 recordState={recordState}
