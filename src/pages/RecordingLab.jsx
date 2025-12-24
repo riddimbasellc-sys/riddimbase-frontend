@@ -968,10 +968,15 @@ export function RecordingLab() {
       if (audioContextRef.current) {
         audioContextRef.current.close()
       }
+    }
+  }, [isTimelinePlaying, recordState, recordingUrl])
+
+  useEffect(() => {
+    return () => {
       stopTimelinePlayback()
       stopPlayheadAnimation()
     }
-  }, [isTimelinePlaying, recordState, recordingUrl])
+  }, [])
 
   const canRecord = micStatus === 'granted' && hasAudioSupport
   const hasRecording = !!recordingUrl
