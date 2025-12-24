@@ -739,6 +739,11 @@ export function RecordingLab() {
       })
       timelineSourcesRef.current = []
     }
+    if (audioRef.current) {
+      try {
+        audioRef.current.pause()
+      } catch {}
+    }
     stopPlayheadAnimation()
     setIsTimelinePlaying(false)
   }
@@ -770,16 +775,6 @@ export function RecordingLab() {
     const hasAnyVocalClip = vocalTracks.some((t) => !!t.clip)
     const hasBeatAudio = !!selectedBeat?.audioUrl
     if (!hasBeatAudio && !hasAnyVocalClip) return
-    const ctx = ensurePlaybackContext()
-    if (!ctx) return
-
-    stopTimelinePlayback()
-    try {
-      await ctx.resume()
-    } catch {}
-
-    const anySolo = beatTrackState.solo || vocalTracks.some((t) => t.solo)
-
     const loopActive =
       loopRegion &&
       loopRegion.enabled &&
@@ -792,6 +787,55 @@ export function RecordingLab() {
       : Math.max(0, playheadSec)
 
     const regionEndLimit = loopActive ? loopRegion.endSec : Infinity
+
+    // Beat-only sessions: fall back to the beat HTMLAudio element for robust playback
+    // (avoids decode/network edge-cases when there are no vocal clips yet).
+    if (hasBeatAudio && !hasAnyVocalClip) {
+      ensureBeatAudio()
+      const el = audioRef.current
+      if (!el) return
+      try {
+        const beatDur = Number.isFinite(el.duration) && el.duration > 0 ? el.duration : 60
+        const safeStart = Math.min(Math.max(0, startAt), beatDur)
+        el.currentTime = safeStart
+        el.play().catch(() => {})
+
+        const endLimit = Number.isFinite(regionEndLimit) && regionEndLimit < Infinity
+          ? Math.min(regionEndLimit, beatDur)
+          : beatDur
+        if (endLimit > safeStart) {
+          const remaining = endLimit - safeStart
+          timelineTimeoutRef.current = setTimeout(() => {
+            if (
+              loopRegion &&
+              loopRegion.enabled &&
+              typeof loopRegion.startSec === 'number' &&
+              typeof loopRegion.endSec === 'number' &&
+              loopRegion.endSec > loopRegion.startSec + 0.05
+            ) {
+              setPlayheadSec(loopRegion.startSec)
+              handlePlayFromCursor()
+            } else {
+              stopTimelinePlayback()
+            }
+          }, remaining * 1000 + 200)
+        }
+
+        setIsTimelinePlaying(true)
+        startPlayheadAnimation(safeStart, endLimit)
+      } catch {}
+      return
+    }
+
+    const ctx = ensurePlaybackContext()
+    if (!ctx) return
+
+    stopTimelinePlayback()
+    try {
+      await ctx.resume()
+    } catch {}
+
+    const anySolo = beatTrackState.solo || vocalTracks.some((t) => t.solo)
 
     const tasks = []
     if (hasBeatAudio && !beatTrackState.muted && (!anySolo || beatTrackState.solo)) {
