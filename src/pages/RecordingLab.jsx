@@ -13,6 +13,8 @@ import '../styles/recordingLab.css'
 export function RecordingLab() {
   const { user } = useSupabaseUser()
 
+  const [isArrangementFullscreen, setIsArrangementFullscreen] = useState(false)
+
   const [savedSessions, setSavedSessions] = useState([]) // { id, name, updated_at, created_at }
   const [selectedSessionId, setSelectedSessionId] = useState('')
   const [sessionBusy, setSessionBusy] = useState(false)
@@ -1166,6 +1168,14 @@ export function RecordingLab() {
             </button>
 
             <span className="rounded-full border border-red-500/70 bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-red-300">Beta</span>
+            <button
+              type="button"
+              onClick={() => setIsArrangementFullscreen((v) => !v)}
+              className="hidden h-8 w-8 items-center justify-center rounded-full border border-slate-700/80 bg-slate-900/80 text-[11px] text-slate-200 hover:border-emerald-400/70 lg:inline-flex"
+              title={isArrangementFullscreen ? 'Exit full arrangement view' : 'Fullscreen arrangement view'}
+            >
+              {isArrangementFullscreen ? '⤢' : '⤢'}
+            </button>
           </div>
         </div>
 
@@ -1175,19 +1185,27 @@ export function RecordingLab() {
           </div>
         )}
 
-        <div className="mt-6 grid flex-1 min-h-0 gap-4 lg:grid-cols-[320px_minmax(0,1fr)_320px]">
-          <div className="min-h-0">
-            <BeatSelector
-              selectedBeat={selectedBeat}
-              onSelectBeat={setSelectedBeat}
-              isPlaying={isBeatPlaying}
-              onTogglePlay={toggleBeatPlay}
-              volume={beatVolume}
-              onVolumeChange={setBeatVolume}
-            />
-          </div>
+        <div
+          className={`mt-6 flex-1 min-h-0 gap-4 transition-all lg:grid ${
+            isArrangementFullscreen
+              ? 'lg:grid-cols-[minmax(0,1fr)]'
+              : 'lg:grid-cols-[320px_minmax(0,1fr)_320px]'
+          }`}
+        >
+          {!isArrangementFullscreen && (
+            <div className="min-h-0">
+              <BeatSelector
+                selectedBeat={selectedBeat}
+                onSelectBeat={setSelectedBeat}
+                isPlaying={isBeatPlaying}
+                onTogglePlay={toggleBeatPlay}
+                volume={beatVolume}
+                onVolumeChange={setBeatVolume}
+              />
+            </div>
+          )}
 
-          <div className="flex min-h-0 flex-col gap-4">
+          <div className="relative flex min-h-0 flex-col gap-4">
             <div className="flex-1 min-h-0 rounded-2xl border border-slate-800/80 bg-slate-950/80 p-4 text-[12px] text-slate-200">
               <TrackTimeline
                 beatClip={beatClip}
@@ -1268,29 +1286,81 @@ export function RecordingLab() {
               </div>
             )}
           </div>
-
-          <div className="min-h-0">
-            <StudioSidebar
-              micStatus={micStatus}
-              onRequestMic={requestMic}
-              monitorEnabled={monitorEnabled}
-              onToggleMonitor={toggleMonitor}
-              inputGain={inputGain}
-              onInputGainChange={handleInputGainChange}
-              selectedVocalTrackName={
-                selectedVocalTrackId
-                  ? vocalTracks.find((t) => t.id === selectedVocalTrackId)?.name || selectedVocalTrackId
-                  : null
-              }
-              selectedTrackFx={
-                selectedVocalTrackId
-                  ? vocalTracks.find((t) => t.id === selectedVocalTrackId)?.fx || null
-                  : null
-              }
-              onOpenEffect={handleOpenEffect}
-            />
-          </div>
+          {!isArrangementFullscreen && (
+            <div className="min-h-0">
+              <StudioSidebar
+                micStatus={micStatus}
+                onRequestMic={requestMic}
+                monitorEnabled={monitorEnabled}
+                onToggleMonitor={toggleMonitor}
+                inputGain={inputGain}
+                onInputGainChange={handleInputGainChange}
+                selectedVocalTrackName={
+                  selectedVocalTrackId
+                    ? vocalTracks.find((t) => t.id === selectedVocalTrackId)?.name || selectedVocalTrackId
+                    : null
+                }
+                selectedTrackFx={
+                  selectedVocalTrackId
+                    ? vocalTracks.find((t) => t.id === selectedVocalTrackId)?.fx || null
+                    : null
+                }
+                onOpenEffect={handleOpenEffect}
+              />
+            </div>
+          )}
         </div>
+        {isArrangementFullscreen && (
+          <div className="pointer-events-none fixed inset-x-0 bottom-4 z-40 flex justify-center px-4">
+            <div className="pointer-events-auto flex max-w-3xl flex-1 items-center justify-between gap-3 rounded-2xl border border-slate-800/80 bg-slate-950/95/90 px-4 py-2 text-[11px] text-slate-200 shadow-[0_18px_60px_rgba(15,23,42,0.95)]">
+              <div className="flex items-center gap-2">
+                <span className="rounded-full border border-slate-700/80 bg-slate-950/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-300">
+                  {creditLoading
+                    ? 'Credits: …'
+                    : typeof creditBalance === 'number'
+                    ? `Credits: ${creditBalance.toLocaleString('en-US')}`
+                    : 'Credits: —'}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleSaveSession}
+                  disabled={!user || sessionBusy}
+                  className="h-7 rounded-full border border-slate-800/80 bg-slate-900/60 px-3 text-[10px] font-semibold text-slate-100 hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {selectedSessionId ? 'Save' : 'Save session'}
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  className="h-7 w-[200px] rounded-full border border-slate-800/80 bg-slate-950/80 px-3 text-[10px] text-slate-200"
+                  value={selectedSessionId}
+                  disabled={!user || sessionBusy}
+                  onChange={(e) => {
+                    const id = e.target.value
+                    setSelectedSessionId(id)
+                    if (id) handleLoadSession(id)
+                  }}
+                  title={user ? 'Saved sessions' : 'Log in to see saved sessions'}
+                >
+                  <option value="">Saved sessions…</option>
+                  {savedSessions.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {formatSessionLabel(s)}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setIsArrangementFullscreen(false)}
+                  className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-700/80 bg-slate-900/80 text-[11px] text-slate-200 hover:border-emerald-400/70"
+                  title="Exit full arrangement view"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {fxEditor && selectedVocalTrackId && (
           <VocalFxModal
