@@ -253,6 +253,15 @@ export default function TrackTimeline({
     onSeek?.(sec)
   }
 
+  const formatTime = (sec) => {
+    let safe = Number.isFinite(sec) ? sec : 0
+    if (safe < 0) safe = 0
+    const totalSeconds = Math.floor(safe)
+    const minutes = Math.floor(totalSeconds / 60)
+    const seconds = totalSeconds % 60
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`
+  }
+
   return (
     <div className="flex h-full flex-col rounded-2xl border border-slate-800/80 bg-slate-950/95 p-3 text-[11px] text-slate-300">
       <div className="mb-2 flex items-center justify-between gap-3">
@@ -260,7 +269,12 @@ export default function TrackTimeline({
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">Arrangement</p>
           <p className="mt-0.5 text-xs text-slate-300">Align your beat and vocal takes on a simple timeline.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <div className="hidden items-center rounded-full border border-slate-800/80 bg-slate-900/80 px-2 py-1 text-[10px] font-mono tabular-nums text-slate-200 md:flex">
+            <span className="text-[9px] uppercase tracking-[0.18em] text-slate-500 mr-1.5">Time</span>
+            <span>{formatTime(playheadSec)}</span>
+          </div>
+          <div className="flex items-center gap-2">
           <div className="hidden items-center gap-1 rounded-full border border-slate-800/80 bg-slate-900/80 px-1.5 py-1 text-[9px] text-slate-400 md:flex">
             <button
               type="button"
@@ -336,6 +350,7 @@ export default function TrackTimeline({
           >
             #
           </button>
+          </div>
         </div>
       </div>
 
