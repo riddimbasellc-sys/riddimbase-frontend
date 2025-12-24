@@ -40,11 +40,9 @@ export default function TrackTimeline({
   requestWaveform,
 }) {
   const containerRef = useRef(null)
-  const dragRef = useRef(null)
   const [waveforms, setWaveforms] = useState({})
   const loadedWaveformsRef = useRef(new Set())
   const [zoom, setZoom] = useState(1)
-  const resizeRef = useRef(null)
   const [showVolumeAutomation, setShowVolumeAutomation] = useState(true)
 
   const liveWaveformsMap = liveRecordingWaveforms || {}
@@ -117,41 +115,16 @@ export default function TrackTimeline({
   }, [bpm])
 
   const secondsPerBar = useMemo(() => {
-    return secondsPerBeat ? secondsPerBeat * beatsPerBar : null
-  }, [secondsPerBeat])
+  const handleMouseDownClip = (clip, e) => {
+    e.preventDefault()
 
-  const clipBoundsRef = useRef(new Map())
+    const startX = e.clientX
+    const initialStart = clip.startSec || 0
 
-  useEffect(() => {
-    if (!requestWaveform) return
-    const urls = Array.from(
-      new Set(
-        timelineClips
-          .map((c) => c.url)
-          .filter((u) => typeof u === 'string' && u.length > 0),
-      ),
-    )
-    urls.forEach((url) => {
-      if (loadedWaveformsRef.current.has(url)) return
-      loadedWaveformsRef.current.add(url)
-      requestWaveform(url)
-        .then((data) => {
-          if (!data) return
-          setWaveforms((prev) => ({ ...prev, [url]: data }))
-        })
-        .catch(() => {})
-    })
-  }, [timelineClips, requestWaveform])
-
-  useEffect(() => {
-    const handleMove = (e) => {
-      if (!dragRef.current) return
-      const { clip, startX } = dragRef.current
-      const bounds = containerRef.current?.getBoundingClientRect()
-      if (!bounds) return
-      const deltaX = e.clientX - startX
+    const handleMove = (evt) => {
+      const deltaX = evt.clientX - startX
       const deltaSec = deltaX / pixelsPerSecond
-      let nextStart = Math.max(0, (clip.startSec || 0) + deltaSec)
+      let nextStart = Math.max(0, initialStart + deltaSec)
       if (snapToGrid) {
         nextStart = Math.max(0, Math.round(nextStart / GRID_STEP_SEC) * GRID_STEP_SEC)
       }
@@ -163,101 +136,13 @@ export default function TrackTimeline({
     }
 
     const handleUp = () => {
-      dragRef.current = null
       window.removeEventListener('mousemove', handleMove)
       window.removeEventListener('mouseup', handleUp)
     }
 
-    if (dragRef.current) {
-      window.addEventListener('mousemove', handleMove)
-      window.addEventListener('mouseup', handleUp)
-    }
-
-    return () => {
-      window.removeEventListener('mousemove', handleMove)
-      window.removeEventListener('mouseup', handleUp)
-    }
-  }, [onBeatClipChange, onVocalClipChange, snapToGrid, pixelsPerSecond])
-  useEffect(() => {
-    const handleMove = (e) => {
-      if (resizeRef.current) {
-        const {
-          edge,
-          startX,
-          startSec,
-          durationSec,
-          origStart,
-          origEnd,
-          kind,
-          trackId,
-          clipId,
-        } = resizeRef.current
-
-        const bounds = containerRef.current?.getBoundingClientRect()
-        if (!bounds) return
-        const deltaX = e.clientX - startX
-        const deltaSec = deltaX / pixelsPerSecond
-
-        let newStart = startSec
-        let newEnd = startSec + durationSec
-        if (edge === 'start') {
-          newStart = startSec + deltaSec
-        } else if (edge === 'end') {
-          newEnd = startSec + durationSec + deltaSec
-        }
-
-        const minLen = MIN_CLIP_SEC
-        if (snapToGrid) {
-          if (edge === 'start') {
-            newStart = Math.round(newStart / GRID_STEP_SEC) * GRID_STEP_SEC
-          } else if (edge === 'end') {
-            newEnd = Math.round(newEnd / GRID_STEP_SEC) * GRID_STEP_SEC
-          }
-        }
-
-        if (newEnd - newStart < minLen) {
-          if (edge === 'start') {
-            newStart = newEnd - minLen
-          } else {
-            newEnd = newStart + minLen
-          }
-        }
-
-        const baseStart = typeof origStart === 'number' ? origStart : startSec
-        const baseEnd = typeof origEnd === 'number' ? origEnd : startSec + durationSec
-        if (newStart < baseStart) newStart = baseStart
-        if (newEnd > baseEnd) newEnd = baseEnd
-        if (newEnd - newStart < minLen) {
-          newEnd = newStart + minLen
-        }
-
-        const nextStart = Math.max(0, newStart)
-        const nextDuration = Math.max(minLen, newEnd - newStart)
-
-        if (kind === 'beat') {
-          onBeatClipResize?.(edge, nextStart, nextDuration)
-        } else {
-          onVocalClipResize?.(trackId, edge, nextStart, nextDuration, clipId)
-        }
-        return
-      }
-
-      if (!dragRef.current) return
-      const { clip, startX } = dragRef.current
-      const bounds = containerRef.current?.getBoundingClientRect()
-      if (!bounds) return
-      const deltaX = e.clientX - startX
-      const deltaSec = deltaX / pixelsPerSecond
-      let nextStart = Math.max(0, (clip.startSec || 0) + deltaSec)
-      if (snapToGrid) {
-        nextStart = Math.max(0, Math.round(nextStart / GRID_STEP_SEC) * GRID_STEP_SEC)
-      }
-      if (clip.type === 'beat') {
-        onBeatClipChange?.(nextStart)
-      } else {
-        onVocalClipChange?.(clip.id, nextStart)
-      }
-    }
+    window.addEventListener('mousemove', handleMove)
+    window.addEventListener('mouseup', handleUp)
+  }
 
     const handleUp = () => {
       dragRef.current = null
@@ -749,17 +634,51 @@ export default function TrackTimeline({
                                     start: clipStart,
                                     end: clipEnd,
                                   }
-                                resizeRef.current = {
-                                  edge: 'start',
-                                  startX: e.clientX,
-                                  startSec: clipStart,
-                                  durationSec: clip.durationSec || 4,
-                                  origStart: bounds.start,
-                                  origEnd: bounds.end,
-                                  kind: clip.type,
-                                  trackId: lane.trackId,
-                                  clipId: clip.id,
+                                const startX = e.clientX
+                                const startSec = clipStart
+                                const durationSec = clip.durationSec || 4
+
+                                const handleMove = (evt) => {
+                                  const deltaX = evt.clientX - startX
+                                  const deltaSec = deltaX / pixelsPerSecond
+
+                                  let newStart = startSec + deltaSec
+                                  let newEnd = startSec + durationSec
+
+                                  const minLen = MIN_CLIP_SEC
+                                  if (snapToGrid) {
+                                    newStart = Math.round(newStart / GRID_STEP_SEC) * GRID_STEP_SEC
+                                  }
+
+                                  if (newEnd - newStart < minLen) {
+                                    newStart = newEnd - minLen
+                                  }
+
+                                  const baseStart = typeof bounds.start === 'number' ? bounds.start : startSec
+                                  const baseEnd = typeof bounds.end === 'number' ? bounds.end : startSec + durationSec
+                                  if (newStart < baseStart) newStart = baseStart
+                                  if (newEnd > baseEnd) newEnd = baseEnd
+                                  if (newEnd - newStart < minLen) {
+                                    newStart = newEnd - minLen
+                                  }
+
+                                  const nextStart = Math.max(0, newStart)
+                                  const nextDuration = Math.max(minLen, newEnd - newStart)
+
+                                  if (clip.type === 'beat') {
+                                    onBeatClipResize?.('start', nextStart, nextDuration)
+                                  } else {
+                                    onVocalClipResize?.(lane.trackId, 'start', nextStart, nextDuration, clip.id)
+                                  }
                                 }
+
+                                const handleUp = () => {
+                                  window.removeEventListener('mousemove', handleMove)
+                                  window.removeEventListener('mouseup', handleUp)
+                                }
+
+                                window.addEventListener('mousemove', handleMove)
+                                window.addEventListener('mouseup', handleUp)
                               }}
                             />
                             <div className="h-full w-1 bg-gradient-to-b from-red-500 to-amber-400" />
@@ -808,17 +727,51 @@ export default function TrackTimeline({
                                     start: clipStart,
                                     end: clipEnd,
                                   }
-                                resizeRef.current = {
-                                  edge: 'end',
-                                  startX: e.clientX,
-                                  startSec: clipStart,
-                                  durationSec: clip.durationSec || 4,
-                                  origStart: bounds.start,
-                                  origEnd: bounds.end,
-                                  kind: clip.type,
-                                  trackId: lane.trackId,
-                                  clipId: clip.id,
+                                const startX = e.clientX
+                                const startSec = clipStart
+                                const durationSec = clip.durationSec || 4
+
+                                const handleMove = (evt) => {
+                                  const deltaX = evt.clientX - startX
+                                  const deltaSec = deltaX / pixelsPerSecond
+
+                                  let newStart = startSec
+                                  let newEnd = startSec + durationSec + deltaSec
+
+                                  const minLen = MIN_CLIP_SEC
+                                  if (snapToGrid) {
+                                    newEnd = Math.round(newEnd / GRID_STEP_SEC) * GRID_STEP_SEC
+                                  }
+
+                                  if (newEnd - newStart < minLen) {
+                                    newEnd = newStart + minLen
+                                  }
+
+                                  const baseStart = typeof bounds.start === 'number' ? bounds.start : startSec
+                                  const baseEnd = typeof bounds.end === 'number' ? bounds.end : startSec + durationSec
+                                  if (newStart < baseStart) newStart = baseStart
+                                  if (newEnd > baseEnd) newEnd = baseEnd
+                                  if (newEnd - newStart < minLen) {
+                                    newEnd = newStart + minLen
+                                  }
+
+                                  const nextStart = Math.max(0, newStart)
+                                  const nextDuration = Math.max(minLen, newEnd - newStart)
+
+                                  if (clip.type === 'beat') {
+                                    onBeatClipResize?.('end', nextStart, nextDuration)
+                                  } else {
+                                    onVocalClipResize?.(lane.trackId, 'end', nextStart, nextDuration, clip.id)
+                                  }
                                 }
+
+                                const handleUp = () => {
+                                  window.removeEventListener('mousemove', handleMove)
+                                  window.removeEventListener('mouseup', handleUp)
+                                }
+
+                                window.addEventListener('mousemove', handleMove)
+                                window.addEventListener('mouseup', handleUp)
                               }}
                             />
                           </button>
