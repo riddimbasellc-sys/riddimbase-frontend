@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 const BASE_PIXELS_PER_SECOND = 40
 const GRID_STEP_SEC = 0.25
 const LANE_LABEL_PX = 160
+const MIN_CLIP_SEC = 0.1
 
 export default function TrackTimeline({
   beatClip,
@@ -20,6 +21,8 @@ export default function TrackTimeline({
   onToggleSnap,
   onBeatClipChange,
   onVocalClipChange,
+  onBeatClipResize,
+  onVocalClipResize,
   onAddVocalTrack,
   onSeek,
   onPlayFromCursor,
@@ -41,6 +44,7 @@ export default function TrackTimeline({
   const [waveforms, setWaveforms] = useState({})
   const loadedWaveformsRef = useRef(new Set())
   const [zoom, setZoom] = useState(1)
+  const resizeRef = useRef(null)
   const [showVolumeAutomation, setShowVolumeAutomation] = useState(true)
 
   const liveWaveformsMap = liveRecordingWaveforms || {}
@@ -110,6 +114,8 @@ export default function TrackTimeline({
   const secondsPerBeat = useMemo(() => {
     const safeBpm = typeof bpm === 'number' && bpm > 0 ? bpm : null
     return safeBpm ? 60 / safeBpm : null
+
+  const clipBoundsRef = useRef(new Map())
   }, [bpm])
 
   const secondsPerBar = useMemo(() => {
@@ -172,6 +178,104 @@ export default function TrackTimeline({
       window.removeEventListener('mouseup', handleUp)
     }
   }, [onBeatClipChange, onVocalClipChange, snapToGrid, pixelsPerSecond])
+  useEffect(() => {
+    const handleMove = (e) => {
+      if (resizeRef.current) {
+        const {
+          edge,
+          startX,
+          startSec,
+          durationSec,
+          origStart,
+          origEnd,
+          kind,
+          trackId,
+          clipId,
+        } = resizeRef.current
+
+        const bounds = containerRef.current?.getBoundingClientRect()
+        if (!bounds) return
+        const deltaX = e.clientX - startX
+        const deltaSec = deltaX / pixelsPerSecond
+
+        let newStart = startSec
+        let newEnd = startSec + durationSec
+        if (edge === 'start') {
+          newStart = startSec + deltaSec
+        } else if (edge === 'end') {
+          newEnd = startSec + durationSec + deltaSec
+        }
+
+        const minLen = MIN_CLIP_SEC
+        if (snapToGrid) {
+          if (edge === 'start') {
+            newStart = Math.round(newStart / GRID_STEP_SEC) * GRID_STEP_SEC
+          } else if (edge === 'end') {
+            newEnd = Math.round(newEnd / GRID_STEP_SEC) * GRID_STEP_SEC
+          }
+        }
+
+        if (newEnd - newStart < minLen) {
+          if (edge === 'start') {
+            newStart = newEnd - minLen
+          } else {
+            newEnd = newStart + minLen
+          }
+        }
+
+        const baseStart = typeof origStart === 'number' ? origStart : startSec
+        const baseEnd = typeof origEnd === 'number' ? origEnd : startSec + durationSec
+        if (newStart < baseStart) newStart = baseStart
+        if (newEnd > baseEnd) newEnd = baseEnd
+        if (newEnd - newStart < minLen) {
+          newEnd = newStart + minLen
+        }
+
+        const nextStart = Math.max(0, newStart)
+        const nextDuration = Math.max(minLen, newEnd - newStart)
+
+        if (kind === 'beat') {
+          onBeatClipResize?.(edge, nextStart, nextDuration)
+        } else {
+          onVocalClipResize?.(trackId, edge, nextStart, nextDuration, clipId)
+        }
+        return
+      }
+
+      if (!dragRef.current) return
+      const { clip, startX } = dragRef.current
+      const bounds = containerRef.current?.getBoundingClientRect()
+      if (!bounds) return
+      const deltaX = e.clientX - startX
+      const deltaSec = deltaX / pixelsPerSecond
+      let nextStart = Math.max(0, (clip.startSec || 0) + deltaSec)
+      if (snapToGrid) {
+        nextStart = Math.max(0, Math.round(nextStart / GRID_STEP_SEC) * GRID_STEP_SEC)
+      }
+      if (clip.type === 'beat') {
+        onBeatClipChange?.(nextStart)
+      } else {
+        onVocalClipChange?.(clip.id, nextStart)
+      }
+    }
+
+    const handleUp = () => {
+      dragRef.current = null
+      resizeRef.current = null
+      window.removeEventListener('mousemove', handleMove)
+      window.removeEventListener('mouseup', handleUp)
+    }
+
+    if (dragRef.current || resizeRef.current) {
+      window.addEventListener('mousemove', handleMove)
+      window.addEventListener('mouseup', handleUp)
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMove)
+      window.removeEventListener('mouseup', handleUp)
+    }
+  }, [onBeatClipChange, onVocalClipChange, onBeatClipResize, onVocalClipResize, snapToGrid, pixelsPerSecond])
 
   const handleMouseDownClip = (clip, e) => {
     e.preventDefault()
@@ -567,6 +671,22 @@ export default function TrackTimeline({
                       .map((clip) => {
                         const left = clip.startSec * pixelsPerSecond
                         const width = Math.max(clip.durationSec * pixelsPerSecond, 80)
+                        const existingBounds = clipBoundsRef.current.get(clip.id)
+                        const clipStart = clip.startSec || 0
+                        const clipEnd = clipStart + (clip.durationSec || 4)
+                        if (!existingBounds) {
+                          clipBoundsRef.current.set(clip.id, {
+                            start: clipStart,
+                            end: clipEnd,
+                          })
+                        } else {
+                          const mergedStart = Math.min(existingBounds.start, clipStart)
+                          const mergedEnd = Math.max(existingBounds.end, clipEnd)
+                          clipBoundsRef.current.set(clip.id, {
+                            start: mergedStart,
+                            end: mergedEnd,
+                          })
+                        }
                         const liveWf =
                           clip.type === 'vocal' && !clip.url
                             ? liveWaveformsMap[clip.id] || null
@@ -619,6 +739,29 @@ export default function TrackTimeline({
                             }`}
                             style={{ left, width }}
                           >
+                            <div
+                              className="absolute inset-y-0 left-0 w-1 cursor-ew-resize bg-slate-100/60/70 group-hover:bg-red-300/80"
+                              onMouseDown={(e) => {
+                                e.stopPropagation()
+                                e.preventDefault()
+                                const bounds =
+                                  clipBoundsRef.current.get(clip.id) || {
+                                    start: clipStart,
+                                    end: clipEnd,
+                                  }
+                                resizeRef.current = {
+                                  edge: 'start',
+                                  startX: e.clientX,
+                                  startSec: clipStart,
+                                  durationSec: clip.durationSec || 4,
+                                  origStart: bounds.start,
+                                  origEnd: bounds.end,
+                                  kind: clip.type,
+                                  trackId: lane.trackId,
+                                  clipId: clip.id,
+                                }
+                              }}
+                            />
                             <div className="h-full w-1 bg-gradient-to-b from-red-500 to-amber-400" />
                             <div className="flex h-full flex-1 flex-col px-2 py-1">
                               <div className="mb-0.5 flex h-4 items-stretch opacity-80">
@@ -655,6 +798,29 @@ export default function TrackTimeline({
                                 </div>
                               </div>
                             )}
+                            <div
+                              className="absolute inset-y-0 right-0 w-1 cursor-ew-resize bg-slate-100/60/70 group-hover:bg-red-300/80"
+                              onMouseDown={(e) => {
+                                e.stopPropagation()
+                                e.preventDefault()
+                                const bounds =
+                                  clipBoundsRef.current.get(clip.id) || {
+                                    start: clipStart,
+                                    end: clipEnd,
+                                  }
+                                resizeRef.current = {
+                                  edge: 'end',
+                                  startX: e.clientX,
+                                  startSec: clipStart,
+                                  durationSec: clip.durationSec || 4,
+                                  origStart: bounds.start,
+                                  origEnd: bounds.end,
+                                  kind: clip.type,
+                                  trackId: lane.trackId,
+                                  clipId: clip.id,
+                                }
+                              }}
+                            />
                           </button>
                         )
                       })}
