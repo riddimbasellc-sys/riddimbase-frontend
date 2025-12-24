@@ -16,6 +16,7 @@ export default function TrackTimeline({
   playheadSec,
   isPlaying,
   loopRegion,
+  liveRecordingWaveforms,
   onToggleSnap,
   onBeatClipChange,
   onVocalClipChange,
@@ -41,6 +42,8 @@ export default function TrackTimeline({
   const loadedWaveformsRef = useRef(new Set())
   const [zoom, setZoom] = useState(1)
   const [showVolumeAutomation, setShowVolumeAutomation] = useState(true)
+
+  const liveWaveformsMap = liveRecordingWaveforms || {}
 
   const clampZoom = (value) => {
     return Math.min(4, Math.max(0.25, value || 1))
@@ -564,7 +567,11 @@ export default function TrackTimeline({
                       .map((clip) => {
                         const left = clip.startSec * pixelsPerSecond
                         const width = Math.max(clip.durationSec * pixelsPerSecond, 80)
-                        const wf = clip.url ? waveforms[clip.url] : null
+                        const liveWf =
+                          clip.type === 'vocal' && !clip.url
+                            ? liveWaveformsMap[clip.id] || null
+                            : null
+                        const wf = liveWf || (clip.url ? waveforms[clip.url] : null)
                         let waveformPoints = null
                         if (wf && wf.length > 1) {
                           const len = wf.length
