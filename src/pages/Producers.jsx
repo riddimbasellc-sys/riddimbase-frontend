@@ -60,46 +60,42 @@ export function Producers() {
             setProfiles(nextProfiles)
             setProducerList(sorted)
           }
+
+          // Load subscription info to flag Producer Pro accounts
+          if (producerIds.length) {
+            const { data: subs } = await supabase
+              .from('subscriptions')
+              .select('user_id, plan_id, status')
+              .in('user_id', producerIds)
+              .in('status', ['active', 'trialing', 'past_due'])
+
+            if (active) {
+              const pro = {}
+              ;(subs || []).forEach((row) => {
+                if (row.plan_id === 'producer-pro') {
+                  pro[row.user_id] = true
+                }
+              })
+              setProMap(pro)
+            }
+          } else if (active) {
+            setProMap({})
+          }
         } else if (active) {
           setProfiles({})
           setProducerList([])
+          setProMap({})
         }
       } catch {
-        // ignore
-      }
-
-      try {
-        const producerIds = producerList.map(([id]) => id)
-        if (!producerIds.length) {
-          if (active) setProMap({})
-          return
-        }
-
-        const { data: subs } = await supabase
-          .from('subscriptions')
-          .select('user_id, plan_id, status')
-          .in('user_id', producerIds)
-          .in('status', ['active', 'trialing', 'past_due'])
-
         if (active) {
-          const pro = {}
-          ;(subs || []).forEach((row) => {
-            if (row.plan_id === 'producer-pro') {
-              pro[row.user_id] = true
-            }
-          })
-          setProMap(pro)
+          setProfiles({})
+          setProducerList([])
+          setProMap({})
         }
-      } catch {
-        if (active) setProMap({})
       }
     })()
 
-            if (active) {
-              setProfiles({})
-              setProducerList([])
-              setProMap({})
-            }
+    return () => {
       active = false
     }
   }, [beats])
