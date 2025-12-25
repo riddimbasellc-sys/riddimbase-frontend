@@ -15,6 +15,17 @@ export async function fetchAdminMetrics() {
   return res.json()
 }
 
+export async function fetchAdminRecordingLabMetrics() {
+  const res = await fetch(buildUrl('/admin/recording-lab'), {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  })
+  if (!res.ok) {
+    throw new Error('Failed to load Recording Lab metrics')
+  }
+  return res.json()
+}
+
 export async function fetchAdminBoostsSummary() {
   const res = await fetch(buildUrl('/api/admin/boosts'), {
     method: 'GET',
