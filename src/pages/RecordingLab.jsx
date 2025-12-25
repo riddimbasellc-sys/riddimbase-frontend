@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import JSZip from 'jszip'
 import BackButton from '../components/BackButton'
 import BeatSelector from '../components/studio/BeatSelector'
 import RecorderControls from '../components/studio/RecorderControls'
@@ -33,6 +34,8 @@ export function RecordingLab() {
   const [recordingUrl, setRecordingUrl] = useState(null)
   const [recordingPublicUrl, setRecordingPublicUrl] = useState(null)
   const [takeUploadState, setTakeUploadState] = useState('idle') // idle | uploading | saved | error
+
+  const [isExporting, setIsExporting] = useState(false)
 
   const [monitorEnabled, setMonitorEnabled] = useState(false)
   const [inputGain, setInputGain] = useState(1)
@@ -383,6 +386,14 @@ export function RecordingLab() {
               t.id === takeId && t.clip
                 ? { ...t, clip: { ...t.clip, durationSec: durationSec || t.clip.durationSec || 0.5 } }
                 : t,
+            ),
+          )
+
+          // Attach the local blob URL to the vocal track so it stays on the grid
+          // and can be exported immediately, even before upload completes.
+          setVocalTracks((prev) =>
+            prev.map((t) =>
+              t.id === takeId && t.clip ? { ...t, clip: { ...t.clip, url } } : t,
             ),
           )
 
@@ -875,6 +886,194 @@ export function RecordingLab() {
     return data
   }
 
+  const computeExportRange = () => {
+    const loopActive =
+      loopRegion &&
+      loopRegion.enabled &&
+      typeof loopRegion.startSec === 'number' &&
+      typeof loopRegion.endSec === 'number' &&
+      loopRegion.endSec > loopRegion.startSec + 0.05
+
+    if (loopActive) {
+      const start = Math.max(0, loopRegion.startSec)
+      const end = Math.max(start + 0.1, loopRegion.endSec)
+      return { start, end }
+    }
+
+    let minStart = null
+    let maxEnd = null
+
+    if (beatClip && selectedBeat?.audioUrl) {
+      const s = Number.isFinite(beatClip.startSec) ? beatClip.startSec : 0
+      const d = Number.isFinite(beatClip.durationSec) ? beatClip.durationSec : 0
+      const e = s + d
+      if (e > s) {
+        minStart = minStart == null ? s : Math.min(minStart, s)
+        maxEnd = maxEnd == null ? e : Math.max(maxEnd, e)
+      }
+    }
+
+    vocalTracks.forEach((t) => {
+      if (!t?.clip || !t.clip.url) return
+      const s = Number.isFinite(t.clip.startSec) ? t.clip.startSec : 0
+      const d = Number.isFinite(t.clip.durationSec) ? t.clip.durationSec : 0
+      const e = s + d
+      if (e > s) {
+        minStart = minStart == null ? s : Math.min(minStart, s)
+        maxEnd = maxEnd == null ? e : Math.max(maxEnd, e)
+      }
+    })
+
+    if (minStart == null || maxEnd == null || maxEnd <= minStart + 0.05) return null
+
+    const start = Math.max(0, minStart)
+    const end = Math.max(start + 0.1, maxEnd)
+    return { start, end }
+  }
+
+  const renderOfflineMix = async (tasks, range) => {
+    if (!tasks?.length || !range) return null
+    const durationSec = Math.max(0.1, range.end - range.start)
+    const AudioContextClass =
+      typeof window !== 'undefined' ? window.AudioContext || window.webkitAudioContext : null
+    const sampleRate = audioContextRef.current?.sampleRate || 44100
+    const lengthSamples = Math.ceil(durationSec * sampleRate)
+
+    const offlineCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(
+      2,
+      lengthSamples,
+      sampleRate,
+    )
+
+    for (const task of tasks) {
+      const buffer = await loadBuffer(task.url)
+      if (!buffer) continue
+
+      const clip = task.clip || {}
+      const clipStart = Number.isFinite(clip.startSec) ? clip.startSec : 0
+      const clipDur = Number.isFinite(clip.durationSec) ? clip.durationSec : buffer.duration
+      const clipEnd = clipStart + clipDur
+
+      const effectiveStart = Math.max(clipStart, range.start)
+      const effectiveEnd = Math.min(clipEnd, range.end)
+      if (effectiveEnd <= effectiveStart) continue
+
+      const offset = Math.max(0, effectiveStart - clipStart)
+      const when = Math.max(0, effectiveStart - range.start)
+      const playDuration = Math.max(0.1, effectiveEnd - effectiveStart)
+
+      const source = offlineCtx.createBufferSource()
+      source.buffer = buffer
+      const gainNode = offlineCtx.createGain()
+      const volume = typeof task.volume === 'number' ? task.volume : 1
+      gainNode.gain.value = Math.max(0, Math.min(2, volume))
+
+      if (task.type === 'vocal') {
+        applyVocalFxChain(offlineCtx, source, task.fx, gainNode)
+      } else {
+        source.connect(gainNode)
+      }
+      gainNode.connect(offlineCtx.destination)
+
+      try {
+        source.start(when, offset, playDuration)
+      } catch {}
+    }
+
+    try {
+      const rendered = await offlineCtx.startRendering()
+      return rendered
+    } catch (e) {
+      console.warn('[RecordingLab] export render failed', e)
+      return null
+    }
+  }
+
+  const audioBufferToWavBlob = (buffer) => {
+    if (!buffer) return null
+    const numChannels = Math.min(2, buffer.numberOfChannels || 1)
+    const sampleRate = buffer.sampleRate || 44100
+    const numFrames = buffer.length
+    const bytesPerSample = 2
+    const blockAlign = numChannels * bytesPerSample
+    const byteRate = sampleRate * blockAlign
+    const dataSize = numFrames * blockAlign
+
+    const bufferArray = new ArrayBuffer(44 + dataSize)
+    const view = new DataView(bufferArray)
+
+    const writeString = (offset, str) => {
+      for (let i = 0; i < str.length; i += 1) {
+        view.setUint8(offset + i, str.charCodeAt(i))
+      }
+    }
+
+    let offset = 0
+    writeString(offset, 'RIFF')
+    offset += 4
+    view.setUint32(offset, 36 + dataSize, true)
+    offset += 4
+    writeString(offset, 'WAVE')
+    offset += 4
+    writeString(offset, 'fmt ')
+    offset += 4
+    view.setUint32(offset, 16, true)
+    offset += 4
+    view.setUint16(offset, 1, true) // PCM
+    offset += 2
+    view.setUint16(offset, numChannels, true)
+    offset += 2
+    view.setUint32(offset, sampleRate, true)
+    offset += 4
+    view.setUint32(offset, byteRate, true)
+    offset += 4
+    view.setUint16(offset, blockAlign, true)
+    offset += 2
+    view.setUint16(offset, 16, true) // bits per sample
+    offset += 2
+    writeString(offset, 'data')
+    offset += 4
+    view.setUint32(offset, dataSize, true)
+    offset += 4
+
+    const channels = []
+    for (let ch = 0; ch < numChannels; ch += 1) {
+      channels.push(buffer.getChannelData(ch))
+    }
+
+    for (let i = 0; i < numFrames; i += 1) {
+      for (let ch = 0; ch < numChannels; ch += 1) {
+        const sample = channels[ch][i]
+        const clamped = Math.max(-1, Math.min(1, sample))
+        const intSample = clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff
+        view.setInt16(offset, intSample, true)
+        offset += 2
+      }
+    }
+
+    return new Blob([bufferArray], { type: 'audio/wav' })
+  }
+
+  const triggerDownload = (blob, filename) => {
+    if (!blob) return
+    try {
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(() => {
+        try {
+          URL.revokeObjectURL(url)
+        } catch {}
+      }, 10_000)
+    } catch (e) {
+      console.warn('[RecordingLab] download failed', e)
+    }
+  }
+
   const stopTimelinePlayback = () => {
     if (timelineTimeoutRef.current) {
       clearTimeout(timelineTimeoutRef.current)
@@ -1073,6 +1272,133 @@ export function RecordingLab() {
           stopTimelinePlayback()
         }
       }, remaining * 1000 + 300)
+    }
+  }
+
+  const buildExportTasks = () => {
+    const hasAnyVocalClip = vocalTracks.some((t) => !!(t.clip && t.clip.url))
+    const hasBeatAudio = !!selectedBeat?.audioUrl
+    if (!hasBeatAudio && !hasAnyVocalClip) return []
+
+    const anySolo = beatTrackState.solo || vocalTracks.some((t) => t.solo)
+    const tasks = []
+
+    if (hasBeatAudio && beatClip && !beatTrackState.muted && (!anySolo || beatTrackState.solo)) {
+      tasks.push({
+        type: 'beat',
+        url: selectedBeat.audioUrl,
+        clip: beatClip,
+        volume: typeof beatTrackState.volume === 'number' ? beatTrackState.volume : 1,
+      })
+    }
+
+    vocalTracks.forEach((t) => {
+      if (!t.clip || !t.clip.url || t.muted) return
+      if (anySolo && !t.solo) return
+      tasks.push({
+        type: 'vocal',
+        url: t.clip.url,
+        clip: t.clip,
+        fx: t.fx,
+        volume: typeof t.volume === 'number' ? t.volume : 1,
+        trackId: t.id,
+        name: t.name,
+      })
+    })
+
+    return tasks
+  }
+
+  const handleExportMixdown = async () => {
+    if (isExporting) return
+    const range = computeExportRange()
+    if (!range) {
+      // eslint-disable-next-line no-alert
+      alert('Nothing to export yet. Add a beat and/or vocal takes first.')
+      return
+    }
+    const tasks = buildExportTasks()
+    if (!tasks.length) {
+      // eslint-disable-next-line no-alert
+      alert('Nothing to export yet. Add a beat and/or vocal takes first.')
+      return
+    }
+
+    try {
+      setIsExporting(true)
+      const buffer = await renderOfflineMix(tasks, range)
+      if (!buffer) throw new Error('Render failed')
+      const blob = audioBufferToWavBlob(buffer)
+      const baseName = (selectedBeat?.title || 'recording').trim() || 'recording'
+      const safe = baseName.replace(/[^a-zA-Z0-9-_]+/g, '_')
+      const filename = `${safe || 'recording'}_mixdown.wav`
+      triggerDownload(blob, filename)
+    } catch (e) {
+      console.warn('[RecordingLab] mixdown export failed', e)
+      // eslint-disable-next-line no-alert
+      alert('Export failed. Try again in a moment.')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const handleExportStemsZip = async () => {
+    if (isExporting) return
+    const range = computeExportRange()
+    if (!range) {
+      // eslint-disable-next-line no-alert
+      alert('Nothing to export yet. Add a beat and/or vocal takes first.')
+      return
+    }
+
+    const allTasks = buildExportTasks()
+    if (!allTasks.length) {
+      // eslint-disable-next-line no-alert
+      alert('Nothing to export yet. Add a beat and/or vocal takes first.')
+      return
+    }
+
+    try {
+      setIsExporting(true)
+      const zip = new JSZip()
+
+      const beatTask = allTasks.find((t) => t.type === 'beat')
+      if (beatTask) {
+        const buffer = await renderOfflineMix([beatTask], range)
+        if (buffer) {
+          const blob = audioBufferToWavBlob(buffer)
+          if (blob) {
+            const arr = await blob.arrayBuffer()
+            zip.file('beat.wav', arr)
+          }
+        }
+      }
+
+      const vocalTasks = allTasks.filter((t) => t.type === 'vocal')
+      // eslint-disable-next-line no-restricted-syntax
+      for (const task of vocalTasks) {
+        const buffer = await renderOfflineMix([task], range)
+        if (!buffer) continue
+        const blob = audioBufferToWavBlob(buffer)
+        if (!blob) continue
+        const arr = await blob.arrayBuffer()
+        const baseName = (task.name || task.trackId || 'vocal').trim() || 'vocal'
+        const safe = baseName.replace(/[^a-zA-Z0-9-_]+/g, '_')
+        const filename = `${safe || 'vocal'}.wav`
+        zip.file(filename, arr)
+      }
+
+      const archive = await zip.generateAsync({ type: 'blob' })
+      const sessionName = (selectedBeat?.title || 'recording').trim() || 'recording'
+      const safeSession = sessionName.replace(/[^a-zA-Z0-9-_]+/g, '_')
+      const zipName = `${safeSession || 'recording'}_stems.zip`
+      triggerDownload(archive, zipName)
+    } catch (e) {
+      console.warn('[RecordingLab] stems export failed', e)
+      // eslint-disable-next-line no-alert
+      alert('Export failed. Try again in a moment.')
+    } finally {
+      setIsExporting(false)
     }
   }
 
@@ -1469,33 +1795,41 @@ export function RecordingLab() {
                 onToggleLoop={handleToggleLoopRegion}
               />
             </div>
-            {hasRecording && (
-              <div className="flex-shrink-0 rounded-2xl border border-slate-800/80 bg-slate-950/80 p-4 text-[12px] text-slate-200">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Take 1</p>
-                  <span className="rounded-full border border-slate-700/80 px-2 py-0.5 text-[10px] text-slate-400">
-                    {takeUploadState === 'uploading'
-                      ? 'Uploading…'
-                      : takeUploadState === 'saved'
-                      ? 'Saved'
-                      : takeUploadState === 'error'
-                      ? 'Upload failed · Local'
-                      : 'Local only · Draft'}
-                  </span>
-                </div>
-                <p className="mt-1 text-sm font-semibold text-slate-50">Preview recording</p>
-                <audio
-                  controls
-                  src={recordingUrl}
-                  className="mt-3 w-full rounded-xl border border-slate-800/80 bg-slate-900/80 p-2"
-                />
-                {recordingPublicUrl ? (
-                  <p className="mt-2 text-[10px] text-slate-500">Saved URL: {recordingPublicUrl}</p>
-                ) : (
-                  <p className="mt-2 text-[10px] text-slate-500">Takes upload to your storage when the backend is running.</p>
-                )}
+            <div className="flex-shrink-0 rounded-2xl border border-slate-800/80 bg-slate-950/80 p-4 text-[12px] text-slate-200">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Export</p>
+                <span className="rounded-full border border-slate-700/80 px-2 py-0.5 text-[10px] text-slate-400">
+                  {loopRegion?.enabled
+                    ? `Range: ${Math.max(0, Number(loopRegion.startSec || 0)).toFixed(1)}–${Math.max(
+                        0,
+                        Number(loopRegion.endSec || 0),
+                      ).toFixed(1)}s`
+                    : 'Range: full arrangement'}
+                </span>
               </div>
-            )}
+              <p className="mt-1 text-sm font-semibold text-slate-50">Download your session audio</p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleExportMixdown}
+                  disabled={isExporting || !canPlayArrangement}
+                  className="inline-flex items-center justify-center rounded-full border border-emerald-500/70 bg-emerald-500/15 px-3 py-1.5 text-[11px] font-semibold text-emerald-200 hover:border-emerald-400/80 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isExporting ? 'Exporting…' : 'Export WAV mix'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExportStemsZip}
+                  disabled={isExporting || !canPlayArrangement}
+                  className="inline-flex items-center justify-center rounded-full border border-slate-700/80 bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-slate-200 hover:border-slate-500/80 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isExporting ? 'Preparing ZIP…' : 'Export stems (ZIP)'}
+                </button>
+              </div>
+              <p className="mt-2 text-[10px] text-slate-500">
+                Exports use the loop region when enabled, or the full arrangement, so files drop into your DAW aligned with the beat.
+              </p>
+            </div>
           </div>
           {!isArrangementFullscreen && (
             <div className="min-h-0">
