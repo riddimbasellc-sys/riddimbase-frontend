@@ -27,7 +27,7 @@ import { fetchBeat as fetchBeatRemote } from '../services/beatsRepository'
 import { useCart } from '../context/CartContext'
 import ReportModal from '../components/ReportModal'
 import { useBeats } from '../hooks/useBeats'
-import { getPlayCount } from '../services/analyticsService'
+import { getPlayCount, loadPlayCountsForBeats } from '../services/analyticsService'
 
 export function BeatDetails() {
   const params = useParams()
@@ -95,7 +95,20 @@ export function BeatDetails() {
     setReposts(await repostCount(id))
     setFavs(await favoriteCount(id))
     if (producerId) setFollowers(await followerCount(producerId))
-    setPlays(getPlayCount(id))
+
+    // First try cached play counts from in-memory analytics cache
+    let currentPlays = getPlayCount(id)
+    // If cache is empty (e.g. first visit, anonymous user), load from Supabase
+    if (!currentPlays) {
+      try {
+        const totals = await loadPlayCountsForBeats([id])
+        currentPlays = totals?.[id] ?? 0
+      } catch {
+        currentPlays = 0
+      }
+    }
+    setPlays(currentPlays)
+
     if (user) {
       setLiked(await isLiked({ userId: user.id, beatId: id }))
       setReposted(await isReposted({ userId: user.id, beatId: id }))
