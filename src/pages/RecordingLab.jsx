@@ -1327,12 +1327,6 @@ export function RecordingLab() {
                 >
                   Buy Credits
                 </a>
-                <a
-                  href="/#pricing"
-                  className="rounded-full border border-sky-500/70 bg-sky-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-300 hover:bg-sky-500/15"
-                >
-                  Upgrade Plan
-                </a>
               </div>
               <p className="mt-1 text-[10px] text-slate-400">200 credits per recording session</p>
             </div>
