@@ -167,6 +167,7 @@ export function UploadBeat() {
         producerName: producerName || null,
         collaborator: collaboratorString || null,
         musicalKey: musicalKey || null,
+        freeDownload,
       })
       createdBeat = beat
       supabaseAudioUrl = audioUrl
