@@ -60,6 +60,7 @@ import AdminTheme from './pages/AdminTheme'
 import AdminEmailTemplates from './pages/AdminEmailTemplates'
 import AdminAnalytics from './pages/AdminAnalytics'
 import AdminDesign from './pages/AdminDesign'
+import AdminRecordingLabCredits from './pages/AdminRecordingLabCredits'
 import AdminChat from './pages/AdminChat'
 import ProducerInbox from './pages/ProducerInbox'
 import { JobDelivery } from './pages/JobDelivery'
@@ -153,6 +154,7 @@ function App() {
         <Route path="/admin/theme" element={<AdminTheme />} />
         <Route path="/admin/email-templates" element={<AdminEmailTemplates />} />
         <Route path="/admin/analytics" element={<AdminAnalytics />} />
+        <Route path="/admin/recording-lab/credits" element={<AdminRecordingLabCredits />} />
         <Route path="/admin/design" element={<AdminDesign />} />
         </Routes>
       </Layout>
