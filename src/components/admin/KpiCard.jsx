@@ -8,7 +8,7 @@ export default function KpiCard({ label, value, sublabel, delta, positive, icon:
     <button
       type="button"
       onClick={onClick}
-      className="group flex flex-col items-start justify-between rounded-2xl border border-slate-800/80 bg-slate-900/80 px-3 py-2 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-400/60 hover:bg-slate-900/95 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
+      className="group flex h-full w-full flex-col items-start justify-between rounded-2xl border border-slate-800/80 bg-slate-900/80 px-3 py-2 text-left shadow-sm transition hover:border-emerald-400/60 hover:bg-slate-900/95 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
     >
       <div className="flex w-full items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-[11px] font-medium text-slate-300">
