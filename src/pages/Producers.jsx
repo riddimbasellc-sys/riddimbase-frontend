@@ -22,7 +22,7 @@ export function Producers() {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('id, display_name, website, instagram, twitter_x, youtube, role')
+          .select('id, display_name, website, instagram, twitter_x, youtube, role, avatar_url')
 
         if (!error && data && active) {
           const nextProfiles = {}
@@ -41,6 +41,7 @@ export function Producers() {
               instagram: row.instagram || '',
               twitterX: row.twitter_x || '',
               youtube: row.youtube || '',
+              avatarUrl: row.avatar_url || null,
             }
             producerIds.push(row.id)
           }
@@ -315,7 +316,15 @@ export function Producers() {
                   to={`/producer/${pid}`}
                   className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-4 hover:border-emerald-400/70 transition"
                 >
-                  <div className="mb-3 h-14 w-14 rounded-xl bg-gradient-to-br from-emerald-500 via-emerald-400 to-orange-500" />
+                  {prof?.avatarUrl ? (
+                    <img
+                      src={prof.avatarUrl}
+                      alt={displayName}
+                      className="mb-3 h-14 w-14 rounded-xl object-cover"
+                    />
+                  ) : (
+                    <div className="mb-3 h-14 w-14 rounded-xl bg-gradient-to-br from-emerald-500 via-emerald-400 to-orange-500" />
+                  )}
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-semibold text-slate-100 truncate">
                       {displayName}
