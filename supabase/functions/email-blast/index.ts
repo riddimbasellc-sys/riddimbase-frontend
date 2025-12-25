@@ -7,7 +7,8 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-const FROM_EMAIL = Deno.env.get('FROM_EMAIL') || 'RiddimBase <support@riddimbase.app>'
+// Force email blast to always come from the main support address
+const FROM_EMAIL = 'RiddimBase <support@riddimbase.app>'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
