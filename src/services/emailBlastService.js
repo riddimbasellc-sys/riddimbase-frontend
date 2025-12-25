@@ -117,8 +117,15 @@ export async function sendEmailBlast({
   const functionsBase = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL
   if (functionsBase) {
     try {
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+      const headers = {}
+      if (anonKey) {
+        headers.Authorization = `Bearer ${anonKey}`
+        headers.apikey = anonKey
+      }
       const res = await fetch(`${functionsBase}/email-blast`, {
         method: 'POST',
+        headers,
         body: JSON.stringify({ html, recipients: personalized, attachments }),
       })
       if (!res.ok) {
