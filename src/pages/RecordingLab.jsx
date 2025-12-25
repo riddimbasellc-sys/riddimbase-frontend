@@ -204,7 +204,7 @@ export function RecordingLab() {
       }
       try {
         setCreditLoading(true)
-        const apiBase = import.meta?.env?.VITE_API_BASE_URL || 'https://www.riddimbase.app'
+        const apiBase = import.meta?.env?.VITE_API_BASE_URL || 'https://riddimbasellc-server.onrender.com'
         const res = await fetch(`${apiBase}/credits/balance`, {
           headers: { 'x-user-id': user.id },
         })
@@ -336,7 +336,7 @@ export function RecordingLab() {
           const elapsed = startedAt ? (Date.now() - startedAt) / 1000 : timerSeconds
           const durationSec = Math.max(elapsed || 0, 0.5)
 
-          const apiBase = import.meta?.env?.VITE_API_BASE_URL || 'https://www.riddimbase.app'
+          const apiBase = import.meta?.env?.VITE_API_BASE_URL || 'https://riddimbasellc-server.onrender.com'
           const takeId = currentRecordingIdRef.current || `take-${Date.now()}`
 
           const uploadTakeToBackend = async () => {
@@ -518,7 +518,7 @@ export function RecordingLab() {
     const recorder = await ensureRecorder()
     if (!recorder) return
     try {
-      const apiBase = import.meta?.env?.VITE_API_BASE_URL || 'https://www.riddimbase.app'
+      const apiBase = import.meta?.env?.VITE_API_BASE_URL || 'https://riddimbasellc-server.onrender.com'
       const res = await fetch(`${apiBase}/credits/use`, {
         method: 'POST',
         headers: {
