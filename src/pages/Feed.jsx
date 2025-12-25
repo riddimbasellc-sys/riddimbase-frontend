@@ -400,7 +400,15 @@ export default function Feed() {
                           </div>
                           {postComments[p.id] && postComments[p.id].length > 0 && (
                             <div className="mt-3 border-t border-slate-800/70 pt-2">
-                              <div className="space-y-1.5 max-h-24 overflow-y-auto pr-1">
+                              <div
+                                className={
+                                  `space-y-1.5 pr-1 ${
+                                    postComments[p.id].length > 3
+                                      ? 'max-h-28 overflow-y-auto'
+                                      : ''
+                                  }`
+                                }
+                              >
                                 {postComments[p.id].map((c) => (
                                   <div key={c.id} className="flex items-start gap-2 text-[10px]">
                                     <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-slate-800 text-[9px] font-semibold text-slate-100">
