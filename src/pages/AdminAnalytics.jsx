@@ -8,6 +8,7 @@ import { listBeats } from '../services/beatsService'
 import { fetchSales } from '../services/salesRepository'
 import { listAllPayouts } from '../services/payoutsRepository'
 import { loadPlayCountsForBeats } from '../services/analyticsService'
+import { fetchAdminRecordingLabMetrics } from '../services/adminDashboardRepository'
 import { supabase } from '../lib/supabaseClient'
 
 const SERVICE_FEE_RATE = 0.12
@@ -27,6 +28,7 @@ export function AdminAnalytics() {
   const [profiles, setProfiles] = useState([])
   const [playCounts, setPlayCounts] = useState({})
   const [loadingDashboard, setLoadingDashboard] = useState(false)
+  const [labMetrics, setLabMetrics] = useState(null)
 
   const revenueRef = useRef(null)
   const beatsRef = useRef(null)
@@ -41,17 +43,19 @@ export function AdminAnalytics() {
     async function loadAll() {
       setLoadingDashboard(true)
       try {
-        const [beatsData, salesData, payoutRows, profileRows] = await Promise.all([
+        const [beatsData, salesData, payoutRows, profileRows, lab] = await Promise.all([
           listBeats({ includeHidden: true }),
           fetchSales(),
           listAllPayouts(),
           loadProfiles(),
+          fetchAdminRecordingLabMetrics().catch(() => null),
         ])
         if (cancelled) return
         setBeats(beatsData || [])
         setSales(salesData || [])
         setPayouts(payoutRows || [])
         setProfiles(profileRows || [])
+        setLabMetrics(lab)
         const beatIds = Array.from(new Set((beatsData || []).map((b) => b.id).filter(Boolean)))
         if (beatIds.length) {
           const map = await loadPlayCountsForBeats(beatIds)
@@ -270,6 +274,12 @@ export function AdminAnalytics() {
       { label: 'Recording Lab', value: labRevenue },
     ].filter((s) => s.value > 0)
   }, [totalRevenueAllTime])
+
+  const totalCreditsIssued = labMetrics?.totalCreditsIssued || 0
+  const totalCreditsUsed = labMetrics?.totalCreditsUsed || 0
+  const totalCreditsRemaining = labMetrics?.totalCreditsRemaining || 0
+  const sessionsCompleted = labMetrics?.sessionsCompleted || 0
+  const avgCreditsPerSession = labMetrics?.avgCreditsPerSession || 0
 
   const kpiCards = [
     {
@@ -725,16 +735,32 @@ export function AdminAnalytics() {
               </div>
             </div>
             <div className="mt-4 grid gap-3 text-[11px] sm:grid-cols-3">
-              <MiniStat label="Total credits issued" value="—" />
-              <MiniStat label="Credits used" value="—" />
-              <MiniStat label="Credits remaining" value="—" />
-              <MiniStat label="Sessions completed" value="—" />
-              <MiniStat label="Avg credits / session" value="—" />
+              <MiniStat
+                label="Total credits issued"
+                value={totalCreditsIssued.toLocaleString()}
+              />
+              <MiniStat
+                label="Credits used"
+                value={totalCreditsUsed.toLocaleString()}
+              />
+              <MiniStat
+                label="Credits remaining"
+                value={totalCreditsRemaining.toLocaleString()}
+              />
+              <MiniStat
+                label="Sessions completed"
+                value={sessionsCompleted.toLocaleString()}
+              />
+              <MiniStat
+                label="Avg credits / session"
+                value={avgCreditsPerSession ? avgCreditsPerSession.toFixed(1) : '—'}
+              />
             </div>
-            <p className="mt-4 text-[10px] text-slate-500">
-              Once wired, this section becomes your Recording Lab KPI hub: free vs paid
-              credits, funnels and burn-down charts.
-            </p>
+            {!labMetrics && (
+              <p className="mt-4 text-[10px] text-slate-500">
+                Unable to load Recording Lab metrics from the server yet.
+              </p>
+            )}
           </section>
 
           <section
