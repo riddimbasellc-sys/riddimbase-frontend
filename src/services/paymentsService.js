@@ -119,7 +119,7 @@ export async function generateLicense({
   orderId,
 }) {
   try {
-    const base = import.meta.env.VITE_API_BASE_URL || 'https://www.riddimbase.app'
+    const base = import.meta.env.VITE_API_BASE_URL || 'https://riddimbase-backend.onrender.com'
     const res = await fetch(`${base}/api/generate-license`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -144,7 +144,7 @@ export async function generateLicense({
 // Record revenue split for a beat sale via backend
 export async function recordBeatSaleSplit({ saleId, beatId, amount, currency }) {
   try {
-    const base = import.meta.env.VITE_API_BASE_URL || 'https://www.riddimbase.app'
+    const base = import.meta.env.VITE_API_BASE_URL || 'https://riddimbase-backend.onrender.com'
     const res = await fetch(`${base}/sales/record-split`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
