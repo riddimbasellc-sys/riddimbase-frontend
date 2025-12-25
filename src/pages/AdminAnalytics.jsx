@@ -423,7 +423,7 @@ export function AdminAnalytics() {
       subtitle="Cross-platform KPIs for revenue, beats, users and Recording Lab."
     >
       <div className="space-y-6">
-        <div className="sticky top-0 z-20 -mx-4 border-b border-slate-900/80 bg-slate-950/95/95 px-4 pb-3 pt-2">
+        <div className="sticky top-0 z-20 -mx-4 border-b border-slate-900/80 bg-slate-950/95 px-4 pb-3 pt-2">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-300">
@@ -467,22 +467,25 @@ export function AdminAnalytics() {
               )}
             </div>
           </div>
-          <div className="mt-3 grid gap-2 md:grid-cols-4 xl:grid-cols-8">
-            {kpiCards.map((card) => (
-              <KpiCard
-                key={card.key}
-                label={card.label}
-                value={card.value}
-                sublabel={card.sublabel}
-                delta={card.delta}
-                positive={card.positive}
-                icon={card.icon}
-                onClick={() => card.target?.current?.scrollIntoView({
-                  behavior: 'smooth',
-                  block: 'start',
-                })}
-              />
-            ))}
+          <div className="mt-3 overflow-x-auto pb-1">
+            <div className="flex min-w-max gap-2">
+              {kpiCards.map((card) => (
+                <div key={card.key} className="w-52 flex-shrink-0">
+                  <KpiCard
+                    label={card.label}
+                    value={card.value}
+                    sublabel={card.sublabel}
+                    delta={card.delta}
+                    positive={card.positive}
+                    icon={card.icon}
+                    onClick={() => card.target?.current?.scrollIntoView({
+                      behavior: 'smooth',
+                      block: 'start',
+                    })}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
