@@ -1,7 +1,6 @@
 import AdminLayout from '../components/AdminLayout'
 import { useAdminRole } from '../hooks/useAdminRole'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import KpiCard from '../components/admin/KpiCard'
 import RevenueChart from '../components/admin/RevenueChart'
 import AnalyticsTable from '../components/admin/AnalyticsTable'
@@ -17,7 +16,6 @@ const HOSTING_COST_PER_BEAT_MONTH = 0.02
 
 export function AdminAnalytics() {
   const { isAdmin, loading } = useAdminRole()
-  const navigate = useNavigate()
 
   const [rangeKey, setRangeKey] = useState('30d')
   const [customFrom, setCustomFrom] = useState('')
@@ -36,12 +34,6 @@ export function AdminAnalytics() {
   const salesRef = useRef(null)
   const recordingRef = useRef(null)
   const profitRef = useRef(null)
-
-  useEffect(() => {
-    if (!loading && !isAdmin) {
-      navigate('/login', { replace: true })
-    }
-  }, [loading, isAdmin, navigate])
 
   useEffect(() => {
     if (!isAdmin) return
