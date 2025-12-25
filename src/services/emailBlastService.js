@@ -119,7 +119,6 @@ export async function sendEmailBlast({
     try {
       const res = await fetch(`${functionsBase}/email-blast`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ html, recipients: personalized, attachments }),
       })
       if (!res.ok) return false
