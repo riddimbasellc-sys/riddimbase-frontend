@@ -69,22 +69,6 @@ export function AdminAnalytics() {
     }
   }, [isAdmin])
 
-  if (loading) {
-    return (
-      <section className="flex min-h-screen items-center justify-center bg-slate-950/95">
-        <p className="text-sm text-slate-400">Loading admin access...</p>
-      </section>
-    )
-  }
-
-  if (!isAdmin) {
-    return (
-      <section className="flex min-h-screen items-center justify-center bg-slate-950/95">
-        <p className="text-sm text-slate-400">Access denied.</p>
-      </section>
-    )
-  }
-
   const range = useMemo(
     () => computeRange(rangeKey, customFrom, customTo),
     [rangeKey, customFrom, customTo],
@@ -416,6 +400,22 @@ export function AdminAnalytics() {
     sales: (b.sales || 0).toLocaleString(),
     revenue: formatCurrency(b.revenue),
   }))
+
+  if (loading) {
+    return (
+      <section className="flex min-h-screen items-center justify-center bg-slate-950/95">
+        <p className="text-sm text-slate-400">Loading admin access...</p>
+      </section>
+    )
+  }
+
+  if (!isAdmin) {
+    return (
+      <section className="flex min-h-screen items-center justify-center bg-slate-950/95">
+        <p className="text-sm text-slate-400">Access denied.</p>
+      </section>
+    )
+  }
 
   return (
     <AdminLayout
