@@ -36,6 +36,7 @@ export function RecordingLab() {
   const [takeUploadState, setTakeUploadState] = useState('idle') // idle | uploading | saved | error
 
   const [isExporting, setIsExporting] = useState(false)
+  const [showExportMenu, setShowExportMenu] = useState(false)
 
   const [monitorEnabled, setMonitorEnabled] = useState(false)
   const [inputGain, setInputGain] = useState(1)
@@ -1795,40 +1796,61 @@ export function RecordingLab() {
                 onToggleLoop={handleToggleLoopRegion}
               />
             </div>
-            <div className="flex-shrink-0 rounded-2xl border border-slate-800/80 bg-slate-950/80 p-4 text-[12px] text-slate-200">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Export</p>
-                <span className="rounded-full border border-slate-700/80 px-2 py-0.5 text-[10px] text-slate-400">
-                  {loopRegion?.enabled
-                    ? `Range: ${Math.max(0, Number(loopRegion.startSec || 0)).toFixed(1)}–${Math.max(
-                        0,
-                        Number(loopRegion.endSec || 0),
-                      ).toFixed(1)}s`
-                    : 'Range: full arrangement'}
-                </span>
-              </div>
-              <p className="mt-1 text-sm font-semibold text-slate-50">Download your session audio</p>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
+            <div className="flex-shrink-0 flex justify-end">
+              <div className="relative inline-flex">
                 <button
                   type="button"
-                  onClick={handleExportMixdown}
-                  disabled={isExporting || !canPlayArrangement}
-                  className="inline-flex items-center justify-center rounded-full border border-emerald-500/70 bg-emerald-500/15 px-3 py-1.5 text-[11px] font-semibold text-emerald-200 hover:border-emerald-400/80 disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={() => setShowExportMenu((v) => !v)}
+                  disabled={!canPlayArrangement}
+                  className="inline-flex items-center justify-center rounded-full border border-slate-700/80 bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-slate-200 hover:border-emerald-400/80 disabled:cursor-not-allowed disabled:opacity-50"
+                  title="Export session audio"
                 >
-                  {isExporting ? 'Exporting…' : 'Export WAV mix'}
+                  Export
+                  <span className="ml-1 text-[9px] text-slate-400">
+                    {loopRegion?.enabled ? '· Range' : '· Full'}
+                  </span>
                 </button>
-                <button
-                  type="button"
-                  onClick={handleExportStemsZip}
-                  disabled={isExporting || !canPlayArrangement}
-                  className="inline-flex items-center justify-center rounded-full border border-slate-700/80 bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-slate-200 hover:border-slate-500/80 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isExporting ? 'Preparing ZIP…' : 'Export stems (ZIP)'}
-                </button>
+                {showExportMenu && (
+                  <div className="absolute right-0 top-full z-30 mt-2 w-64 rounded-2xl border border-slate-800/80 bg-slate-950/95 p-3 text-[11px] text-slate-200 shadow-xl">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Export</p>
+                    <p className="mt-1 text-[11px] text-slate-300">
+                      {loopRegion?.enabled
+                        ? `Loop range: ${Math.max(0, Number(loopRegion.startSec || 0)).toFixed(1)}–${Math.max(
+                            0,
+                            Number(loopRegion.endSec || 0),
+                          ).toFixed(1)}s`
+                        : 'Range: full arrangement'}
+                    </p>
+                    <div className="mt-3 flex flex-col gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowExportMenu(false)
+                          handleExportMixdown()
+                        }}
+                        disabled={isExporting || !canPlayArrangement}
+                        className="inline-flex items-center justify-center rounded-full border border-emerald-500/70 bg-emerald-500/15 px-3 py-1.5 text-[11px] font-semibold text-emerald-200 hover:border-emerald-400/80 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {isExporting ? 'Exporting…' : 'Export WAV mix'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowExportMenu(false)
+                          handleExportStemsZip()
+                        }}
+                        disabled={isExporting || !canPlayArrangement}
+                        className="inline-flex items-center justify-center rounded-full border border-slate-700/80 bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-slate-200 hover:border-slate-500/80 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {isExporting ? 'Preparing ZIP…' : 'Export stems (ZIP)'}
+                      </button>
+                    </div>
+                    <p className="mt-2 text-[10px] text-slate-500">
+                      Exports use the loop region when enabled, or the full arrangement, so files drop into your DAW aligned with the beat.
+                    </p>
+                  </div>
+                )}
               </div>
-              <p className="mt-2 text-[10px] text-slate-500">
-                Exports use the loop region when enabled, or the full arrangement, so files drop into your DAW aligned with the beat.
-              </p>
             </div>
           </div>
           {!isArrangementFullscreen && (
