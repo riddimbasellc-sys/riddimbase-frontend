@@ -227,7 +227,7 @@ export function UploadBeat() {
     // 4) Persist collaborators via backend
     try {
       if (createdBeat?.id && collaborators.length > 0) {
-        const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001'
+        const base = import.meta.env.VITE_API_BASE_URL || 'https://www.riddimbase.app'
         await fetch(`${base}/collab/set`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
