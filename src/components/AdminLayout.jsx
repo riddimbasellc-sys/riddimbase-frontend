@@ -23,6 +23,7 @@ const navItems = [
   { label: 'Chat', to: '/admin/chat', icon: MailIcon },
   { label: 'Footer Links', to: '/admin/footer-links', icon: LinkIcon },
   { label: 'Socials', to: '/admin/socials', icon: SocialIcon },
+  { label: 'Recording Lab', to: '/admin/recording-lab/credits', icon: LabIcon },
   { label: 'Analytics', to: '/admin/analytics', icon: SparkIcon },
   { label: 'Design System', to: '/admin/design', icon: ImageIcon },
   { label: 'Brand & Theme', to: '/admin/theme', icon: ImageIcon },
@@ -119,3 +120,4 @@ function PlaylistIcon(props){return(<svg viewBox="0 0 24 24" fill="none" stroke=
 function AdsIcon(props){return(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect x="3" y="5" width="13" height="14" rx="2"/><path d="M16 9l5-2v8l-5-2"/><path d="M7 9h5"/><path d="M7 13h3"/></svg>)}
 function SocialIcon(props){return(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="7" cy="12" r="3"/><circle cx="17" cy="6" r="2.5"/><circle cx="17" cy="18" r="2.5"/><path d="M9.5 10.8 14.5 7.2"/><path d="M9.5 13.2 14.5 16.8"/></svg>)}
 function BriefcaseIcon(props){return(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a3 3 0 0 1 3-3h2a3 3 0 0 1 3 3v2"/><path d="M3 12h18"/><path d="M12 12v3"/></svg>)}
+function LabIcon(props){return(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M6 2h12"/><path d="M9 2v6l-4 8a4 4 0 0 0 3.6 6h6.8A4 4 0 0 0 19 16l-4-8V2"/><path d="M10 14h4"/></svg>)}
