@@ -10,51 +10,75 @@ export function Producers() {
   const { beats } = useBeats()
   const [profiles, setProfiles] = useState({})
   const [proMap, setProMap] = useState({})
+  const [producerList, setProducerList] = useState([]) // [userId, beatCount]
   const [viewMode, setViewMode] = useState('grid')
   const [search, setSearch] = useState('')
   const [suggestions, setSuggestions] = useState([])
 
-  const map = {}
-  for (const b of beats) {
-    if (!b.userId) continue
-    map[b.userId] = (map[b.userId] || 0) + 1
-  }
-  const list = Object.entries(map).sort((a, b) => b[1] - a[1])
-
   useEffect(() => {
-    if (!list.length) return
-    const ids = list.map(([id]) => id)
     let active = true
 
     ;(async () => {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('id, display_name, website, instagram, twitter_x, youtube')
-          .in('id', ids)
+          .select('id, display_name, website, instagram, twitter_x, youtube, role')
 
         if (!error && data && active) {
-          const next = {}
+          const nextProfiles = {}
+          const producerIds = []
           for (const row of data) {
-            next[row.id] = {
+            const role = (row.role || '').toLowerCase()
+            const tokens = role.split(/[+\s,\/]+/).filter(Boolean)
+            const isProducer =
+              tokens.includes('producer') ||
+              tokens.includes('beatmaker') ||
+              tokens.includes('beat')
+            if (!isProducer) continue
+            nextProfiles[row.id] = {
               displayName: row.display_name || row.id,
               website: row.website || '',
               instagram: row.instagram || '',
               twitterX: row.twitter_x || '',
               youtube: row.youtube || '',
             }
+            producerIds.push(row.id)
           }
-          setProfiles(next)
+
+          // Compute beat counts for each producer (including those with zero beats)
+          const beatCounts = {}
+          for (const b of beats) {
+            if (!b.userId) continue
+            beatCounts[b.userId] = (beatCounts[b.userId] || 0) + 1
+          }
+
+          const sorted = producerIds
+            .map((id) => [id, beatCounts[id] || 0])
+            .sort((a, b) => b[1] - a[1])
+
+          if (active) {
+            setProfiles(nextProfiles)
+            setProducerList(sorted)
+          }
+        } else if (active) {
+          setProfiles({})
+          setProducerList([])
         }
       } catch {
         // ignore
       }
 
       try {
+        const producerIds = producerList.map(([id]) => id)
+        if (!producerIds.length) {
+          if (active) setProMap({})
+          return
+        }
+
         const { data: subs } = await supabase
           .from('subscriptions')
           .select('user_id, plan_id, status')
-          .in('user_id', ids)
+          .in('user_id', producerIds)
           .in('status', ['active', 'trialing', 'past_due'])
 
         if (active) {
@@ -71,10 +95,14 @@ export function Producers() {
       }
     })()
 
-    return () => {
+            if (active) {
+              setProfiles({})
+              setProducerList([])
+              setProMap({})
+            }
       active = false
     }
-  }, [beats.length, list.length])
+  }, [beats])
 
   useEffect(() => {
     const term = search.trim()
@@ -102,7 +130,7 @@ export function Producers() {
     }
   }, [search])
 
-  const filteredList = list.filter(([pid]) => {
+  const filteredList = producerList.filter(([pid]) => {
     const term = search.trim().toLowerCase()
     if (!term) return true
     const prof = profiles[pid]
