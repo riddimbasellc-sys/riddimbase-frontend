@@ -121,8 +121,16 @@ export async function sendEmailBlast({
         method: 'POST',
         body: JSON.stringify({ html, recipients: personalized, attachments }),
       })
-      if (!res.ok) return false
-    } catch {
+      if (!res.ok) {
+        let text = ''
+        try {
+          text = await res.text()
+        } catch {}
+        console.warn('[emailBlastService] email-blast failed', res.status, res.statusText, text)
+        return false
+      }
+    } catch (e) {
+      console.warn('[emailBlastService] email-blast exception', e?.message || e)
       return false
     }
   }
