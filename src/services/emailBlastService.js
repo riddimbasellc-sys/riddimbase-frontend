@@ -72,7 +72,7 @@ export async function fetchAllUsers() {
   try {
     const { data, error } = await supabase
       .from(TABLE_PROFILES)
-      .select('id, email, display_name')
+      .select('id, email, display_name, role')
 
     if (error) {
       console.warn('[emailBlastService] fetchAllUsers error', error.message)
