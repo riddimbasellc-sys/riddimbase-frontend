@@ -139,11 +139,14 @@ export default function Feed() {
       if (!active) return
       setPosts(rows || [])
       const likeCounts = {}
+      const commentsByPost = {}
       for (const p of rows || []) {
         likeCounts[p.id] = await postLikeCount(p.id)
+        commentsByPost[p.id] = await listPostComments(p.id)
       }
       if (!active) return
       setPostLikes(likeCounts)
+      setPostComments(commentsByPost)
     })()
     return () => {
       active = false
