@@ -20,7 +20,7 @@ function StudioCredits() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
-  const apiBase = import.meta?.env?.VITE_API_BASE_URL || 'https://riddimbasellc-server.onrender.com'
+  const apiBase = import.meta?.env?.VITE_API_BASE_URL || 'https://riddimbase-backend.onrender.com'
 
   useEffect(() => {
     const run = async () => {
