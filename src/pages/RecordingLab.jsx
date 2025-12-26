@@ -23,6 +23,7 @@ export function RecordingLab() {
   const [creditBalance, setCreditBalance] = useState(null)
   const [creditLoading, setCreditLoading] = useState(false)
   const [insufficientCredits, setInsufficientCredits] = useState(false)
+  const [sessionCharged, setSessionCharged] = useState(false)
 
   const [selectedBeat, setSelectedBeat] = useState(null)
   const [beatVolume, setBeatVolume] = useState(0.8)
@@ -519,7 +520,8 @@ export function RecordingLab() {
       alert('Log in to use the Recording Lab.')
       return
     }
-    if (typeof creditBalance === 'number' && creditBalance < 200) {
+    const needsCharge = !sessionCharged
+    if (needsCharge && typeof creditBalance === 'number' && creditBalance < 200) {
       setInsufficientCredits(true)
       // eslint-disable-next-line no-alert
       alert('Insufficient credits. Each session costs 200 credits.')
@@ -529,32 +531,35 @@ export function RecordingLab() {
     if (recordState === 'recording') return
     const recorder = await ensureRecorder()
     if (!recorder) return
-    try {
-      const apiBase = import.meta?.env?.VITE_API_BASE_URL || 'https://riddimbase-backend.onrender.com'
-      const res = await fetch(`${apiBase}/credits/use`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': user.id,
-        },
-        body: JSON.stringify({ amount: 200 }),
-      })
-      if (res.status === 402) {
-        setInsufficientCredits(true)
+    if (needsCharge) {
+      try {
+        const apiBase = import.meta?.env?.VITE_API_BASE_URL || 'https://riddimbase-backend.onrender.com'
+        const res = await fetch(`${apiBase}/credits/use`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': user.id,
+          },
+          body: JSON.stringify({ amount: 200 }),
+        })
+        if (res.status === 402) {
+          setInsufficientCredits(true)
+          const data = await res.json().catch(() => ({}))
+          if (typeof data.balance === 'number') setCreditBalance(data.balance)
+          // eslint-disable-next-line no-alert
+          alert('Insufficient credits. Please buy credits or upgrade your plan.')
+          return
+        }
+        if (!res.ok) throw new Error('Credit deduction failed')
         const data = await res.json().catch(() => ({}))
         if (typeof data.balance === 'number') setCreditBalance(data.balance)
+        setSessionCharged(true)
+      } catch (e) {
+        console.warn('[RecordingLab] credit deduction failed', e)
         // eslint-disable-next-line no-alert
-        alert('Insufficient credits. Please buy credits or upgrade your plan.')
+        alert('Could not verify credits. Please try again in a moment.')
         return
       }
-      if (!res.ok) throw new Error('Credit deduction failed')
-      const data = await res.json().catch(() => ({}))
-      if (typeof data.balance === 'number') setCreditBalance(data.balance)
-    } catch (e) {
-      console.warn('[RecordingLab] credit deduction failed', e)
-      // eslint-disable-next-line no-alert
-      alert('Could not verify credits. Please try again in a moment.')
-      return
     }
     try {
       const takeId = `take-${Date.now()}`
@@ -1454,10 +1459,16 @@ export function RecordingLab() {
     }
   }, [])
 
+  useEffect(() => {
+    // Reset per-session credit flag when user identity changes
+    setSessionCharged(false)
+  }, [user?.id])
+
   const canRecord = micStatus === 'granted' && hasAudioSupport
   const hasRecording = !!recordingUrl
   const canPlayArrangement = !!selectedBeat?.audioUrl || vocalTracks.some((t) => !!t.clip)
-  const hasEnoughCredits = typeof creditBalance === 'number' ? creditBalance >= 200 : true
+  const hasEnoughCredits =
+    sessionCharged || (typeof creditBalance === 'number' ? creditBalance >= 200 : true)
 
   const formatSessionLabel = (s) => {
     const name = (s?.name || '').trim()
@@ -1495,6 +1506,7 @@ export function RecordingLab() {
       loopRegion,
       playheadSec,
       selectedVocalTrackId,
+      creditsCharged: sessionCharged,
     }
   }
 
@@ -1666,6 +1678,7 @@ export function RecordingLab() {
       setLoopRegion(state.loopRegion || { enabled: false, startSec: 0, endSec: 8 })
       setPlayheadSec(typeof state.playheadSec === 'number' ? state.playheadSec : 0)
       setSelectedVocalTrackId(state.selectedVocalTrackId || null)
+      setSessionCharged(!!state.creditsCharged)
 
       setRecordState('idle')
       setTimerSeconds(0)
