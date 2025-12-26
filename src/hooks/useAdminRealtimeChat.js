@@ -89,7 +89,11 @@ export function useAdminRealtimeChat(currentUser) {
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            setMessages((prev) => [...prev, payload.new])
+            // Guard against duplicate inserts from multiple subscriptions
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === payload.new.id)) return prev
+              return [...prev, payload.new]
+            })
           } else if (payload.eventType === 'UPDATE') {
             setMessages((prev) =>
               prev.map((m) => (m.id === payload.new.id ? payload.new : m)),
@@ -165,6 +169,23 @@ export function useAdminRealtimeChat(currentUser) {
         ...attachmentFields,
       })
       if (error) throw error
+
+      // Update conversation metadata so it appears correctly in the sidebar
+      const now = new Date().toISOString()
+      let preview = content || ''
+      if (!preview && attachment) {
+        if (type === 'image') preview = '[Image]'
+        else if (type === 'audio') preview = '[Audio]'
+        else preview = '[File]'
+      }
+
+      await supabase
+        .from('chat_conversations')
+        .update({
+          last_message_at: now,
+          last_message_preview: preview,
+        })
+        .eq('id', convId)
     },
     [activeConversationId, currentUser],
   )
