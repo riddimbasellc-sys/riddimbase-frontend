@@ -1189,7 +1189,12 @@ export function RecordingLab() {
   const handlePlayFromCursor = async () => {
     const hasAnyVocalClip = vocalTracks.some((t) => !!t.clip)
     const hasBeatAudio = !!selectedBeat?.audioUrl
-    if (!hasBeatAudio && !hasAnyVocalClip) return
+    if (!hasBeatAudio && !hasAnyVocalClip) {
+      // Nothing to play yet – avoid silent failures so its clear why transport does nothing
+      // eslint-disable-next-line no-alert
+      alert('Nothing to play yet. Add a beat or record a take first.')
+      return
+    }
     const loopActive =
       loopRegion &&
       loopRegion.enabled &&
@@ -1343,6 +1348,30 @@ export function RecordingLab() {
       }, remaining * 1000 + 300)
     }
   }
+
+  // Global spacebar shortcut for play / pause, unless the user is typing
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.code !== 'Space' && e.key !== ' ') return
+
+      const target = e.target
+      const tag = target?.tagName
+      const isTyping =
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        target?.isContentEditable
+
+      if (isTyping) return
+
+      e.preventDefault()
+      handleToggleArrangementPlay()
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [handleToggleArrangementPlay])
 
   const buildExportTasks = () => {
     const hasAnyVocalClip = vocalTracks.some((t) => !!(t.clip && t.clip.url))
