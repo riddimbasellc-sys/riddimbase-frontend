@@ -132,15 +132,26 @@ export function Checkout() {
       return
     }
 
-    // Trigger the download immediately while we still have a user gesture.
+    // Trigger the download without navigating away from the site.
+    // Primary: fetch -> blob -> objectURL (requires CORS on the file host).
+    // Fallback: open in a new tab (keeps the site open).
     try {
-      const link = document.createElement('a')
-      link.href = downloadUrl
-      link.download = ''
-      link.style.display = 'none'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+      const res = await fetch(downloadUrl)
+      if (res.ok) {
+        const blob = await res.blob()
+        const objectUrl = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = objectUrl
+        const safeTitle = String(beat.title || 'download').replace(/[^a-z0-9._-]+/gi, '_')
+        link.download = safeTitle
+        link.style.display = 'none'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000)
+      } else {
+        window.open(downloadUrl, '_blank', 'noopener,noreferrer')
+      }
     } catch (e) {
       try {
         window.open(downloadUrl, '_blank', 'noopener,noreferrer')
