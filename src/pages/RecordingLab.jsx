@@ -102,6 +102,7 @@ export function RecordingLab() {
   const recordStartPlayheadRef = useRef(0)
   const timelineSourcesRef = useRef([])
   const bufferCacheRef = useRef(new Map())
+  const recordingBlobCacheRef = useRef(new Map())
   const timelineTimeoutRef = useRef(null)
   const waveformCacheRef = useRef(new Map())
   const [liveRecordingWaveforms, setLiveRecordingWaveforms] = useState({})
@@ -336,6 +337,10 @@ export function RecordingLab() {
           chunksRef.current = []
           if (recordingUrl) URL.revokeObjectURL(recordingUrl)
           const url = URL.createObjectURL(blob)
+          // Cache blob so playback can decode it without needing fetch on blob: URLs
+          try {
+            recordingBlobCacheRef.current.set(url, blob)
+          } catch {}
           setRecordingUrl(url)
           setRecordingPublicUrl(null)
           const startedAt = recordStartRef.current
@@ -823,9 +828,18 @@ export function RecordingLab() {
     const cache = bufferCacheRef.current
     if (cache.has(url)) return cache.get(url)
     try {
-      const res = await fetch(url)
-      const arr = await res.arrayBuffer()
-      const buf = await ctx.decodeAudioData(arr)
+      let arrayBuffer
+
+      // Support locally recorded takes stored as blob: URLs
+      if (url.startsWith('blob:') && recordingBlobCacheRef.current.has(url)) {
+        const blob = recordingBlobCacheRef.current.get(url)
+        arrayBuffer = await blob.arrayBuffer()
+      } else {
+        const res = await fetch(url)
+        arrayBuffer = await res.arrayBuffer()
+      }
+
+      const buf = await ctx.decodeAudioData(arrayBuffer)
       cache.set(url, buf)
       return buf
     } catch {
