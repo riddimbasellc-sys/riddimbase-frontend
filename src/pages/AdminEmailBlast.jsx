@@ -60,7 +60,7 @@ export function AdminEmailBlast() {
         listEmailBlasts(),
         fetchAllUsers(),
       ])
-      setBlasts(existingBlasts || [])
+      setBlasts((Array.isArray(existingBlasts) ? existingBlasts : []).filter(Boolean))
       setUsers(allUsers || [])
     })()
   }, [])
@@ -133,11 +133,11 @@ export function AdminEmailBlast() {
       const ok = await sendEmailBlast({ subject, body, recipients: recipientsToSend, includeFooter, html: htmlMode, attachments })
       if (!ok) throw new Error('Failed to dispatch email blast.')
       const blast = await createEmailBlast({ subject, body, totalRecipients: recipientsToSend.length, includeFooter, html: htmlMode })
-      if (blast) {
+      if (blast?.id) {
         // Log recipients per blast in Supabase
         await saveBlastRecipients(blast.id, recipientsToSend)
+        setBlasts((prev) => [blast, ...(Array.isArray(prev) ? prev : [])].filter(Boolean))
       }
-      setBlasts(prev => [blast, ...prev])
       setSuccess(`Sent to ${recipientsToSend.length} recipient${recipientsToSend.length===1?'':'s'}.`)
       setSubject(''); setBody(''); setAttachments([])
     } catch (e) {
@@ -170,6 +170,7 @@ export function AdminEmailBlast() {
   }
 
   function resend(blast) {
+    if (!blast) return
     setSubject(blast.subject)
     setBody(blast.body)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -491,7 +492,7 @@ export function AdminEmailBlast() {
           <h2 className="text-sm font-semibold text-slate-100 tracking-wide mb-4">Past Blasts ({blasts.length})</h2>
           {blasts.length === 0 && <p className="text-[11px] text-slate-500">No blasts sent yet.</p>}
           <ul className="space-y-3">
-            {blasts.map(b => (
+            {blasts.filter(Boolean).map(b => (
               <li key={b.id} className="rounded-xl border border-slate-800/70 bg-slate-950/70 p-4 flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-3">
                   <div className="text-[11px] font-semibold text-emerald-300 truncate" title={b.subject}>{b.subject}</div>
