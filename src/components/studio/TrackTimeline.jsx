@@ -38,6 +38,7 @@ export default function TrackTimeline({
   onLoopSetEnd,
   onSelectVocalTrack,
   onDeleteVocalClip,
+  onDeleteVocalTrack,
   onSetLoopFromClip,
   requestWaveform,
 }) {
@@ -46,7 +47,7 @@ export default function TrackTimeline({
   const loadedWaveformsRef = useRef(new Set())
   const [zoom, setZoom] = useState(1)
   const [showVolumeAutomation, setShowVolumeAutomation] = useState(true)
-  const [contextMenu, setContextMenu] = useState(null) // { x, y, clip }
+  const [contextMenu, setContextMenu] = useState(null) // { x, y, clip?, lane? }
 
   const liveWaveformsMap = liveRecordingWaveforms || {}
 
@@ -241,21 +242,46 @@ export default function TrackTimeline({
   }
 
   const handleContextMenuAction = (action) => {
-    if (!contextMenu || !contextMenu.clip) return
-    const { clip } = contextMenu
-    if (action === 'delete') {
-      if (clip.type === 'vocal') {
-        onDeleteVocalClip?.(clip.id)
+    if (!contextMenu) return
+
+    if (contextMenu.clip) {
+      const { clip } = contextMenu
+      if (action === 'delete-clip') {
+        if (clip.type === 'vocal') {
+          onDeleteVocalClip?.(clip.id)
+        }
+      } else if (action === 'loop-clip') {
+        const start = clip.startSec || 0
+        const dur = clip.durationSec || 0
+        onSetLoopFromClip?.(start, dur)
+      } else if (action === 'play-clip') {
+        const start = clip.startSec || 0
+        onSeek?.(start)
+        onPlayFromCursor?.()
       }
-    } else if (action === 'loop') {
-      const start = clip.startSec || 0
-      const dur = clip.durationSec || 0
-      onSetLoopFromClip?.(start, dur)
-    } else if (action === 'play') {
-      const start = clip.startSec || 0
-      onSeek?.(start)
-      onPlayFromCursor?.()
+    } else if (contextMenu.lane) {
+      const { lane } = contextMenu
+      const isBeatLane = lane.kind === 'beat'
+
+      if (action === 'delete-track') {
+        if (!isBeatLane) {
+          onDeleteVocalTrack?.(lane.trackId)
+        }
+      } else if (action === 'mute-track') {
+        if (isBeatLane) {
+          onToggleBeatMute?.()
+        } else {
+          onToggleVocalMute?.(lane.trackId)
+        }
+      } else if (action === 'solo-track') {
+        if (isBeatLane) {
+          onToggleBeatSolo?.()
+        } else {
+          onToggleVocalSolo?.(lane.trackId)
+        }
+      }
     }
+
     closeContextMenu()
   }
 
@@ -418,6 +444,14 @@ export default function TrackTimeline({
                         ? 'bg-slate-900/95 shadow-[0_0_0_1px_rgba(248,113,113,0.7)]'
                         : 'bg-slate-950/95'
                     }`}
+                    onContextMenu={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      if (!isBeatLane) {
+                        onSelectVocalTrack?.(lane.trackId)
+                      }
+                      setContextMenu({ x: e.clientX, y: e.clientY, lane })
+                    }}
                   >
                     <div
                       className="flex items-center justify-between gap-2 cursor-pointer"
@@ -813,28 +847,59 @@ export default function TrackTimeline({
                 style={{ left: contextMenu.x, top: contextMenu.y }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <button
-                  type="button"
-                  onClick={() => handleContextMenuAction('play')}
-                  className="flex w-full items-center rounded px-2 py-1 text-left hover:bg-slate-800/80"
-                >
-                  Play from clip
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleContextMenuAction('loop')}
-                  className="flex w-full items-center rounded px-2 py-1 text-left hover:bg-slate-800/80"
-                >
-                  Set loop to clip
-                </button>
-                {contextMenu.clip?.type === 'vocal' && (
-                  <button
-                    type="button"
-                    onClick={() => handleContextMenuAction('delete')}
-                    className="mt-1 flex w-full items-center rounded px-2 py-1 text-left text-red-300 hover:bg-red-900/40"
-                  >
-                    Delete clip
-                  </button>
+                {contextMenu.clip && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleContextMenuAction('play-clip')}
+                      className="flex w-full items-center rounded px-2 py-1 text-left hover:bg-slate-800/80"
+                    >
+                      Play from clip
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleContextMenuAction('loop-clip')}
+                      className="flex w-full items-center rounded px-2 py-1 text-left hover:bg-slate-800/80"
+                    >
+                      Set loop to clip
+                    </button>
+                    {contextMenu.clip.type === 'vocal' && (
+                      <button
+                        type="button"
+                        onClick={() => handleContextMenuAction('delete-clip')}
+                        className="mt-1 flex w-full items-center rounded px-2 py-1 text-left text-red-300 hover:bg-red-900/40"
+                      >
+                        Delete clip
+                      </button>
+                    )}
+                  </>
+                )}
+                {contextMenu.lane && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleContextMenuAction('mute-track')}
+                      className="flex w-full items-center rounded px-2 py-1 text-left hover:bg-slate-800/80"
+                    >
+                      {contextMenu.lane.kind === 'beat' ? 'Mute beat track' : 'Mute track'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleContextMenuAction('solo-track')}
+                      className="flex w-full items-center rounded px-2 py-1 text-left hover:bg-slate-800/80"
+                    >
+                      {contextMenu.lane.kind === 'beat' ? 'Solo beat track' : 'Solo track'}
+                    </button>
+                    {contextMenu.lane.kind === 'vocal' && (
+                      <button
+                        type="button"
+                        onClick={() => handleContextMenuAction('delete-track')}
+                        className="mt-1 flex w-full items-center rounded px-2 py-1 text-left text-red-300 hover:bg-red-900/40"
+                      >
+                        Delete track
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
