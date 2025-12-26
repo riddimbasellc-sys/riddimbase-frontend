@@ -85,10 +85,16 @@ export function RecordingLab() {
   })
 
   const [vocalTracks, setVocalTracks] = useState([]) // { id, name, muted, solo, volume, clip, fx }
-  const [beatTrackState, setBeatTrackState] = useState({ muted: false, solo: false, volume: 1 })
+  const [beatTrackState, setBeatTrackState] = useState({
+    muted: false,
+    solo: false,
+    volume: 1,
+    fx: createDefaultVocalFx(),
+  })
   const [playheadSec, setPlayheadSec] = useState(0)
   const [isTimelinePlaying, setIsTimelinePlaying] = useState(false)
   const [selectedVocalTrackId, setSelectedVocalTrackId] = useState(null)
+  const [selectedFxTrackId, setSelectedFxTrackId] = useState(null) // 'beat' or vocal track id
 
   const audioRef = useRef(null)
   const audioContextRef = useRef(null)
@@ -115,6 +121,8 @@ export function RecordingLab() {
   const playbackStartSecRef = useRef(0)
   const playbackEndSecRef = useRef(null)
   const isTimelinePlayingRef = useRef(false)
+  const fxPreviewSourceRef = useRef(null)
+  const fxPreviewTimeoutRef = useRef(null)
 
   const [hasAudioSupport] = useState(() =>
     typeof window !== 'undefined' &&
@@ -611,6 +619,7 @@ export function RecordingLab() {
           },
         ]
         setSelectedVocalTrackId(trackId)
+        setSelectedFxTrackId(trackId)
         return next
       })
 
@@ -847,7 +856,7 @@ export function RecordingLab() {
     }
   }
 
-  const applyVocalFxChain = (ctx, sourceNode, fx, destinationNode) => {
+  const applyFxChain = (ctx, sourceNode, fx, destinationNode) => {
     const safeFx = fx || {}
     let current = sourceNode
     const destination = destinationNode || ctx.destination
@@ -1045,8 +1054,8 @@ export function RecordingLab() {
       const volume = typeof task.volume === 'number' ? task.volume : 1
       gainNode.gain.value = Math.max(0, Math.min(2, volume))
 
-      if (task.type === 'vocal') {
-        applyVocalFxChain(offlineCtx, source, task.fx, gainNode)
+      if (task.fx) {
+        applyFxChain(offlineCtx, source, task.fx, gainNode)
       } else {
         source.connect(gainNode)
       }
@@ -1185,11 +1194,16 @@ export function RecordingLab() {
 
   const handleSelectVocalTrack = (trackId) => {
     setSelectedVocalTrackId(trackId)
+    setSelectedFxTrackId(trackId)
+  }
+
+  const handleSelectBeatTrack = () => {
+    setSelectedFxTrackId('beat')
   }
 
   const handleOpenEffect = (effectKey) => {
-    if (!selectedVocalTrackId) return
-    setFxEditor({ effectKey, trackId: selectedVocalTrackId })
+    if (!selectedFxTrackId) return
+    setFxEditor({ effectKey, trackId: selectedFxTrackId })
   }
 
   const handleToggleArrangementPlay = () => {
@@ -1223,14 +1237,27 @@ export function RecordingLab() {
     const regionEndLimit = loopActive ? loopRegion.endSec : Infinity
     // Always stop any prior transport state before starting new playback
     stopTimelinePlayback()
-
+    const startAt = loopActive
     let anySources = false
 
     // Always drive the beat through the HTMLAudio element since it already
     // plays correctly in the "beat monitor" path. This avoids cross-origin
-    // / decode issues that can happen when trying to fetch + decode the beat
-    // into Web Audio.
-    if (hasBeatAudio) {
+    // Always stop any prior transport state before starting new playback
+    stopTimelinePlayback()
+
+    let anySources = false
+    let maxEnd = startAt
+
+    const beatFxEnabled =
+      hasBeatAudio &&
+      beatTrackState?.fx &&
+      Object.values(beatTrackState.fx).some((fx) => fx && fx.enabled)
+
+    // If there is a beat without FX, drive it through the HTMLAudio element
+    // (same path as the beat monitor button). When FX are enabled on the
+    // beat track, we route it through Web Audio instead so the FX chain can
+    // be applied.
+    if (hasBeatAudio && !beatFxEnabled) {
       ensureBeatAudio()
       const el = audioRef.current
       if (el) {
@@ -1263,13 +1290,14 @@ export function RecordingLab() {
 
           startPlayheadAnimation(safeStart, endLimit)
           anySources = true
+          maxEnd = Math.max(maxEnd, endLimit)
         } catch {}
       }
     }
 
-    // If there are no vocal clips, arrangement playback is beat-only and is
-    // already handled by the HTMLAudio element above.
-    if (!hasAnyVocalClip) {
+    const needsWebAudio = hasAnyVocalClip || beatFxEnabled
+
+    if (!needsWebAudio) {
       if (anySources) setIsTimelinePlaying(true)
       return
     }
@@ -1287,6 +1315,18 @@ export function RecordingLab() {
     const anySolo = beatTrackState.solo || vocalTracks.some((t) => t.solo)
 
     const tasks = []
+
+    // Beat through Web Audio when FX are enabled
+    if (beatFxEnabled && !beatTrackState.muted && (!anySolo || beatTrackState.solo)) {
+      tasks.push({
+        type: 'beat',
+        url: selectedBeat.audioUrl,
+        clip: beatClip || { startSec: 0, durationSec: undefined },
+        fx: beatTrackState.fx,
+        volume: typeof beatTrackState.volume === 'number' ? beatTrackState.volume : 1,
+      })
+    }
+
     vocalTracks.forEach((t) => {
       if (!t.clip || t.muted) return
       if (anySolo && !t.solo) return
@@ -1306,7 +1346,6 @@ export function RecordingLab() {
 
     const now = ctx.currentTime + 0.05
     const sources = []
-    let maxEnd = 0
 
     for (const task of tasks) {
       const buffer = await loadBuffer(task.url)
@@ -1331,7 +1370,13 @@ export function RecordingLab() {
       const volume = typeof task.volume === 'number' ? task.volume : 1
       const gainNode = ctx.createGain()
       gainNode.gain.value = Math.max(0, Math.min(2, volume))
-      applyVocalFxChain(ctx, source, task.fx, gainNode)
+
+      if (task.fx) {
+        applyFxChain(ctx, source, task.fx, gainNode)
+      } else {
+        source.connect(gainNode)
+      }
+
       gainNode.connect(ctx.destination)
       try {
         source.start(when, offset, playDuration)
@@ -1349,12 +1394,13 @@ export function RecordingLab() {
 
     if (maxEnd > startAt) {
       startPlayheadAnimation(startAt, maxEnd)
-    } else if (!hasBeatAudio) {
-      // If there is a beat, the playhead animation was already started above.
+    } else if (!hasBeatAudio || beatFxEnabled) {
+      // If the beat is running only via Web Audio (FX enabled) or there is
+      // no beat, animation is driven by the Web Audio mix.
       startPlayheadAnimation(startAt)
     }
 
-    if (!hasBeatAudio && maxEnd > startAt) {
+    if ((!hasBeatAudio || beatFxEnabled) && maxEnd > startAt) {
       const remaining = maxEnd - startAt
       timelineTimeoutRef.current = setTimeout(() => {
         if (
@@ -1373,14 +1419,6 @@ export function RecordingLab() {
     }
 
     if (anySources) setIsTimelinePlaying(true)
-  }
-
-  // Global spacebar shortcut for play / pause, unless the user is typing
-  useEffect(() => {
-    const onKeyDown = (e) => {
-      if (e.code !== 'Space' && e.key !== ' ') return
-
-      const target = e.target
       const tag = target?.tagName
       const isTyping =
         tag === 'INPUT' ||
@@ -1829,6 +1867,85 @@ export function RecordingLab() {
     }
   }
 
+  const stopFxPreview = () => {
+    if (fxPreviewTimeoutRef.current) {
+      clearTimeout(fxPreviewTimeoutRef.current)
+      fxPreviewTimeoutRef.current = null
+    }
+    if (fxPreviewSourceRef.current) {
+      try {
+        fxPreviewSourceRef.current.stop()
+      } catch {}
+      fxPreviewSourceRef.current = null
+    }
+  }
+
+  const previewFxForCurrentTrack = async (effectKey, draftSettings) => {
+    if (!fxEditor || !fxEditor.trackId) return
+    const ctx = ensurePlaybackContext()
+    if (!ctx) return
+
+    const trackId = fxEditor.trackId
+    const isBeat = trackId === 'beat'
+
+    let url = null
+    let clipStart = 0
+    let clipDur = 0
+    let baseFx = null
+    let volume = 1
+
+    if (isBeat) {
+      if (!selectedBeat?.audioUrl || !beatClip) return
+      url = selectedBeat.audioUrl
+      clipStart = Number.isFinite(beatClip.startSec) ? beatClip.startSec : 0
+      clipDur = Number.isFinite(beatClip.durationSec) ? beatClip.durationSec : 4
+      baseFx = beatTrackState.fx || createDefaultVocalFx()
+      volume =
+        typeof beatTrackState.volume === 'number' ? beatTrackState.volume : 1
+    } else {
+      const track = vocalTracks.find((t) => t.id === trackId)
+      if (!track?.clip || !track.clip.url) return
+      url = track.clip.url
+      clipStart = Number.isFinite(track.clip.startSec) ? track.clip.startSec : 0
+      clipDur = Number.isFinite(track.clip.durationSec) ? track.clip.durationSec : 4
+      baseFx = track.fx || createDefaultVocalFx()
+      volume = typeof track.volume === 'number' ? track.volume : 1
+    }
+
+    const buffer = await loadBuffer(url)
+    if (!buffer) return
+
+    stopFxPreview()
+
+    const previewFx = {
+      ...baseFx,
+      [effectKey]: { ...(baseFx?.[effectKey] || {}), ...draftSettings },
+    }
+
+    const source = ctx.createBufferSource()
+    source.buffer = buffer
+    const gainNode = ctx.createGain()
+    gainNode.gain.value = Math.max(0, Math.min(2, volume))
+
+    applyFxChain(ctx, source, previewFx, gainNode)
+    gainNode.connect(ctx.destination)
+
+    try {
+      await ctx.resume()
+    } catch {}
+
+    const start = Math.max(0, clipStart)
+    const dur = Math.max(0.25, Math.min(4, clipDur))
+    const when = ctx.currentTime + 0.05
+    try {
+      source.start(when, start, dur)
+      fxPreviewSourceRef.current = source
+      fxPreviewTimeoutRef.current = setTimeout(() => {
+        stopFxPreview()
+      }, (dur + 0.25) * 1000)
+    } catch {}
+  }
+
   const handleLoadSession = async (sessionId) => {
     if (!user?.id) return
     if (!sessionId) return
@@ -1852,7 +1969,19 @@ export function RecordingLab() {
       setBeatVolume(typeof state.beatVolume === 'number' ? state.beatVolume : 0.8)
       setSnapToGrid(typeof state.snapToGrid === 'boolean' ? state.snapToGrid : true)
       setBeatClip(state.beatClip || null)
-      setBeatTrackState(state.beatTrackState || { muted: false, solo: false, volume: 1 })
+      setBeatTrackState(
+        state.beatTrackState
+          ? {
+              muted: !!state.beatTrackState.muted,
+              solo: !!state.beatTrackState.solo,
+              volume:
+                typeof state.beatTrackState.volume === 'number'
+                  ? state.beatTrackState.volume
+                  : 1,
+              fx: state.beatTrackState.fx || createDefaultVocalFx(),
+            }
+          : { muted: false, solo: false, volume: 1, fx: createDefaultVocalFx() },
+      )
       setVocalTracks(
         Array.isArray(state.vocalTracks)
           ? state.vocalTracks.map((t, idx) => ({
@@ -1869,6 +1998,7 @@ export function RecordingLab() {
       setLoopRegion(state.loopRegion || { enabled: false, startSec: 0, endSec: 8 })
       setPlayheadSec(typeof state.playheadSec === 'number' ? state.playheadSec : 0)
       setSelectedVocalTrackId(state.selectedVocalTrackId || null)
+      setSelectedFxTrackId(state.selectedVocalTrackId || null)
       setSessionCharged(!!state.creditsCharged)
 
       setRecordState('idle')
@@ -2073,6 +2203,7 @@ export function RecordingLab() {
                 onLoopSetStart={handleLoopSetStart}
                 onLoopSetEnd={handleLoopSetEnd}
                 onSelectVocalTrack={handleSelectVocalTrack}
+                onSelectBeatTrack={handleSelectBeatTrack}
                 onDeleteVocalClip={handleDeleteVocalClip}
                 onDeleteVocalTrack={handleDeleteVocalTrack}
                 onSetLoopFromClip={handleSetLoopFromClip}
@@ -2170,14 +2301,18 @@ export function RecordingLab() {
                 onToggleMonitor={toggleMonitor}
                 inputGain={inputGain}
                 onInputGainChange={handleInputGainChange}
-                selectedVocalTrackName={
-                  selectedVocalTrackId
-                    ? vocalTracks.find((t) => t.id === selectedVocalTrackId)?.name || selectedVocalTrackId
+                selectedTrackName={
+                  selectedFxTrackId === 'beat'
+                    ? selectedBeat?.title || 'Beat track'
+                    : selectedFxTrackId
+                    ? vocalTracks.find((t) => t.id === selectedFxTrackId)?.name || selectedFxTrackId
                     : null
                 }
                 selectedTrackFx={
-                  selectedVocalTrackId
-                    ? vocalTracks.find((t) => t.id === selectedVocalTrackId)?.fx || null
+                  selectedFxTrackId === 'beat'
+                    ? beatTrackState.fx
+                    : selectedFxTrackId
+                    ? vocalTracks.find((t) => t.id === selectedFxTrackId)?.fx || null
                     : null
                 }
                 onOpenEffect={handleOpenEffect}
@@ -2266,20 +2401,47 @@ export function RecordingLab() {
           <VocalFxModal
             effectKey={fxEditor.effectKey}
             trackName={
-              vocalTracks.find((t) => t.id === fxEditor.trackId)?.name || fxEditor.trackId
+              fxEditor.trackId === 'beat'
+                ? selectedBeat?.title || 'Beat track'
+                : vocalTracks.find((t) => t.id === fxEditor.trackId)?.name || fxEditor.trackId
             }
             initialSettings={
-              vocalTracks.find((t) => t.id === fxEditor.trackId)?.fx?.[fxEditor.effectKey] || {}
+              (fxEditor.trackId === 'beat'
+                ? beatTrackState.fx?.[fxEditor.effectKey]
+                : vocalTracks.find((t) => t.id === fxEditor.trackId)?.fx?.[fxEditor.effectKey]) || {}
             }
+            onPreview={(settings) => previewFxForCurrentTrack(fxEditor.effectKey, settings)}
             onDiscard={() => setFxEditor(null)}
             onApply={(settings) => {
-              setVocalTracks((prev) =>
-                prev.map((t) =>
-                  t.id === fxEditor.trackId
-                    ? { ...t, fx: { ...t.fx, [fxEditor.effectKey]: { ...t.fx?.[fxEditor.effectKey], ...settings } } }
-                    : t,
-                ),
-              )
+              if (fxEditor.trackId === 'beat') {
+                setBeatTrackState((prev) => ({
+                  ...prev,
+                  fx: {
+                    ...prev.fx,
+                    [fxEditor.effectKey]: {
+                      ...(prev.fx?.[fxEditor.effectKey] || {}),
+                      ...settings,
+                    },
+                  },
+                }))
+              } else {
+                setVocalTracks((prev) =>
+                  prev.map((t) =>
+                    t.id === fxEditor.trackId
+                      ? {
+                          ...t,
+                          fx: {
+                            ...t.fx,
+                            [fxEditor.effectKey]: {
+                              ...(t.fx?.[fxEditor.effectKey] || {}),
+                              ...settings,
+                            },
+                          },
+                        }
+                      : t,
+                  ),
+                )
+              }
               setFxEditor(null)
             }}
           />
