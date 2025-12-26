@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import AdminLayout from '../components/AdminLayout'
 import { listEmailBlasts, fetchAllUsers, sendEmailBlast, createEmailBlast, saveBlastRecipients } from '../services/emailBlastService'
 import { useAdminRole } from '../hooks/useAdminRole'
@@ -53,6 +53,7 @@ export function AdminEmailBlast() {
   const [testEmail, setTestEmail] = useState('')
   const [sendingTest, setSendingTest] = useState(false)
   const [activeTemplateId, setActiveTemplateId] = useState(null)
+  const bodyRef = useRef(null)
 
   useEffect(() => {
     ;(async () => {
@@ -91,6 +92,51 @@ export function AdminEmailBlast() {
   const recipients = resolveRecipients()
   const totalRecipients = recipients.length
   const canSend = subject.trim() && body.trim() && !sending && totalRecipients > 0
+
+  function insertIntoBody(snippet) {
+    if (!snippet) return
+    setBody((current) => {
+      const el = bodyRef.current
+      const base = current || ''
+      if (!el || typeof el.selectionStart !== 'number' || typeof el.selectionEnd !== 'number') {
+        return base + snippet
+      }
+      const start = el.selectionStart
+      const end = el.selectionEnd
+      const next = base.slice(0, start) + snippet + base.slice(end)
+      window.requestAnimationFrame(() => {
+        if (!bodyRef.current) return
+        const pos = start + snippet.length
+        bodyRef.current.focus()
+        bodyRef.current.selectionStart = pos
+        bodyRef.current.selectionEnd = pos
+      })
+      return next
+    })
+  }
+
+  function handleInsertMedia(kind) {
+    if (!htmlMode) {
+      window.alert('Turn on HTML Mode to insert images, videos or GIFs into the email body.')
+      return
+    }
+    let label = 'Media'
+    if (kind === 'image') label = 'Image'
+    else if (kind === 'gif') label = 'GIF'
+    else if (kind === 'video') label = 'Video'
+
+    const url = window.prompt(`${label} URL (https://…)`)
+    if (!url) return
+
+    let snippet = ''
+    if (kind === 'image' || kind === 'gif') {
+      snippet = `<p><img src="${url}" alt="" style="max-width:100%;height:auto;display:block;margin:0 auto;" /></p>\n`
+    } else if (kind === 'video') {
+      snippet = `<p>\n<video controls style="max-width:100%;height:auto;display:block;margin:0 auto;">\n  <source src="${url}" />\n</video>\n</p>\n`
+    }
+
+    insertIntoBody(snippet)
+  }
 
   async function handleFiles(e) {
     const files = Array.from(e.target.files || [])
@@ -374,10 +420,37 @@ export function AdminEmailBlast() {
               <textarea
                 value={body}
                 onChange={e=>setBody(e.target.value)}
+                ref={bodyRef}
                 rows={8}
                 placeholder="Write your message…"
                 className="mt-1 rounded-lg border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-[12px] text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-cyan-400/70"
               />
+              {htmlMode && (
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] text-slate-400">
+                  <span className="text-slate-500">Insert media (HTML):</span>
+                  <button
+                    type="button"
+                    onClick={() => handleInsertMedia('image')}
+                    className="rounded-full border border-slate-700/70 px-2 py-[3px] hover:border-emerald-400/70 hover:text-emerald-300 transition"
+                  >
+                    Image
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInsertMedia('gif')}
+                    className="rounded-full border border-slate-700/70 px-2 py-[3px] hover:border-emerald-400/70 hover:text-emerald-300 transition"
+                  >
+                    GIF
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInsertMedia('video')}
+                    className="rounded-full border border-slate-700/70 px-2 py-[3px] hover:border-emerald-400/70 hover:text-emerald-300 transition"
+                  >
+                    Video
+                  </button>
+                </div>
+              )}
               <p className="mt-1 text-[10px] text-slate-500">Variables: {'{{display_name}}'} will personalize per user. Line breaks are preserved; HTML mode sends raw markup.</p>
             </div>
 
