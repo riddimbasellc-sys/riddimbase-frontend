@@ -7,7 +7,7 @@ import {
   createEmailBlast,
   saveBlastRecipients,
   EMAIL_BLAST_FOOTER_TEXT,
-  EMAIL_BLAST_FOOTER_HTML,
+  getEmailBlastFooterHtml,
 } from '../services/emailBlastService'
 import { useAdminRole } from '../hooks/useAdminRole'
 import useSupabaseUser from '../hooks/useSupabaseUser'
@@ -61,6 +61,7 @@ export function AdminEmailBlast() {
   const [testEmail, setTestEmail] = useState('')
   const [sendingTest, setSendingTest] = useState(false)
   const [activeTemplateId, setActiveTemplateId] = useState(null)
+  const [footerHtmlPreview, setFooterHtmlPreview] = useState('')
   const bodyRef = useRef(null)
 
   useEffect(() => {
@@ -71,6 +72,17 @@ export function AdminEmailBlast() {
       ])
       setBlasts((Array.isArray(existingBlasts) ? existingBlasts : []).filter(Boolean))
       setUsers(allUsers || [])
+    })()
+  }, [])
+
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const html = await getEmailBlastFooterHtml()
+        setFooterHtmlPreview(html || '')
+      } catch {
+        setFooterHtmlPreview('')
+      }
     })()
   }, [])
 
@@ -576,7 +588,7 @@ export function AdminEmailBlast() {
                     const baseBody = (body || 'Body preview…').replace(/{{\s*display_name\s*}}/gi, sampleUser.display_name || sampleUser.email || 'there')
 
                     if (htmlMode) {
-                      const footerHtml = includeFooter ? EMAIL_BLAST_FOOTER_HTML : ''
+                      const footerHtml = includeFooter ? footerHtmlPreview : ''
                       const htmlContent = baseBody + footerHtml
                       return (
                         <div
