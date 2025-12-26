@@ -1153,7 +1153,13 @@ export function RecordingLab() {
         audioRef.current.pause()
       } catch {}
     }
+    if (audioContextRef.current) {
+      try {
+        audioContextRef.current.suspend()
+      } catch {}
+    }
     stopPlayheadAnimation()
+    isTimelinePlayingRef.current = false
     setIsTimelinePlaying(false)
   }
 
