@@ -577,32 +577,56 @@ export function RecordingLab() {
             name,
             muted: false,
             solo: false,
-            volume: 1,
-            clip: { startSec, durationSec: 0, url: null },
-            fx: createDefaultVocalFx(),
-          },
-        ]
-      })
-      setSelectedVocalTrackId(takeId)
-      setTakeUploadState('idle')
-      liveRecordingSamplesRef.current = []
-      recorder.start()
-      setRecordState('recording')
-      recordStartRef.current = Date.now()
-      startTimer()
-      if (selectedBeat && !isBeatPlaying) {
-        toggleBeatPlay()
-      }
-    } catch (e) {
-      console.warn('[RecordingLab] start record error', e)
-    }
-  }
+            try {
+              const startSec = Number.isFinite(playheadSec) && playheadSec >= 0 ? playheadSec : 0
 
+              setVocalTracks((prev) => {
+                // If a vocal track is selected, record into that track instead of creating a new one
+                const existing = selectedVocalTrackId
+                  ? prev.find((t) => t.id === selectedVocalTrackId)
+                  : null
+
+                if (existing) {
+                  const trackId = existing.id
+                  currentRecordingIdRef.current = trackId
+                  recordStartPlayheadRef.current = startSec
+                  setSelectedVocalTrackId(trackId)
+
+                  return prev.map((t) =>
+                    t.id === trackId
+                      ? {
+                          ...t,
+                          clip: { startSec, durationSec: 0, url: null },
+                        }
+                      : t,
+                  )
+                }
+
+                const trackId = `take-${Date.now()}`
+                currentRecordingIdRef.current = trackId
+                recordStartPlayheadRef.current = startSec
+                const index = prev.length + 1
+                const name = `Take ${index}`
+                const next = [
+                  ...prev,
+                  {
+                    id: trackId,
+                    name,
+                    muted: false,
+                    solo: false,
+                    volume: 1,
+                    clip: { startSec, durationSec: 0, url: null },
+                    fx: createDefaultVocalFx(),
+                  },
+                ]
+                setSelectedVocalTrackId(trackId)
+                return next
+              })
   const handleStop = () => {
     if (!hasAudioSupport) return
     const recorder = mediaRecorderRef.current
     if (recorder) {
-      try {
+              recordStartRef.current = Date.now()
         if (recorder.state === 'recording') {
           recorder.stop()
         }
@@ -706,6 +730,12 @@ export function RecordingLab() {
           : t,
       ),
     )
+  }
+
+  const handleDeleteVocalTrack = (trackId) => {
+    if (!trackId) return
+    setVocalTracks((prev) => prev.filter((t) => t.id !== trackId))
+    setSelectedVocalTrackId((prev) => (prev === trackId ? null : prev))
   }
 
   const handleAddVocalTrack = () => {
@@ -1919,6 +1949,7 @@ export function RecordingLab() {
                 onLoopSetEnd={handleLoopSetEnd}
                 onSelectVocalTrack={handleSelectVocalTrack}
                 onDeleteVocalClip={handleDeleteVocalClip}
+                onDeleteVocalTrack={handleDeleteVocalTrack}
                 onSetLoopFromClip={handleSetLoopFromClip}
                 requestWaveform={getWaveformForUrl}
                   />
