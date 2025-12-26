@@ -99,6 +99,7 @@ export function RecordingLab() {
   const chunksRef = useRef([])
   const timerRef = useRef(null)
   const recordStartRef = useRef(null)
+  const recordStartPlayheadRef = useRef(0)
   const timelineSourcesRef = useRef([])
   const bufferCacheRef = useRef(new Map())
   const timelineTimeoutRef = useRef(null)
@@ -565,6 +566,7 @@ export function RecordingLab() {
       const takeId = `take-${Date.now()}`
       const startSec = Number.isFinite(playheadSec) && playheadSec >= 0 ? playheadSec : 0
       currentRecordingIdRef.current = takeId
+      recordStartPlayheadRef.current = startSec
       setVocalTracks((prev) => {
         const index = prev.length + 1
         const name = `Take ${index}`
@@ -599,9 +601,11 @@ export function RecordingLab() {
   const handleStop = () => {
     if (!hasAudioSupport) return
     const recorder = mediaRecorderRef.current
-    if (recorder && recordState === 'recording') {
+    if (recorder) {
       try {
-        recorder.stop()
+        if (recorder.state === 'recording') {
+          recorder.stop()
+        }
         stopTimer()
       } catch (e) {
         console.warn('[RecordingLab] stop record error', e)
@@ -1431,6 +1435,34 @@ export function RecordingLab() {
   }
 
   useEffect(() => {
+    if (recordState !== 'recording') return undefined
+
+    const startedAt = recordStartRef.current
+    const startPlayhead = Number.isFinite(recordStartPlayheadRef.current)
+      ? recordStartPlayheadRef.current
+      : 0
+    if (!startedAt) return undefined
+
+    let frameId
+    const loop = () => {
+      const now = typeof performance !== 'undefined' ? performance.now() : Date.now()
+      const elapsed = Math.max(0, (now - startedAt) / 1000)
+      setPlayheadSec(startPlayhead + elapsed)
+      frameId = requestAnimationFrame(loop)
+    }
+
+    frameId = requestAnimationFrame(loop)
+
+    return () => {
+      if (frameId) {
+        try {
+          cancelAnimationFrame(frameId)
+        } catch {}
+      }
+    }
+  }, [recordState])
+
+  useEffect(() => {
     isTimelinePlayingRef.current = isTimelinePlaying
     const handleKeyDown = (e) => {
       const target = e.target
@@ -1443,7 +1475,10 @@ export function RecordingLab() {
 
       if (e.key === ' ' || e.code === 'Space') {
         e.preventDefault()
-        if (isTimelinePlaying) {
+        if (recordState === 'recording') {
+          handleStop()
+          stopTimelinePlayback()
+        } else if (isTimelinePlaying) {
           stopTimelinePlayback()
         } else {
           handlePlayFromCursor()
