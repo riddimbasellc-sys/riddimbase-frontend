@@ -690,6 +690,20 @@ export function RecordingLab() {
     )
   }
 
+  const handleDeleteVocalClip = (trackId) => {
+    if (!trackId) return
+    setVocalTracks((prev) =>
+      prev.map((t) =>
+        t.id === trackId
+          ? {
+              ...t,
+              clip: null,
+            }
+          : t,
+      ),
+    )
+  }
+
   const handleAddVocalTrack = () => {
     setVocalTracks((prev) => {
       const index = prev.length + 1
@@ -748,6 +762,14 @@ export function RecordingLab() {
       const end = Math.max(safe, start + minLen)
       return { ...prev, startSec: start, endSec: end }
     })
+  }
+
+  const handleSetLoopFromClip = (startSec, durationSec) => {
+    const safeStart = Number.isFinite(startSec) && startSec >= 0 ? startSec : 0
+    const safeDur = Number.isFinite(durationSec) && durationSec > 0 ? durationSec : 0
+    if (!safeDur) return
+    const endSec = safeStart + safeDur
+    setLoopRegion({ enabled: true, startSec: safeStart, endSec })
   }
 
   const ensurePlaybackContext = () => {
@@ -1411,19 +1433,25 @@ export function RecordingLab() {
   useEffect(() => {
     isTimelinePlayingRef.current = isTimelinePlaying
     const handleKeyDown = (e) => {
+      const target = e.target
+      const tag = target && target.tagName
+      const isTypingField =
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        target.isContentEditable
+      if (isTypingField) return
+
       if (e.key === ' ' || e.code === 'Space') {
-        const target = e.target
-        const tag = target && target.tagName
-        const isTypingField =
-          tag === 'INPUT' ||
-          tag === 'TEXTAREA' ||
-          target.isContentEditable
-        if (isTypingField) return
         e.preventDefault()
         if (isTimelinePlaying) {
           stopTimelinePlayback()
         } else {
           handlePlayFromCursor()
+        }
+      } else if (e.key === 'Delete') {
+        e.preventDefault()
+        if (selectedVocalTrackId) {
+          handleDeleteVocalClip(selectedVocalTrackId)
         }
       }
     }
@@ -1433,7 +1461,7 @@ export function RecordingLab() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [isTimelinePlaying, recordState, recordingUrl])
+  }, [isTimelinePlaying, recordState, recordingUrl, selectedVocalTrackId])
 
   useEffect(() => {
     return () => {
@@ -1855,6 +1883,8 @@ export function RecordingLab() {
                 onLoopSetStart={handleLoopSetStart}
                 onLoopSetEnd={handleLoopSetEnd}
                 onSelectVocalTrack={handleSelectVocalTrack}
+                onDeleteVocalClip={handleDeleteVocalClip}
+                onSetLoopFromClip={handleSetLoopFromClip}
                 requestWaveform={getWaveformForUrl}
                   />
                 </div>
