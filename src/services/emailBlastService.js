@@ -12,25 +12,24 @@ export const EMAIL_BLAST_FOOTER_TEXT = `\n\n—\nYou are receiving this email be
 
 // Simple, mobile-friendly footer inspired by modern SaaS emails.
 // Uses only inline styles so most email clients render it correctly.
+// Social URLs should match the Admin > Social Profiles configuration.
 export const EMAIL_BLAST_FOOTER_HTML = `
-  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:32px;background:#f5f3ff;padding:24px 12px 20px 12px;border-radius:16px;">
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:32px;background:#020617;padding:24px 12px 20px 12px;border-radius:16px;">
     <tr>
-      <td align="center" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#4f46e5;font-size:0;letter-spacing:6px;text-transform:uppercase;">
-        <a href="https://www.facebook.com" style="display:inline-block;margin:0 6px;width:22px;height:22px;border-radius:999px;background:#eef2ff;color:#4f46e5;text-decoration:none;line-height:22px;font-size:12px;font-weight:600;">f</a>
-        <a href="https://twitter.com" style="display:inline-block;margin:0 6px;width:22px;height:22px;border-radius:999px;background:#eef2ff;color:#4f46e5;text-decoration:none;line-height:22px;font-size:12px;font-weight:600;">X</a>
-        <a href="https://www.linkedin.com" style="display:inline-block;margin:0 6px;width:22px;height:22px;border-radius:999px;background:#eef2ff;color:#4f46e5;text-decoration:none;line-height:22px;font-size:12px;font-weight:600;">in</a>
-        <a href="https://www.youtube.com" style="display:inline-block;margin:0 6px;width:22px;height:22px;border-radius:999px;background:#eef2ff;color:#4f46e5;text-decoration:none;line-height:22px;font-size:12px;font-weight:600;">▶</a>
-        <a href="https://www.instagram.com" style="display:inline-block;margin:0 6px;width:22px;height:22px;border-radius:999px;background:#eef2ff;color:#4f46e5;text-decoration:none;line-height:22px;font-size:12px;font-weight:600;">IG</a>
-        <a href="https://www.pinterest.com" style="display:inline-block;margin:0 6px;width:22px;height:22px;border-radius:999px;background:#eef2ff;color:#4f46e5;text-decoration:none;line-height:22px;font-size:12px;font-weight:600;">P</a>
+      <td align="center" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#f97373;font-size:0;letter-spacing:6px;text-transform:uppercase;">
+        <a href="https://www.facebook.com/riddimbase" style="display:inline-block;margin:0 6px;width:22px;height:22px;border-radius:999px;background:#111827;color:#fee2e2;text-decoration:none;line-height:22px;font-size:12px;font-weight:600;">f</a>
+        <a href="https://twitter.com/riddimbase" style="display:inline-block;margin:0 6px;width:22px;height:22px;border-radius:999px;background:#111827;color:#fee2e2;text-decoration:none;line-height:22px;font-size:12px;font-weight:600;">X</a>
+        <a href="https://www.youtube.com/@riddimbase" style="display:inline-block;margin:0 6px;width:22px;height:22px;border-radius:999px;background:#111827;color:#fee2e2;text-decoration:none;line-height:22px;font-size:12px;font-weight:600;">▶</a>
+        <a href="https://www.instagram.com/riddimbase" style="display:inline-block;margin:0 6px;width:22px;height:22px;border-radius:999px;background:#111827;color:#fee2e2;text-decoration:none;line-height:22px;font-size:12px;font-weight:600;">IG</a>
       </td>
     </tr>
     <tr>
-      <td align="center" style="padding-top:10px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1f2933;font-size:13px;font-weight:600;">
+      <td align="center" style="padding-top:10px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#f9fafb;font-size:13px;font-weight:600;">
         RiddimBase
       </td>
     </tr>
     <tr>
-      <td align="center" style="padding-top:4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#6b7280;font-size:11px;">
+      <td align="center" style="padding-top:4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#fca5a5;font-size:11px;">
         Home of Caribbean Beats
       </td>
     </tr>
@@ -39,26 +38,26 @@ export const EMAIL_BLAST_FOOTER_HTML = `
         <table cellpadding="0" cellspacing="0" role="presentation" style="margin:0 auto;">
           <tr>
             <td style="padding:4px 6px;">
-              <a href="https://apps.apple.com" style="display:inline-block;padding:8px 14px;border-radius:999px;background:#020617;color:#f9fafb;font-size:11px;font-weight:600;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-decoration:none;">Download on the App Store</a>
+              <a href="https://riddimbase.app" style="display:inline-block;padding:8px 14px;border-radius:999px;background:#ef4444;color:#f9fafb;font-size:11px;font-weight:600;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-decoration:none;">Open RiddimBase</a>
             </td>
             <td style="padding:4px 6px;">
-              <a href="https://play.google.com" style="display:inline-block;padding:8px 14px;border-radius:999px;background:#020617;color:#f9fafb;font-size:11px;font-weight:600;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-decoration:none;">Get it on Google Play</a>
+              <a href="https://riddimbase.app/studio" style="display:inline-block;padding:8px 14px;border-radius:999px;background:#111827;color:#f9fafb;font-size:11px;font-weight:600;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-decoration:none;">Launch Recording Lab</a>
             </td>
           </tr>
         </table>
       </td>
     </tr>
     <tr>
-      <td align="center" style="padding-top:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#6b7280;font-size:11px;">
-        Our friendly support team is available <a href="https://riddimbase.app/support" style="color:#4f46e5;text-decoration:none;">24/7</a>.
+      <td align="center" style="padding-top:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#e5e7eb;font-size:11px;">
+        Our friendly support team is available <a href="https://riddimbase.app/support" style="color:#f97373;text-decoration:none;">24/7</a>.
       </td>
     </tr>
     <tr>
       <td align="center" style="padding-top:10px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#9ca3af;font-size:10px;">
         If you no longer wish to receive these emails, you may
-        <a href="https://riddimbase.app/account/notifications" style="color:#4f46e5;text-decoration:none;"> unsubscribe</a>
+        <a href="https://riddimbase.app/account/notifications" style="color:#f97373;text-decoration:none;"> unsubscribe</a>
         or update your
-        <a href="https://riddimbase.app/account/notifications" style="color:#4f46e5;text-decoration:none;"> email preferences</a>.
+        <a href="https://riddimbase.app/account/notifications" style="color:#f97373;text-decoration:none;"> email preferences</a>.
       </td>
     </tr>
   </table>
