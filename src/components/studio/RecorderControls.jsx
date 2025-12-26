@@ -140,11 +140,13 @@ export default function RecorderControls({
           </TransportButton>
           <TransportButton
             title={recordState === 'recording' ? 'Stop recording' : 'Stop playback'}
-            disabled={recordState !== 'recording' && !isArrangementPlaying}
+            disabled={false}
             active={recordState === 'recording' || isArrangementPlaying}
             onClick={() => {
-              if (recordState === 'recording') onStop?.()
-              else onStopArrangement?.()
+              if (recordState === 'recording') {
+                onStop?.()
+              }
+              onStopArrangement?.()
             }}
           >
             <IconStop />
