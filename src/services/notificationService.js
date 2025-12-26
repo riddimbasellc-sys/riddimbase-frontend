@@ -1,4 +1,13 @@
-const functionsBase = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL
+function resolveFunctionsBase() {
+  const explicit = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL
+  if (explicit) return String(explicit).replace(/\/+$/, '')
+
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+  if (!supabaseUrl) return null
+  return `${String(supabaseUrl).replace(/\/+$/, '')}/functions/v1`
+}
+
+const functionsBase = resolveFunctionsBase()
 
 async function postJson(url, payload) {
   try {
