@@ -1,6 +1,14 @@
 import { useEffect, useState, useRef } from 'react'
 import AdminLayout from '../components/AdminLayout'
-import { listEmailBlasts, fetchAllUsers, sendEmailBlast, createEmailBlast, saveBlastRecipients } from '../services/emailBlastService'
+import {
+  listEmailBlasts,
+  fetchAllUsers,
+  sendEmailBlast,
+  createEmailBlast,
+  saveBlastRecipients,
+  EMAIL_BLAST_FOOTER_TEXT,
+  EMAIL_BLAST_FOOTER_HTML,
+} from '../services/emailBlastService'
 import { useAdminRole } from '../hooks/useAdminRole'
 import useSupabaseUser from '../hooks/useSupabaseUser'
 
@@ -135,6 +143,26 @@ export function AdminEmailBlast() {
       snippet = `<p>\n<video controls style="max-width:100%;height:auto;display:block;margin:0 auto;">\n  <source src="${url}" />\n</video>\n</p>\n`
     }
 
+    insertIntoBody(snippet)
+  }
+
+  function handleInsertHeading(level) {
+    if (!htmlMode) {
+      window.alert('Turn on HTML Mode to insert HTML headings.')
+      return
+    }
+    const tag = level === 1 ? 'h1' : level === 2 ? 'h2' : 'h3'
+    const label = level === 1 ? 'Big headline' : level === 2 ? 'Section heading' : 'Subheading'
+    const snippet = `\n<${tag} style="margin:16px 0 6px 0;font-size:${level === 1 ? '22px' : level === 2 ? '18px' : '16px'};line-height:1.3;">${label}</${tag}>\n`
+    insertIntoBody(snippet)
+  }
+
+  function handleInsertColorSpan(color) {
+    if (!htmlMode) {
+      window.alert('Turn on HTML Mode to style text colors.')
+      return
+    }
+    const snippet = `<span style="color:${color};">Your colored text</span>`
     insertIntoBody(snippet)
   }
 
@@ -427,7 +455,37 @@ export function AdminEmailBlast() {
               />
               {htmlMode && (
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] text-slate-400">
-                  <span className="text-slate-500">Insert media (HTML):</span>
+                  <span className="text-slate-500">Insert HTML elements:</span>
+                  <button
+                    type="button"
+                    onClick={() => handleInsertHeading(1)}
+                    className="rounded-full border border-slate-700/70 px-2 py-[3px] hover:border-emerald-400/70 hover:text-emerald-300 transition"
+                  >
+                    H1
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInsertHeading(2)}
+                    className="rounded-full border border-slate-700/70 px-2 py-[3px] hover:border-emerald-400/70 hover:text-emerald-300 transition"
+                  >
+                    H2
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInsertColorSpan('#4f46e5')}
+                    className="rounded-full border border-slate-700/70 px-2 py-[3px] hover:border-indigo-400/70 hover:text-indigo-300 transition"
+                  >
+                    Accent text
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInsertColorSpan('#f97316')}
+                    className="rounded-full border border-slate-700/70 px-2 py-[3px] hover:border-orange-400/70 hover:text-orange-300 transition"
+                  >
+                    Highlight text
+                  </button>
+                  <span className="mx-1 h-4 w-px bg-slate-700/70" />
+                  <span className="text-slate-500">Media:</span>
                   <button
                     type="button"
                     onClick={() => handleInsertMedia('image')}
@@ -515,18 +573,28 @@ export function AdminEmailBlast() {
                   </div>
                   {(() => {
                     const sampleUser = recipients[0] || parsedUsers[0] || { display_name: 'Producer', email: 'user@example.com' }
-                    const replaced = (body || 'Body preview…').replace(/{{\s*display_name\s*}}/gi, sampleUser.display_name || sampleUser.email || 'there')
-                    const footer = includeFooter ? '\n\n—\nYou are receiving this email because you have an account on RiddimBase. To unsubscribe from future promotional emails, update your notification preferences in your profile.' : ''
-                    const finalText = replaced + footer
+                    const baseBody = (body || 'Body preview…').replace(/{{\s*display_name\s*}}/gi, sampleUser.display_name || sampleUser.email || 'there')
+
                     if (htmlMode) {
-                      return <div className="text-[12px]" dangerouslySetInnerHTML={{ __html: finalText.replace(/\n/g,'<br/>') }} />
+                      const footerHtml = includeFooter ? EMAIL_BLAST_FOOTER_HTML : ''
+                      const htmlContent = baseBody + footerHtml
+                      return (
+                        <div
+                          className="text-[12px] leading-relaxed"
+                          dangerouslySetInnerHTML={{ __html: htmlContent }}
+                        />
+                      )
                     }
+
+                    const footerText = includeFooter ? EMAIL_BLAST_FOOTER_TEXT : ''
+                    const finalText = baseBody + footerText
+
                     if (previewMode === 'plain') {
                       return <pre className="whitespace-pre-wrap text-[12px]">{finalText}</pre>
                     }
                     return (
                       <div className="prose max-w-none text-[13px] prose-p:mb-3 prose-headings:mt-4 prose-headings:mb-2">
-                        {finalText.split(/\n\n+/).map((block,i) => (
+                        {finalText.split(/\n\n+/).map((block, i) => (
                           <p key={i}>{block}</p>
                         ))}
                       </div>
