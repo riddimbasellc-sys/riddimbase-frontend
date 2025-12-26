@@ -67,34 +67,62 @@ export default function VocalFxModal({
     switch (effectKey) {
       case 'eq':
         return (
-          <div className="space-y-3">
-            <SliderRow
-              label="Low shelf"
-              min={-12}
-              max={12}
-              step={0.5}
-              value={draft.lowGainDb ?? 0}
-              onChange={(v) => handleChange({ lowGainDb: v })}
-              unit="dB"
-            />
-            <SliderRow
-              label="Mid"
-              min={-12}
-              max={12}
-              step={0.5}
-              value={draft.midGainDb ?? 0}
-              onChange={(v) => handleChange({ midGainDb: v })}
-              unit="dB"
-            />
-            <SliderRow
-              label="High shelf"
-              min={-12}
-              max={12}
-              step={0.5}
-              value={draft.highGainDb ?? 0}
-              onChange={(v) => handleChange({ highGainDb: v })}
-              unit="dB"
-            />
+          <div className="space-y-4">
+            <div className="flex items-end gap-4">
+              <div className="flex flex-col items-center gap-2 text-[10px] text-slate-300">
+                <span className="font-semibold">Pre-Amp</span>
+                <input
+                  type="range"
+                  min={-12}
+                  max={12}
+                  step={0.5}
+                  value={draft.preGainDb ?? 0}
+                  onChange={(e) => handleChange({ preGainDb: parseFloat(e.target.value) })}
+                  className="h-24 w-2 cursor-pointer appearance-none rounded-full bg-slate-800 accent-red-500"
+                />
+                <span className="tabular-nums text-slate-400">
+                  {(draft.preGainDb ?? 0).toFixed(1)} dB
+                </span>
+              </div>
+              <div className="flex flex-1 items-end justify-between gap-3">
+                {[{
+                  key: 'lowGainDb',
+                  label: 'Low',
+                  sub: 'Body',
+                }, {
+                  key: 'midGainDb',
+                  label: 'Mid',
+                  sub: 'Presence',
+                }, {
+                  key: 'highGainDb',
+                  label: 'High',
+                  sub: 'Air',
+                }].map((band) => (
+                  <div
+                    key={band.key}
+                    className="flex flex-col items-center gap-2 text-[10px] text-slate-300"
+                  >
+                    <span className="font-semibold">{band.label}</span>
+                    <input
+                      type="range"
+                      min={-12}
+                      max={12}
+                      step={0.5}
+                      value={draft[band.key] ?? 0}
+                      onChange={(e) => handleChange({ [band.key]: parseFloat(e.target.value) })}
+                      className="h-24 w-2 cursor-pointer appearance-none rounded-full bg-slate-800 accent-red-500"
+                    />
+                    <span className="tabular-nums text-slate-400">
+                      {(draft[band.key] ?? 0).toFixed(1)} dB
+                    </span>
+                    <span className="text-[9px] text-slate-500">{band.sub}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <p className="text-[10px] text-slate-500">
+              Use the pre-amp and three tone bands to sculpt your track, similar to a graphic EQ.
+            </p>
           </div>
         )
       case 'reverb':
