@@ -1218,11 +1218,12 @@ export function RecordingLab() {
     const hasAnyVocalClip = vocalTracks.some((t) => !!t.clip)
     const hasBeatAudio = !!selectedBeat?.audioUrl
     if (!hasBeatAudio && !hasAnyVocalClip) {
-      // Nothing to play yet – avoid silent failures so its clear why transport does nothing
+      // Nothing to play yet – avoid silent failures so it’s clear why transport does nothing
       // eslint-disable-next-line no-alert
       alert('Nothing to play yet. Add a beat or record a take first.')
       return
     }
+
     const loopActive =
       loopRegion &&
       loopRegion.enabled &&
@@ -1235,13 +1236,7 @@ export function RecordingLab() {
       : Math.max(0, playheadSec)
 
     const regionEndLimit = loopActive ? loopRegion.endSec : Infinity
-    // Always stop any prior transport state before starting new playback
-    stopTimelinePlayback()
-    const startAt = loopActive
-    let anySources = false
 
-    // Always drive the beat through the HTMLAudio element since it already
-    // plays correctly in the "beat monitor" path. This avoids cross-origin
     // Always stop any prior transport state before starting new playback
     stopTimelinePlayback()
 
