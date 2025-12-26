@@ -5,7 +5,7 @@ export default function StudioSidebar({
   onToggleMonitor,
   inputGain,
   onInputGainChange,
-  selectedVocalTrackName,
+  selectedTrackName,
   selectedTrackFx,
   onOpenEffect,
 }) {
@@ -83,9 +83,9 @@ export default function StudioSidebar({
 
         <div className="rounded-xl border border-slate-800/80 bg-slate-950/80 p-3 space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-[11px] font-semibold text-slate-300">Vocal effects</p>
+            <p className="text-[11px] font-semibold text-slate-300">Track effects</p>
             <span className="truncate text-[10px] text-slate-500">
-              {selectedVocalTrackName ? `Track: ${selectedVocalTrackName}` : 'Select a vocal track'}
+              {selectedTrackName ? `Track: ${selectedTrackName}` : 'Select a track'}
             </span>
           </div>
           {[{ key: 'eq', label: 'EQ' }, { key: 'reverb', label: 'Reverb' }, { key: 'delay', label: 'Delay' }, { key: 'compressor', label: 'Compressor' }, { key: 'autotune', label: 'Auto-Tune' }].map((fx) => {
@@ -95,13 +95,13 @@ export default function StudioSidebar({
                 key={fx.key}
                 type="button"
                 onClick={() => onOpenEffect?.(fx.key)}
-                disabled={!selectedVocalTrackName}
-                title={selectedVocalTrackName ? `${fx.label} settings` : 'Select a vocal track to edit FX'}
+                disabled={!selectedTrackName}
+                title={selectedTrackName ? `${fx.label} settings` : 'Select a track to edit FX'}
                 className={`mt-1 flex w-full items-center justify-between rounded-lg border px-3 py-1.5 text-[11px] transition ${
                   active
                     ? 'border-red-500/70 bg-red-500/10 text-red-100 shadow-[0_0_10px_rgba(248,113,113,0.5)]'
                     : 'border-slate-700/70 bg-slate-950 text-slate-300 hover:border-red-500/60'
-                } ${!selectedVocalTrackName ? 'cursor-not-allowed opacity-60' : ''}`}
+                } ${!selectedTrackName ? 'cursor-not-allowed opacity-60' : ''}`}
               >
                 <span>{fx.label}</span>
                 <span className={`h-2.5 w-2.5 rounded-full ${active ? 'bg-red-500 shadow-[0_0_10px_rgba(248,113,113,0.9)]' : 'bg-slate-600'}`} />

@@ -37,6 +37,7 @@ export default function TrackTimeline({
   onLoopSetStart,
   onLoopSetEnd,
   onSelectVocalTrack,
+  onSelectBeatTrack,
   onDeleteVocalClip,
   onDeleteVocalTrack,
   onSetLoopFromClip,
@@ -447,7 +448,9 @@ export default function TrackTimeline({
                     onContextMenu={(e) => {
                       e.preventDefault()
                       e.stopPropagation()
-                      if (!isBeatLane) {
+                      if (isBeatLane) {
+                        onSelectBeatTrack?.()
+                      } else {
                         onSelectVocalTrack?.(lane.trackId)
                       }
                       setContextMenu({ x: e.clientX, y: e.clientY, lane })
@@ -456,7 +459,8 @@ export default function TrackTimeline({
                     <div
                       className="flex items-center justify-between gap-2 cursor-pointer"
                       onClick={() => {
-                        if (!isBeatLane) onSelectVocalTrack?.(lane.trackId)
+                        if (isBeatLane) onSelectBeatTrack?.()
+                        else onSelectVocalTrack?.(lane.trackId)
                       }}
                     >
                       <span className="mr-1 truncate font-semibold text-slate-200">{lane.label}</span>

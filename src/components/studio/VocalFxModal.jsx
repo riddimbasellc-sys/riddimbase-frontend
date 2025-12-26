@@ -14,6 +14,7 @@ export default function VocalFxModal({
   initialSettings,
   onApply,
   onDiscard,
+  onPreview,
 }) {
   const [draft, setDraft] = useState(initialSettings || {})
 
@@ -251,7 +252,7 @@ export default function VocalFxModal({
       <div className="w-full max-w-md rounded-2xl border border-slate-700/80 bg-slate-950/95 p-4 shadow-2xl">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Vocal FX</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Track FX</p>
             <h2 className="text-sm font-semibold text-slate-50">{title} · {trackName}</h2>
           </div>
           <button
@@ -298,6 +299,13 @@ export default function VocalFxModal({
         </div>
 
         <div className="mt-4 flex items-center justify-end gap-2 text-[11px]">
+          <button
+            type="button"
+            onClick={() => onPreview?.(draft)}
+            className="rounded-full border border-slate-700/80 px-3 py-1 text-slate-200 hover:border-emerald-500/70"
+          >
+            Preview
+          </button>
           <button
             type="button"
             onClick={onDiscard}
