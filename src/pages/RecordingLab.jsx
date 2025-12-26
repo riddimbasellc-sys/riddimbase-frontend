@@ -1817,7 +1817,7 @@ export function RecordingLab() {
                   </span>
                 </button>
                 {showExportMenu && (
-                  <div className="absolute right-0 top-full z-30 mt-2 w-64 rounded-2xl border border-slate-800/80 bg-slate-950/95 p-3 text-[11px] text-slate-200 shadow-xl">
+                  <div className="absolute right-0 bottom-full z-30 mb-2 w-64 rounded-2xl border border-slate-800/80 bg-slate-950/95 p-3 text-[11px] text-slate-200 shadow-xl">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Export</p>
                     <p className="mt-1 text-[11px] text-slate-300">
                       {loopRegion?.enabled
