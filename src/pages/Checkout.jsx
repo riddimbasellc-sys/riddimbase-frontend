@@ -131,6 +131,23 @@ export function Checkout() {
       setLoading(false)
       return
     }
+
+    // Trigger the download immediately while we still have a user gesture.
+    try {
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      link.download = ''
+      link.style.display = 'none'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (e) {
+      try {
+        window.open(downloadUrl, '_blank', 'noopener,noreferrer')
+      } catch {}
+    }
+
+    // Send the email with the download link (best-effort).
     try {
       await sendFreeDownloadEmail({ beatTitle: beat.title, downloadUrl, buyerEmail })
     } catch (e) {
