@@ -13,25 +13,28 @@ export function useAdminRealtimeChat(currentUser) {
   const channelRef = useRef(null)
 
   // Load conversations where this admin is a participant
+  const refreshConversations = useCallback(async () => {
+    if (!currentUser) return
+    const { data, error } = await supabase
+      .from('chat_participants')
+      .select('conversation_id, role, chat_conversations(*)')
+      .eq('user_id', currentUser.id)
+      .eq('role', 'admin')
+      .order('chat_conversations.last_message_at', { ascending: false })
+
+    if (!error) {
+      setConversations(
+        (data || [])
+          .map((row) => row.chat_conversations)
+          .filter(Boolean),
+      )
+    }
+  }, [currentUser])
+
   useEffect(() => {
     if (!currentUser) return
-    ;(async () => {
-      const { data, error } = await supabase
-        .from('chat_participants')
-        .select('conversation_id, role, chat_conversations(*)')
-        .eq('user_id', currentUser.id)
-        .eq('role', 'admin')
-        .order('chat_conversations.last_message_at', { ascending: false })
-
-      if (!error) {
-        setConversations(
-          (data || [])
-            .map((row) => row.chat_conversations)
-            .filter(Boolean),
-        )
-      }
-    })()
-  }, [currentUser])
+    refreshConversations()
+  }, [currentUser, refreshConversations])
 
   const loadMessages = useCallback(
     async ({ conversationId, before } = {}) => {
@@ -195,6 +198,68 @@ export function useAdminRealtimeChat(currentUser) {
     [currentUser],
   )
 
+  // When admin selects a user from search, open existing conversation or create a new one
+  const startConversationWithUser = useCallback(
+    async (user) => {
+      if (!currentUser || !user?.id) return
+
+      // Try to find a shared conversation between this admin and the user
+      const [{ data: adminRows }, { data: userRows }] = await Promise.all([
+        supabase
+          .from('chat_participants')
+          .select('conversation_id')
+          .eq('user_id', currentUser.id),
+        supabase
+          .from('chat_participants')
+          .select('conversation_id')
+          .eq('user_id', user.id),
+      ])
+
+      const adminIds = new Set((adminRows || []).map((r) => r.conversation_id))
+      const shared = (userRows || []).find((r) => adminIds.has(r.conversation_id))
+
+      let conversationId = shared?.conversation_id || null
+      let createdConversation = null
+
+      if (!conversationId) {
+        // Create a fresh conversation and add both participants
+        const { data: created, error: convError } = await supabase
+          .from('chat_conversations')
+          .insert({
+            subject: user.display_name || user.email || 'Conversation',
+          })
+          .select('*')
+          .single()
+
+        if (convError || !created) return
+
+        conversationId = created.id
+        createdConversation = created
+
+        await supabase.from('chat_participants').insert([
+          { conversation_id: conversationId, user_id: currentUser.id, role: 'admin' },
+          { conversation_id: conversationId, user_id: user.id, role: 'member' },
+        ])
+      }
+
+      // Optimistically ensure the new conversation appears in the list
+      if (conversationId && createdConversation) {
+        setConversations((prev) => {
+          if (prev.some((c) => c.id === conversationId)) return prev
+          return [createdConversation, ...prev]
+        })
+      } else if (conversationId && !createdConversation) {
+        // Make sure conversations list is up to date
+        refreshConversations()
+      }
+
+      if (conversationId) {
+        setActiveConversationId(conversationId)
+      }
+    },
+    [currentUser, refreshConversations],
+  )
+
   return {
     conversations,
     activeConversationId,
@@ -212,5 +277,6 @@ export function useAdminRealtimeChat(currentUser) {
     deleteMessage,
     blockUser,
     reportUser,
+    startConversationWithUser,
   }
 }
