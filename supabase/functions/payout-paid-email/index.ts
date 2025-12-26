@@ -6,7 +6,7 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-const FROM_EMAIL = Deno.env.get('FROM_EMAIL') || 'no-reply@riddimbase.dev'
+const FROM_EMAIL = Deno.env.get('FROM_EMAIL') || 'RiddimBase <support@riddimbase.app>'
 const OWNER_EMAIL = Deno.env.get('OWNER_EMAIL') || 'owner@example.com'
 
 const ALLOWED_ORIGINS = new Set([
