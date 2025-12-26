@@ -26,6 +26,7 @@ export function ProducerInbox() {
     clearChat,
     blockUser,
     reportUser,
+    startConversationWithUser,
   } = useProducerChat(user)
 
   const handleOpenReport = (targetUserId, conversationId) => {
@@ -54,6 +55,7 @@ export function ProducerInbox() {
         loading={conversationsLoading}
         activeConversationId={activeConversationId}
         onSelectConversation={setActiveConversationId}
+        onStartConversationWithUser={startConversationWithUser}
       />
 
       <div className="flex flex-1 flex-col border-l border-slate-900/70">

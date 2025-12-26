@@ -1,12 +1,15 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { supabase } from '../../lib/supabaseClient'
 
 export function ConversationList({
   conversations,
   loading,
   activeConversationId,
   onSelectConversation,
+  onStartConversationWithUser,
 }) {
   const [query, setQuery] = useState('')
+   const [suggestions, setSuggestions] = useState([])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -17,6 +20,27 @@ export function ConversationList({
         (c.lastMessagePreview ?? '').toLowerCase().includes(q),
     )
   }, [conversations, query])
+
+  // Search across profiles to allow starting a new chat with any user
+  useEffect(() => {
+    const term = query.trim()
+    if (!term) {
+      setSuggestions([])
+      return
+    }
+
+    ;(async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, display_name, username, email, avatar_url')
+        .or(`email.ilike.%${term}%,display_name.ilike.%${term}%,username.ilike.%${term}%`)
+        .limit(8)
+
+      if (!error) {
+        setSuggestions(data || [])
+      }
+    })()
+  }, [query])
 
   return (
     <aside className="w-[280px] lg:w-[300px] xl:w-[320px] flex flex-col bg-slate-950/90 border-r border-slate-900/80">
@@ -32,10 +56,50 @@ export function ConversationList({
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search conversations"
+            placeholder="Search conversations or users…"
             className="w-full rounded-xl bg-slate-900/80 border border-slate-800/80 pl-8 pr-3 py-1.5 text-[11px] text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-rose-500/80 focus:ring-0"
             aria-label="Search conversations"
           />
+          {suggestions.length > 0 && (
+            <div className="absolute z-20 mt-1 w-full rounded-xl border border-slate-800/80 bg-slate-950/95 max-h-64 overflow-y-auto text-[11px]">
+              {suggestions.map((u) => (
+                <button
+                  key={u.id}
+                  type="button"
+                  onClick={() => {
+                    if (onStartConversationWithUser) {
+                      onStartConversationWithUser(u)
+                    }
+                    setSuggestions([])
+                    setQuery('')
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 hover:bg-slate-900/80 text-left"
+                >
+                  <div className="h-7 w-7 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center text-[10px] font-semibold text-slate-100">
+                    {u.avatar_url ? (
+                      <img
+                        src={u.avatar_url}
+                        alt={u.display_name || u.username || u.email || 'User'}
+                        className="h-full w-full rounded-full object-cover"
+                      />
+                    ) : (
+                      (u.display_name || u.username || u.email || 'U')
+                        .slice(0, 2)
+                        .toUpperCase()
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold text-slate-50">
+                      {u.display_name || u.username || u.email || 'User'}
+                    </p>
+                    {u.email && (
+                      <p className="truncate text-[10px] text-slate-400">{u.email}</p>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

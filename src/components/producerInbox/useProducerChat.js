@@ -15,41 +15,44 @@ export function useProducerChat(currentUser) {
   const [typingUsers, setTypingUsers] = useState([])
 
   // Load conversations for the current producer
-  useEffect(() => {
+  const refreshConversations = useCallback(async () => {
     if (!currentUser) return
     setConversationsLoading(true)
-    ;(async () => {
-      const { data, error } = await supabase
-        .from('chat_participants')
-        .select(
-          'conversation_id, role, chat_conversations(id, last_message_at, last_message_preview, other_user_id, other_user_name, other_user_avatar_url, unread_count)',
-        )
-        .eq('user_id', currentUser.id)
-        .order('chat_conversations.last_message_at', { ascending: false })
+    const { data, error } = await supabase
+      .from('chat_participants')
+      .select(
+        'conversation_id, role, chat_conversations(id, last_message_at, last_message_preview, other_user_id, other_user_name, other_user_avatar_url, unread_count)',
+      )
+      .eq('user_id', currentUser.id)
+      .order('chat_conversations.last_message_at', { ascending: false })
 
-      if (!error && data) {
-        const mapped = data
-          .map((row) => row.chat_conversations)
-          .filter(Boolean)
-          .map((c) => ({
-            id: c.id,
-            otherUserId: c.other_user_id,
-            otherUserName: c.other_user_name,
-            otherUserAvatarUrl: c.other_user_avatar_url,
-            lastMessagePreview: c.last_message_preview,
-            lastMessageAt: c.last_message_at,
-            unreadCount: c.unread_count,
-          }))
+    if (!error && data) {
+      const mapped = data
+        .map((row) => row.chat_conversations)
+        .filter(Boolean)
+        .map((c) => ({
+          id: c.id,
+          otherUserId: c.other_user_id,
+          otherUserName: c.other_user_name,
+          otherUserAvatarUrl: c.other_user_avatar_url,
+          lastMessagePreview: c.last_message_preview,
+          lastMessageAt: c.last_message_at,
+          unreadCount: c.unread_count,
+        }))
 
-        setConversations(mapped)
-        if (!activeConversationId && mapped.length > 0) {
-          setActiveConversationId(mapped[0].id)
-        }
+      setConversations(mapped)
+      if (!activeConversationId && mapped.length > 0) {
+        setActiveConversationId(mapped[0].id)
       }
+    }
 
-      setConversationsLoading(false)
-    })()
+    setConversationsLoading(false)
   }, [currentUser, activeConversationId])
+
+  useEffect(() => {
+    if (!currentUser) return
+    refreshConversations()
+  }, [currentUser, refreshConversations])
 
   const activeConversation = useMemo(() => {
     const found = conversations.find((c) => c.id === activeConversationId)
@@ -125,7 +128,25 @@ export function useProducerChat(currentUser) {
       const { error } = await supabase.from('chat_messages').insert(payload)
       if (error) {
         console.error('sendMessage error', error)
+        return
       }
+
+      // Keep conversation list metadata in sync
+      const now = new Date().toISOString()
+      let preview = text || ''
+      if (!preview && attachment) {
+        if (type === 'image') preview = '[Image]'
+        else if (type === 'audio') preview = '[Audio]'
+        else preview = '[File]'
+      }
+
+      await supabase
+        .from('chat_conversations')
+        .update({
+          last_message_at: now,
+          last_message_preview: preview,
+        })
+        .eq('id', conversationId)
     },
     [currentUser],
   )
@@ -144,6 +165,77 @@ export function useProducerChat(currentUser) {
       })
     },
     [currentUser],
+  )
+
+  // When producer selects a user from search, open existing conversation or create a new one
+  const startConversationWithUser = useCallback(
+    async (user) => {
+      if (!currentUser || !user?.id) return
+
+      const [{ data: myRows }, { data: theirRows }] = await Promise.all([
+        supabase
+          .from('chat_participants')
+          .select('conversation_id')
+          .eq('user_id', currentUser.id),
+        supabase
+          .from('chat_participants')
+          .select('conversation_id')
+          .eq('user_id', user.id),
+      ])
+
+      const mine = new Set((myRows || []).map((r) => r.conversation_id))
+      const shared = (theirRows || []).find((r) => mine.has(r.conversation_id))
+
+      let conversationId = shared?.conversation_id || null
+      let createdConversation = null
+
+      if (!conversationId) {
+        const { data: created, error: convError } = await supabase
+          .from('chat_conversations')
+          .insert({
+            subject: user.display_name || user.username || user.email || 'Conversation',
+          })
+          .select('*')
+          .single()
+
+        if (convError || !created) return
+
+        conversationId = created.id
+        createdConversation = created
+
+        await supabase.from('chat_participants').insert([
+          { conversation_id: conversationId, user_id: currentUser.id, role: 'producer' },
+          { conversation_id: conversationId, user_id: user.id, role: 'member' },
+        ])
+      }
+
+      if (conversationId && createdConversation) {
+        setConversations((prev) => {
+          if (prev.some((c) => c.id === conversationId)) return prev
+          return [
+            {
+              id: conversationId,
+              otherUserId: user.id,
+              otherUserName:
+                user.display_name || user.username || user.email || 'Conversation',
+              otherUserAvatarUrl: user.avatar_url || null,
+              lastMessagePreview: null,
+              lastMessageAt: null,
+              unreadCount: 0,
+            },
+            ...prev,
+          ]
+        })
+      } else if (conversationId && !createdConversation) {
+        // Ensure list reflects an existing conversation we just reused
+        refreshConversations()
+      }
+
+      if (conversationId) {
+        setActiveConversationId(conversationId)
+      }
+    },
+    [currentUser, refreshConversations],
   )
 
   const reportUser = useCallback(
@@ -179,5 +271,6 @@ export function useProducerChat(currentUser) {
     clearChat,
     blockUser,
     reportUser,
+    startConversationWithUser,
   }
 }
