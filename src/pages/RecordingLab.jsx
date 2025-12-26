@@ -1221,50 +1221,65 @@ export function RecordingLab() {
       : Math.max(0, playheadSec)
 
     const regionEndLimit = loopActive ? loopRegion.endSec : Infinity
+    // Always stop any prior transport state before starting new playback
+    stopTimelinePlayback()
 
-    // Beat-only sessions: fall back to the beat HTMLAudio element for robust playback
-    // (avoids decode/network edge-cases when there are no vocal clips yet).
-    if (hasBeatAudio && !hasAnyVocalClip) {
+    let anySources = false
+
+    // Always drive the beat through the HTMLAudio element since it already
+    // plays correctly in the "beat monitor" path. This avoids cross-origin
+    // / decode issues that can happen when trying to fetch + decode the beat
+    // into Web Audio.
+    if (hasBeatAudio) {
       ensureBeatAudio()
       const el = audioRef.current
-      if (!el) return
-      try {
-        const beatDur = Number.isFinite(el.duration) && el.duration > 0 ? el.duration : 60
-        const safeStart = Math.min(Math.max(0, startAt), beatDur)
-        el.currentTime = safeStart
-        el.play().catch(() => {})
+      if (el) {
+        try {
+          const beatDur = Number.isFinite(el.duration) && el.duration > 0 ? el.duration : 60
+          const safeStart = Math.min(Math.max(0, startAt), beatDur)
+          el.currentTime = safeStart
+          el.play().catch(() => {})
 
-        const endLimit = Number.isFinite(regionEndLimit) && regionEndLimit < Infinity
-          ? Math.min(regionEndLimit, beatDur)
-          : beatDur
-        if (endLimit > safeStart) {
-          const remaining = endLimit - safeStart
-          timelineTimeoutRef.current = setTimeout(() => {
-            if (
-              loopRegion &&
-              loopRegion.enabled &&
-              typeof loopRegion.startSec === 'number' &&
-              typeof loopRegion.endSec === 'number' &&
-              loopRegion.endSec > loopRegion.startSec + 0.05
-            ) {
-              setPlayheadSec(loopRegion.startSec)
-              handlePlayFromCursor()
-            } else {
-              stopTimelinePlayback()
-            }
-          }, remaining * 1000 + 200)
-        }
+          const endLimit = Number.isFinite(regionEndLimit) && regionEndLimit < Infinity
+            ? Math.min(regionEndLimit, beatDur)
+            : beatDur
+          if (endLimit > safeStart) {
+            const remaining = endLimit - safeStart
+            timelineTimeoutRef.current = setTimeout(() => {
+              if (
+                loopRegion &&
+                loopRegion.enabled &&
+                typeof loopRegion.startSec === 'number' &&
+                typeof loopRegion.endSec === 'number' &&
+                loopRegion.endSec > loopRegion.startSec + 0.05
+              ) {
+                setPlayheadSec(loopRegion.startSec)
+                handlePlayFromCursor()
+              } else {
+                stopTimelinePlayback()
+              }
+            }, remaining * 1000 + 200)
+          }
 
-        setIsTimelinePlaying(true)
-        startPlayheadAnimation(safeStart, endLimit)
-      } catch {}
+          startPlayheadAnimation(safeStart, endLimit)
+          anySources = true
+        } catch {}
+      }
+    }
+
+    // If there are no vocal clips, arrangement playback is beat-only and is
+    // already handled by the HTMLAudio element above.
+    if (!hasAnyVocalClip) {
+      if (anySources) setIsTimelinePlaying(true)
       return
     }
 
     const ctx = ensurePlaybackContext()
-    if (!ctx) return
+    if (!ctx) {
+      if (anySources) setIsTimelinePlaying(true)
+      return
+    }
 
-    stopTimelinePlayback()
     try {
       await ctx.resume()
     } catch {}
@@ -1272,14 +1287,6 @@ export function RecordingLab() {
     const anySolo = beatTrackState.solo || vocalTracks.some((t) => t.solo)
 
     const tasks = []
-    if (hasBeatAudio && !beatTrackState.muted && (!anySolo || beatTrackState.solo)) {
-      tasks.push({
-        type: 'beat',
-        url: selectedBeat.audioUrl,
-        clip: beatClip || { startSec: 0 },
-        volume: typeof beatTrackState.volume === 'number' ? beatTrackState.volume : 1,
-      })
-    }
     vocalTracks.forEach((t) => {
       if (!t.clip || t.muted) return
       if (anySolo && !t.solo) return
@@ -1292,7 +1299,10 @@ export function RecordingLab() {
       })
     })
 
-    if (!tasks.length) return
+    if (!tasks.length) {
+      if (anySources) setIsTimelinePlaying(true)
+      return
+    }
 
     const now = ctx.currentTime + 0.05
     const sources = []
@@ -1321,11 +1331,7 @@ export function RecordingLab() {
       const volume = typeof task.volume === 'number' ? task.volume : 1
       const gainNode = ctx.createGain()
       gainNode.gain.value = Math.max(0, Math.min(2, volume))
-      if (task.type === 'vocal') {
-        applyVocalFxChain(ctx, source, task.fx, gainNode)
-      } else {
-        source.connect(gainNode)
-      }
+      applyVocalFxChain(ctx, source, task.fx, gainNode)
       gainNode.connect(ctx.destination)
       try {
         source.start(when, offset, playDuration)
@@ -1333,18 +1339,22 @@ export function RecordingLab() {
       } catch {}
     }
 
-    if (!sources.length) return
+    if (!sources.length) {
+      if (anySources) setIsTimelinePlaying(true)
+      return
+    }
 
     timelineSourcesRef.current = sources
-    setIsTimelinePlaying(true)
+    anySources = true
 
     if (maxEnd > startAt) {
       startPlayheadAnimation(startAt, maxEnd)
-    } else {
+    } else if (!hasBeatAudio) {
+      // If there is a beat, the playhead animation was already started above.
       startPlayheadAnimation(startAt)
     }
 
-    if (maxEnd > startAt) {
+    if (!hasBeatAudio && maxEnd > startAt) {
       const remaining = maxEnd - startAt
       timelineTimeoutRef.current = setTimeout(() => {
         if (
@@ -1361,6 +1371,8 @@ export function RecordingLab() {
         }
       }, remaining * 1000 + 300)
     }
+
+    if (anySources) setIsTimelinePlaying(true)
   }
 
   // Global spacebar shortcut for play / pause, unless the user is typing
