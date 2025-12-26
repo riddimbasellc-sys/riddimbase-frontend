@@ -1906,7 +1906,12 @@ export function RecordingLab() {
 
     const previewFx = {
       ...baseFx,
-      [effectKey]: { ...(baseFx?.[effectKey] || {}), ...draftSettings },
+      [effectKey]: {
+        ...(baseFx?.[effectKey] || {}),
+        ...draftSettings,
+        // Always force the effect on while previewing so changes are audible
+        enabled: true,
+      },
     }
 
     const source = ctx.createBufferSource()
@@ -2408,6 +2413,8 @@ export function RecordingLab() {
                     [fxEditor.effectKey]: {
                       ...(prev.fx?.[fxEditor.effectKey] || {}),
                       ...settings,
+                      // Ensure the effect is turned on once applied
+                      enabled: settings.enabled ?? true,
                     },
                   },
                 }))
@@ -2422,6 +2429,8 @@ export function RecordingLab() {
                             [fxEditor.effectKey]: {
                               ...(t.fx?.[fxEditor.effectKey] || {}),
                               ...settings,
+                              // Ensure the effect is turned on once applied
+                              enabled: settings.enabled ?? true,
                             },
                           },
                         }
