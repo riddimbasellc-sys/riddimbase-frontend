@@ -1738,6 +1738,42 @@ export function RecordingLab() {
     }
   }
 
+  const handleDeleteSelectedSession = async () => {
+    if (!user?.id || !selectedSessionId) return
+    // eslint-disable-next-line no-alert
+    const ok = window.confirm('Delete this saved session and its contents? This cannot be undone.')
+    if (!ok) return
+
+    try {
+      setSessionBusy(true)
+      const apiBase = import.meta?.env?.VITE_API_BASE_URL || 'https://riddimbase-backend.onrender.com'
+      const res = await fetch(`${apiBase}/studio-sessions/${selectedSessionId}/delete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': user.id,
+        },
+      })
+      if (!res.ok) {
+        let msg = 'Failed to delete session.'
+        try {
+          const data = await res.json()
+          if (data?.error) msg = data.error
+        } catch {}
+        throw new Error(msg)
+      }
+
+      setSavedSessions((prev) => (Array.isArray(prev) ? prev.filter((s) => s.id !== selectedSessionId) : []))
+      setSelectedSessionId('')
+    } catch (e) {
+      console.warn('[RecordingLab] delete session failed', e)
+      // eslint-disable-next-line no-alert
+      alert('Failed to delete session.')
+    } finally {
+      setSessionBusy(false)
+    }
+  }
+
   const handleLoadSession = async (sessionId) => {
     if (!user?.id) return
     if (!sessionId) return
@@ -1838,24 +1874,51 @@ export function RecordingLab() {
               </div>
               <p className="mt-1 text-[10px] text-slate-400">200 credits per recording session</p>
             </div>
-            <select
-              className="h-9 w-[220px] max-w-[52vw] rounded-xl border border-slate-800/80 bg-slate-950/80 px-3 text-[12px] text-slate-200"
-              value={selectedSessionId}
-              disabled={!user || sessionBusy}
-              onChange={(e) => {
-                const id = e.target.value
-                setSelectedSessionId(id)
-                if (id) handleLoadSession(id)
-              }}
-              title={user ? 'Saved sessions' : 'Log in to see saved sessions'}
-            >
-              <option value="">Saved sessions…</option>
-              {savedSessions.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {formatSessionLabel(s)}
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center gap-1">
+              <select
+                className="h-9 w-[220px] max-w-[52vw] rounded-xl border border-slate-800/80 bg-slate-950/80 px-3 text-[12px] text-slate-200"
+                value={selectedSessionId}
+                disabled={!user || sessionBusy}
+                onChange={(e) => {
+                  const id = e.target.value
+                  setSelectedSessionId(id)
+                  if (id) handleLoadSession(id)
+                }}
+                title={user ? 'Saved sessions' : 'Log in to see saved sessions'}
+              >
+                <option value="">Saved sessions…</option>
+                {savedSessions.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {formatSessionLabel(s)}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleDeleteSelectedSession}
+                disabled={!user || sessionBusy || !selectedSessionId}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-800/80 bg-slate-900/70 text-[11px] text-slate-300 hover:border-rose-500/80 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-40"
+                title="Delete selected session"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-3.5 w-3.5"
+                  aria-hidden="true"
+                  focusable="false"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                  <line x1="10" y1="11" x2="10" y2="17" />
+                  <line x1="14" y1="11" x2="14" y2="17" />
+                </svg>
+              </button>
+            </div>
 
             <button
               type="button"
@@ -2106,6 +2169,31 @@ export function RecordingLab() {
                     </option>
                   ))}
                 </select>
+                <button
+                  type="button"
+                  onClick={handleDeleteSelectedSession}
+                  disabled={!user || sessionBusy || !selectedSessionId}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-800/80 bg-slate-900/70 text-[10px] text-slate-300 hover:border-rose-500/80 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-40"
+                  title="Delete selected session"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="h-3.5 w-3.5"
+                    aria-hidden="true"
+                    focusable="false"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                    <line x1="10" y1="11" x2="10" y2="17" />
+                    <line x1="14" y1="11" x2="14" y2="17" />
+                  </svg>
+                </button>
                 <button
                   type="button"
                   onClick={() => setIsArrangementFullscreen(false)}
