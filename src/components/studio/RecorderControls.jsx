@@ -143,9 +143,7 @@ export default function RecorderControls({
             disabled={false}
             active={recordState === 'recording' || isArrangementPlaying}
             onClick={() => {
-              if (recordState === 'recording') {
-                onStop?.()
-              }
+              onStop?.()
               onStopArrangement?.()
             }}
           >
