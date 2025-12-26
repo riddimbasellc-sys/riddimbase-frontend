@@ -37,6 +37,8 @@ export default function TrackTimeline({
   onLoopSetStart,
   onLoopSetEnd,
   onSelectVocalTrack,
+  onDeleteVocalClip,
+  onSetLoopFromClip,
   requestWaveform,
 }) {
   const containerRef = useRef(null)
@@ -44,6 +46,7 @@ export default function TrackTimeline({
   const loadedWaveformsRef = useRef(new Set())
   const [zoom, setZoom] = useState(1)
   const [showVolumeAutomation, setShowVolumeAutomation] = useState(true)
+  const [contextMenu, setContextMenu] = useState(null) // { x, y, clip }
 
   const liveWaveformsMap = liveRecordingWaveforms || {}
 
@@ -231,6 +234,29 @@ export default function TrackTimeline({
     const minutes = Math.floor(totalSeconds / 60)
     const seconds = totalSeconds % 60
     return `${minutes}:${seconds.toString().padStart(2, '0')}`
+  }
+
+  const closeContextMenu = () => {
+    setContextMenu(null)
+  }
+
+  const handleContextMenuAction = (action) => {
+    if (!contextMenu || !contextMenu.clip) return
+    const { clip } = contextMenu
+    if (action === 'delete') {
+      if (clip.type === 'vocal') {
+        onDeleteVocalClip?.(clip.id)
+      }
+    } else if (action === 'loop') {
+      const start = clip.startSec || 0
+      const dur = clip.durationSec || 0
+      onSetLoopFromClip?.(start, dur)
+    } else if (action === 'play') {
+      const start = clip.startSec || 0
+      onSeek?.(start)
+      onPlayFromCursor?.()
+    }
+    closeContextMenu()
   }
 
   return (
@@ -591,6 +617,18 @@ export default function TrackTimeline({
                               }
                               handleMouseDownClip(clip, e)
                             }}
+                            onContextMenu={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              if (clip.type === 'vocal') {
+                                onSelectVocalTrack?.(clip.id)
+                              }
+                              setContextMenu({
+                                x: e.clientX,
+                                y: e.clientY,
+                                clip,
+                              })
+                            }}
                             title={
                               clip.type === 'beat'
                                 ? 'Drag to offset beat against vocals'
@@ -761,6 +799,46 @@ export default function TrackTimeline({
               )
             })}
           </div>
+          {contextMenu && (
+            <div
+              className="fixed inset-0 z-40"
+              onClick={closeContextMenu}
+              onContextMenu={(e) => {
+                e.preventDefault()
+                closeContextMenu()
+              }}
+            >
+              <div
+                className="absolute z-50 w-44 rounded-md border border-slate-800/80 bg-slate-950/95 p-1 text-[11px] text-slate-200 shadow-xl"
+                style={{ left: contextMenu.x, top: contextMenu.y }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  onClick={() => handleContextMenuAction('play')}
+                  className="flex w-full items-center rounded px-2 py-1 text-left hover:bg-slate-800/80"
+                >
+                  Play from clip
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleContextMenuAction('loop')}
+                  className="flex w-full items-center rounded px-2 py-1 text-left hover:bg-slate-800/80"
+                >
+                  Set loop to clip
+                </button>
+                {contextMenu.clip?.type === 'vocal' && (
+                  <button
+                    type="button"
+                    onClick={() => handleContextMenuAction('delete')}
+                    className="mt-1 flex w-full items-center rounded px-2 py-1 text-left text-red-300 hover:bg-red-900/40"
+                  >
+                    Delete clip
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
