@@ -49,6 +49,7 @@ export function RecordingLab() {
     eq: {
       enabled: false,
       preset: 'flat',
+      preGainDb: 0,
       lowGainDb: 0,
       midGainDb: 0,
       highGainDb: 0,
@@ -863,6 +864,12 @@ export function RecordingLab() {
 
     const eqFx = safeFx.eq || {}
     if (eqFx.enabled) {
+      const pre = ctx.createGain()
+      if (typeof eqFx.preGainDb === 'number') {
+        const linear = Math.pow(10, (eqFx.preGainDb || 0) / 20)
+        pre.gain.value = linear
+      }
+
       const low = ctx.createBiquadFilter()
       low.type = 'lowshelf'
       low.frequency.value = 120
@@ -879,7 +886,8 @@ export function RecordingLab() {
       high.frequency.value = 6000
       high.gain.value = eqFx.highGainDb ?? 0
 
-      current.connect(low)
+      current.connect(pre)
+      pre.connect(low)
       low.connect(mid)
       mid.connect(high)
       current = high
@@ -2376,7 +2384,7 @@ export function RecordingLab() {
           </div>
         )}
 
-        {fxEditor && selectedVocalTrackId && (
+        {fxEditor && (
           <VocalFxModal
             effectKey={fxEditor.effectKey}
             trackName={
