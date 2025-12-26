@@ -19,6 +19,7 @@ export function AdminRealtimeChat() {
           conversations={chat.conversations}
           activeConversationId={chat.activeConversationId}
           onSelectConversation={chat.setActiveConversationId}
+          onStartConversationWithUser={chat.startConversationWithUser}
         />
         <AdminChatThread
           activeConversationId={chat.activeConversationId}
