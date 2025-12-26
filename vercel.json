@@ -1,4 +1,15 @@
 {
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "connect-src 'self' https://npchamnsaaykeedohfli.supabase.co https://npchamnsaaykeedohfli.functions.supabase.co https://riddimbase-backend.onrender.com wss://npchamnsaaykeedohfli.supabase.co;"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/sitemaps/pages.xml",
