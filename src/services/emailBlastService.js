@@ -114,7 +114,23 @@ export async function sendEmailBlast({
     }
   })
 
-  const functionsBase = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL
+  const configuredFunctionsBase = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL
+    ? import.meta.env.VITE_SUPABASE_FUNCTIONS_URL.trim()
+    : ''
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    ? import.meta.env.VITE_SUPABASE_URL.trim()
+    : ''
+
+  // Prefer the API-gateway style edge functions endpoint:
+  //   https://<project>.supabase.co/functions/v1/<fn>
+  // This is generally more reliable for browser CORS than the *.functions.supabase.co host.
+  let functionsBase = configuredFunctionsBase
+  if (supabaseUrl) {
+    const gatewayBase = `${supabaseUrl.replace(/\/$/, '')}/functions/v1`
+    if (!functionsBase) functionsBase = gatewayBase
+    if (functionsBase.includes('.functions.supabase.co')) functionsBase = gatewayBase
+  }
+
   if (functionsBase) {
     try {
       const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -123,6 +139,7 @@ export async function sendEmailBlast({
         headers.Authorization = `Bearer ${anonKey}`
         headers.apikey = anonKey
       }
+      headers['Content-Type'] = 'application/json'
       const res = await fetch(`${functionsBase}/email-blast`, {
         method: 'POST',
         headers,
