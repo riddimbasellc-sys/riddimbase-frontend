@@ -1419,23 +1419,7 @@ export function RecordingLab() {
     }
 
     if (anySources) setIsTimelinePlaying(true)
-      const tag = target?.tagName
-      const isTyping =
-        tag === 'INPUT' ||
-        tag === 'TEXTAREA' ||
-        target?.isContentEditable
-
-      if (isTyping) return
-
-      e.preventDefault()
-      handleToggleArrangementPlay()
-    }
-
-    window.addEventListener('keydown', onKeyDown)
-    return () => {
-      window.removeEventListener('keydown', onKeyDown)
-    }
-  }, [handleToggleArrangementPlay])
+  }
 
   const buildExportTasks = () => {
     const hasAnyVocalClip = vocalTracks.some((t) => !!(t.clip && t.clip.url))
