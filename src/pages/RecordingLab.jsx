@@ -1725,8 +1725,10 @@ export function RecordingLab() {
           )}
 
           <div className="relative flex min-h-0 flex-col gap-4">
-            <div className="flex-1 min-h-0 rounded-2xl border border-slate-800/80 bg-slate-950/80 p-4 text-[12px] text-slate-200">
-              <TrackTimeline
+            <div className="relative flex-1 min-h-0 rounded-2xl border border-slate-800/80 bg-slate-950/80 p-4 text-[12px] text-slate-200">
+              <div className="h-full flex flex-col">
+                <div className="flex-1 min-h-0 pb-20">
+                  <TrackTimeline
                 beatClip={beatClip}
                 beatLabel={selectedBeat?.title || 'Beat Track'}
                 beatTrackState={beatTrackState}
@@ -1773,28 +1775,32 @@ export function RecordingLab() {
                 onLoopSetEnd={handleLoopSetEnd}
                 onSelectVocalTrack={handleSelectVocalTrack}
                 requestWaveform={getWaveformForUrl}
-              />
-            </div>
-            <div className="flex-shrink-0">
-              <RecorderControls
-                recordState={recordState}
-                onRecord={handleRecord}
-                onStop={handleStop}
-                onReRecord={handleReRecord}
-                onRequestMic={requestMic}
-                onStopArrangement={stopTimelinePlayback}
-                canRecord={canRecord}
-                canPlay={canPlayArrangement}
-                hasRecording={hasRecording}
-                isBeatPlaying={isBeatPlaying}
-                onToggleBeat={toggleBeatPlay}
-                hasBeatSelected={!!selectedBeat}
-                timerSeconds={timerSeconds}
-                isArrangementPlaying={isTimelinePlaying}
-                onToggleArrangementPlay={handleToggleArrangementPlay}
-                isLoopEnabled={!!loopRegion?.enabled}
-                onToggleLoop={handleToggleLoopRegion}
-              />
+                  />
+                </div>
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center pb-3">
+                  <div className="pointer-events-auto w-full max-w-3xl px-2">
+                    <RecorderControls
+                      recordState={recordState}
+                      onRecord={handleRecord}
+                      onStop={handleStop}
+                      onReRecord={handleReRecord}
+                      onRequestMic={requestMic}
+                      onStopArrangement={stopTimelinePlayback}
+                      canRecord={canRecord}
+                      canPlay={canPlayArrangement}
+                      hasRecording={hasRecording}
+                      isBeatPlaying={isBeatPlaying}
+                      onToggleBeat={toggleBeatPlay}
+                      hasBeatSelected={!!selectedBeat}
+                      timerSeconds={timerSeconds}
+                      isArrangementPlaying={isTimelinePlaying}
+                      onToggleArrangementPlay={handleToggleArrangementPlay}
+                      isLoopEnabled={!!loopRegion?.enabled}
+                      onToggleLoop={handleToggleLoopRegion}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="flex-shrink-0 flex justify-end">
               <div className="relative inline-flex">
