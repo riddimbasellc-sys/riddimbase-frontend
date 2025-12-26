@@ -1471,11 +1471,12 @@ export function RecordingLab() {
     }
   }
 
-  const buildSessionState = () => {
+  const buildSessionState = (opts = {}) => {
+    const { silent = false } = opts
     const hasLocalOnlyTakes = vocalTracks.some((t) =>
       typeof t?.clip?.url === 'string' ? t.clip.url.startsWith('blob:') : false,
     )
-    if (hasLocalOnlyTakes) {
+    if (hasLocalOnlyTakes && !silent) {
       // Local blob URLs can’t be restored after refresh.
       // Keep saving anyway (user might have other tracks + beat + FX).
       // eslint-disable-next-line no-alert
@@ -1571,6 +1572,60 @@ export function RecordingLab() {
     }
   }
 
+  const autoSaveSession = async () => {
+    if (!user?.id) return
+
+    const hasAnyContent =
+      !!selectedBeat ||
+      !!beatClip ||
+      vocalTracks.some((t) => !!t.clip)
+    if (!hasAnyContent) return
+
+    const payload = {
+      user_id: user.id,
+      name: 'Autosave session',
+      beat_id: selectedBeat?.id || null,
+      beat_snapshot: selectedBeat
+        ? {
+            id: selectedBeat.id,
+            title: selectedBeat.title,
+            audioUrl: selectedBeat.audioUrl,
+            coverUrl: selectedBeat.coverUrl,
+            bpm: selectedBeat.bpm,
+            producer: selectedBeat.producer,
+          }
+        : null,
+      state: buildSessionState({ silent: true }),
+    }
+
+    try {
+      setSessionBusy(true)
+      if (selectedSessionId) {
+        const { error } = await supabase
+          .from('studio_sessions')
+          .update(payload)
+          .eq('id', selectedSessionId)
+          .eq('user_id', user.id)
+        if (error) throw error
+      } else {
+        const { data, error } = await supabase
+          .from('studio_sessions')
+          .insert(payload)
+          .select('id')
+          .single()
+        if (error) throw error
+        if (data?.id) setSelectedSessionId(data.id)
+      }
+
+      await fetchSessionsList()
+      // Silent: no alerts/UI changes beyond existing "Saved sessions" dropdown
+    } catch (e) {
+      console.warn('[RecordingLab] auto-save session failed', e)
+    } finally {
+      setSessionBusy(false)
+    }
+  }
+
   const handleLoadSession = async (sessionId) => {
     if (!user?.id) return
     if (!sessionId) return
@@ -1628,6 +1683,19 @@ export function RecordingLab() {
       setSessionBusy(false)
     }
   }
+
+  useEffect(() => {
+    if (!user?.id) return undefined
+
+    const interval = setInterval(() => {
+      if (sessionBusy) return
+      autoSaveSession()
+    }, 60_000)
+
+    return () => {
+      clearInterval(interval)
+    }
+  }, [user?.id, sessionBusy, selectedSessionId, selectedBeat, beatClip, vocalTracks.length])
 
   return (
     <section className="studio-shell min-h-screen lg:h-screen lg:overflow-hidden">
