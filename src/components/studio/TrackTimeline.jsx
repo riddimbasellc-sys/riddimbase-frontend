@@ -52,6 +52,45 @@ export default function TrackTimeline({
 
   const liveWaveformsMap = liveRecordingWaveforms || {}
 
+  // Lazily request downsampled waveform data for any clip URLs so we can
+  // render filled waveforms instead of simple rectangles.
+  useEffect(() => {
+    if (!requestWaveform) return
+
+    let cancelled = false
+
+    const loadWaveforms = async () => {
+      const urlsToLoad = []
+
+      timelineClips.forEach((clip) => {
+        const url = clip.url
+        if (!url) return
+        if (loadedWaveformsRef.current.has(url)) return
+        loadedWaveformsRef.current.add(url)
+        urlsToLoad.push(url)
+      })
+
+      for (const url of urlsToLoad) {
+        try {
+          const data = await requestWaveform(url)
+          if (!data || cancelled) continue
+          setWaveforms((prev) =>
+            prev[url] ? prev : { ...prev, [url]: data },
+          )
+        } catch (e) {
+          // Allow retry on next render if something went wrong
+          loadedWaveformsRef.current.delete(url)
+        }
+      }
+    }
+
+    loadWaveforms()
+
+    return () => {
+      cancelled = true
+    }
+  }, [timelineClips, requestWaveform])
+
   const clampZoom = (value) => {
     return Math.min(4, Math.max(0.25, value || 1))
   }
