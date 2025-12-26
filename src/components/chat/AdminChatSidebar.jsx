@@ -5,6 +5,7 @@ export function AdminChatSidebar({
   conversations,
   activeConversationId,
   onSelectConversation,
+  onStartConversationWithUser,
 }) {
   const [search, setSearch] = useState('')
   const [suggestions, setSuggestions] = useState([])
@@ -50,8 +51,11 @@ export function AdminChatSidebar({
                   key={u.id}
                   type="button"
                   onClick={() => {
-                    // TODO: create/focus conversation with this user
-                    setSearch(u.email || '')
+                    if (onStartConversationWithUser) {
+                      onStartConversationWithUser(u)
+                    } else {
+                      setSearch(u.email || '')
+                    }
                     setSuggestions([])
                   }}
                   className="flex w-full flex-col items-start px-3 py-2 hover:bg-slate-900/80"
