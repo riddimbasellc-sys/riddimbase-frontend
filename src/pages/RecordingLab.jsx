@@ -1927,7 +1927,8 @@ export function RecordingLab() {
     } catch {}
 
     const start = Math.max(0, clipStart)
-    const dur = Math.max(0.25, Math.min(4, clipDur))
+    // Preview the full clip length (no 4s cap)
+    const dur = Math.max(0.25, clipDur)
     const when = ctx.currentTime + 0.05
     try {
       source.start(when, start, dur)
