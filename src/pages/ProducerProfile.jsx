@@ -13,6 +13,8 @@ import ReportModal from '../components/ReportModal'
 import { useAdminRole } from '../hooks/useAdminRole'
 import { slugify } from '../utils/slugify'
 import { supabase } from '../lib/supabaseClient'
+import VerifiedBadge from '../components/VerifiedBadge'
+import { isProducerProPlanId } from '../services/subscriptionService'
 
 export function ProducerProfile() {
   const { producerId: producerIdParam } = useParams()
@@ -29,6 +31,7 @@ export function ProducerProfile() {
   const { user } = useSupabaseUser()
   const navigate = useNavigate()
   const [sub, setSub] = useState(null)
+  const [producerSub, setProducerSub] = useState(null)
   const [shareOpen, setShareOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [following, setFollowing] = useState(false)
@@ -114,6 +117,21 @@ export function ProducerProfile() {
     }
     return () => { active = false }
   }, [user])
+
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      if (!producerId) {
+        if (active) setProducerSub(null)
+        return
+      }
+      const s = await getSubscription(producerId)
+      if (active) setProducerSub(s)
+    })()
+    return () => {
+      active = false
+    }
+  }, [producerId])
   // Ensure a sample profile for prototype if none exists
   const [profile, setProfile] = useState(null)
   useEffect(() => {
@@ -125,7 +143,7 @@ export function ProducerProfile() {
   }, [producerId])
   const youtubeUrl = profile?.youtubeUrl || null
   const isOwnProfile = user && producerId === user.id
-  const showProBadge = isOwnProfile && sub
+  const showProBadge = !!(producerSub && isProducerProPlanId(producerSub.planId))
   const handleFollow = async () => {
     if (!user) {
       setAuthPrompt('Log in or create an account to follow producers.')
@@ -229,7 +247,10 @@ export function ProducerProfile() {
                   )}
                 </p>
                 <h2 className="text-xl font-semibold text-slate-50 truncate">
-                  {displayName}
+                  <span className="inline-flex items-center gap-2">
+                    {displayName}
+                    {showProBadge && <VerifiedBadge className="h-5 w-5 text-sky-300" />}
+                  </span>
                 </h2>
                 <p className="mt-1 text-sm text-slate-300">
                   {bioText}

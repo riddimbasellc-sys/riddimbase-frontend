@@ -6,6 +6,8 @@ import { BeatPlayer } from '../components/BeatPlayer'
 import ScrollableGrid from '../components/ScrollableGrid'
 import { listProviderProfiles, fetchCatalog } from '../services/supabaseProvidersRepository'
 import { supabase } from '../lib/supabaseClient'
+import VerifiedBadge from '../components/VerifiedBadge'
+import { isProducerProPlanId } from '../services/subscriptionService'
 
 export function Services() {
   const [providers, setProviders] = useState([])
@@ -74,7 +76,7 @@ export function Services() {
         if (active) {
           const pro = {}
           ;(subs || []).forEach((row) => {
-            if (row.plan_id === 'producer-pro') {
+            if (isProducerProPlanId(row.plan_id)) {
               pro[row.user_id] = true
             }
           })
@@ -266,18 +268,15 @@ export function Services() {
                     className="flex items-center justify-between gap-4 rounded-2xl border border-slate-800/70 bg-slate-900/70 px-4 py-3 transition hover:border-emerald-400/60"
                   >
                     <div className="min-w-0">
-                      <h2 className="truncate text-sm font-semibold text-slate-100">{p.name}</h2>
+                      <h2 className="truncate text-sm font-semibold text-slate-100 flex items-center gap-1">
+                        <span className="truncate">{p.name}</span>
+                        {isPro && <VerifiedBadge className="h-4 w-4 text-sky-300" />}
+                      </h2>
                       <p className="mt-1 truncate text-[11px] text-slate-400">
                         {p.location || p.bio}
                       </p>
                     </div>
                     <div className="flex flex-shrink-0 items-center gap-3">
-                      {isPro && (
-                        <span className="hidden items-center gap-1 rounded-full border border-sky-400/70 bg-sky-500/15 px-2 py-[1px] text-[9px] font-semibold text-sky-200 sm:inline-flex">
-                          <span>バ"</span>
-                          <span>Verified Pro</span>
-                        </span>
-                      )}
                       {p.contact && (
                         <div className="hidden md:block">
                           <SocialIconRow
@@ -306,8 +305,9 @@ export function Services() {
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <h2 className="text-sm font-semibold text-slate-100 transition group-hover:text-emerald-300">
-                        {p.name}
+                      <h2 className="text-sm font-semibold text-slate-100 transition group-hover:text-emerald-300 flex items-center gap-1">
+                        <span className="truncate">{p.name}</span>
+                        {isPro && <VerifiedBadge className="h-4 w-4 text-sky-300" />}
                       </h2>
                       <p className="mt-1 text-[11px] text-slate-400">{p.location}</p>
                     </div>
@@ -323,14 +323,7 @@ export function Services() {
                       )}
                     </div>
                   </div>
-                  {isPro && (
-                    <div className="mt-2">
-                      <span className="inline-flex items-center gap-1 rounded-full border border-sky-400/70 bg-sky-500/15 px-2 py-[1px] text-[9px] font-semibold text-sky-200">
-                        <span>バ"</span>
-                        <span>Verified Pro</span>
-                      </span>
-                    </div>
-                  )}
+
                   <p className="mt-3 line-clamp-3 text-[11px] text-slate-400">{p.bio}</p>
                   {p.services.length > 0 && (
                     <div className="mt-3 space-y-1 text-[11px] text-slate-300">

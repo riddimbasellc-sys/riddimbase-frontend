@@ -5,6 +5,8 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import SocialIconRow from '../components/SocialIconRow'
 import ScrollableGrid from '../components/ScrollableGrid'
+import VerifiedBadge from '../components/VerifiedBadge'
+import { isProducerProPlanId } from '../services/subscriptionService'
 
 export function Producers() {
   const { beats } = useBeats()
@@ -73,7 +75,7 @@ export function Producers() {
             if (active) {
               const pro = {}
               ;(subs || []).forEach((row) => {
-                if (row.plan_id === 'producer-pro') {
+                if (isProducerProPlanId(row.plan_id)) {
                   pro[row.user_id] = true
                 }
               })
@@ -277,20 +279,15 @@ export function Producers() {
                     className="flex items-center justify-between gap-4 rounded-2xl border border-slate-800/80 bg-slate-900/70 px-4 py-3 hover:border-emerald-400/70 transition"
                   >
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-100 truncate">
-                        {displayName}
+                      <p className="text-sm font-semibold text-slate-100 truncate flex items-center gap-1">
+                        <span className="truncate">{displayName}</span>
+                        {isPro && <VerifiedBadge className="h-4 w-4 text-sky-300" />}
                       </p>
                       <p className="mt-1 text-[11px] text-slate-400">
                         {count} beat{count !== 1 ? 's' : ''}
                       </p>
                     </div>
                     <div className="flex flex-shrink-0 items-center gap-3">
-                      {isPro && (
-                        <span className="hidden sm:inline-flex items-center gap-1 rounded-full border border-sky-400/70 bg-sky-500/15 px-2 py-[1px] text-[9px] font-semibold text-sky-200">
-                          <span>バ"</span>
-                          <span>Verified Pro</span>
-                        </span>
-                      )}
                       {prof && (
                         <div className="hidden md:block">
                           <SocialIconRow
@@ -326,15 +323,10 @@ export function Producers() {
                     <div className="mb-3 h-14 w-14 rounded-xl bg-gradient-to-br from-emerald-500 via-emerald-400 to-orange-500" />
                   )}
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-slate-100 truncate">
-                      {displayName}
+                    <p className="text-sm font-semibold text-slate-100 truncate flex items-center gap-1">
+                      <span className="truncate">{displayName}</span>
+                      {isPro && <VerifiedBadge className="h-4 w-4 text-sky-300" />}
                     </p>
-                    {isPro && (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-sky-400/70 bg-sky-500/15 px-2 py-[1px] text-[9px] font-semibold text-sky-200">
-                        <span>バ"</span>
-                        <span>Verified Pro</span>
-                      </span>
-                    )}
                   </div>
                   <p className="mt-1 text-[11px] text-slate-400">
                     {count} beat{count !== 1 ? 's' : ''}
