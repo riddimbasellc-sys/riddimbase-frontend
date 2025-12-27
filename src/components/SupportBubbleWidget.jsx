@@ -75,7 +75,7 @@ export default function SupportBubbleWidget() {
         .filter(Boolean)
         .join('\n')
 
-      await createSupportTicket({
+      const result = await createSupportTicket({
         subject,
         category: 'general',
         message: messageBody,
@@ -83,6 +83,11 @@ export default function SupportBubbleWidget() {
         contactPhone: phone || null,
         userId: user?.id || null,
       })
+      if (!result?.stored) {
+        // eslint-disable-next-line no-alert
+        alert('Failed to submit support ticket. Please try again or contact support directly.')
+        return
+      }
 
       setSubmitted(true)
       setTimeout(() => {
