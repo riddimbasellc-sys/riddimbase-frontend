@@ -9,6 +9,7 @@ import TrackTimeline from '../components/studio/TrackTimeline'
 import VocalFxModal from '../components/studio/VocalFxModal'
 import useSupabaseUser from '../hooks/useSupabaseUser'
 import { supabase } from '../lib/supabaseClient'
+import { fetchBeat } from '../services/beatsRepository'
 import '../styles/recordingLab.css'
 
 export function RecordingLab() {
@@ -172,9 +173,10 @@ export function RecordingLab() {
   }
 
   const ensureBeatAudio = () => {
-    if (!selectedBeat || !selectedBeat.audioUrl) return
+    const url = getBeatPlayableUrl(selectedBeat)
+    if (!selectedBeat || !url) return
     if (audioRef.current) return
-    const el = new Audio(selectedBeat.audioUrl)
+    const el = new Audio(url)
     el.loop = true
     el.volume = Math.max(0, Math.min(1, beatVolume))
     el.addEventListener('ended', () => {
@@ -185,6 +187,30 @@ export function RecordingLab() {
       setBeatClip((prev) => ({ beatId: selectedBeat?.id, startSec: prev?.startSec || 0, durationSec: duration }))
     })
     audioRef.current = el
+  }
+
+  const getBeatPlayableUrl = (beat) => {
+    if (!beat) return null
+    return (
+      beat.audioUrl ||
+      beat.audio_url ||
+      beat.untaggedUrl ||
+      beat.untagged_url ||
+      null
+    )
+  }
+
+  const normalizeBeatSnapshotOrRow = (raw) => {
+    if (!raw) return null
+    return {
+      id: raw.id,
+      title: raw.title || 'Untitled Beat',
+      producer: raw.producer || 'Unknown',
+      bpm: raw.bpm || null,
+      audioUrl: raw.audioUrl || raw.audio_url || null,
+      untaggedUrl: raw.untaggedUrl || raw.untagged_url || null,
+      coverUrl: raw.coverUrl || raw.cover_url || null,
+    }
   }
 
   const cleanupBeatAudio = () => {
@@ -200,7 +226,7 @@ export function RecordingLab() {
   useEffect(() => {
     // When beat changes, rebuild audio element
     cleanupBeatAudio()
-    if (selectedBeat && selectedBeat.audioUrl) {
+    if (selectedBeat && getBeatPlayableUrl(selectedBeat)) {
       // Create a safe default clip immediately so arrangement playback works
       // even before the audio element metadata has loaded.
       setBeatClip((prev) => {
@@ -280,6 +306,11 @@ export function RecordingLab() {
 
   const toggleBeatPlay = () => {
     if (!selectedBeat) return
+    if (!getBeatPlayableUrl(selectedBeat)) {
+      // eslint-disable-next-line no-alert
+      alert('This beat has no playable audio URL yet. Upload a preview audio file first.')
+      return
+    }
     ensureBeatAudio()
     if (!audioRef.current) return
     if (isBeatPlaying) {
@@ -1224,11 +1255,29 @@ export function RecordingLab() {
 
   const handlePlayFromCursor = async () => {
     const hasAnyVocalClip = vocalTracks.some((t) => !!t.clip)
-    const hasBeatAudio = !!selectedBeat?.audioUrl
+
+    let beatCandidate = selectedBeat
+    let beatUrl = getBeatPlayableUrl(beatCandidate)
+
+    // If we have a beat clip (e.g., loaded from session) but no hydrated beat snapshot,
+    // fetch the beat row so transport can actually play.
+    if (!beatUrl && beatClip?.beatId) {
+      const row = await fetchBeat(beatClip.beatId)
+      const normalized = normalizeBeatSnapshotOrRow(row)
+      const url = getBeatPlayableUrl(normalized)
+      if (url) {
+        beatCandidate = normalized
+        beatUrl = url
+        setSelectedBeat(normalized)
+      }
+    }
+
+    const hasBeatAudio = !!beatUrl
+
     if (!hasBeatAudio && !hasAnyVocalClip) {
       // Nothing to play yet – avoid silent failures so it’s clear why transport does nothing
       // eslint-disable-next-line no-alert
-      alert('Nothing to play yet. Add a beat or record a take first.')
+      alert('Nothing to play yet. Select a beat (with audio) or record a take first.')
       return
     }
 
@@ -1261,6 +1310,10 @@ export function RecordingLab() {
     // beat track, we route it through Web Audio instead so the FX chain can
     // be applied.
     if (hasBeatAudio && !beatFxEnabled) {
+      if (beatCandidate && beatCandidate !== selectedBeat) {
+        // ensureBeatAudio relies on selectedBeat; keep state consistent.
+        setSelectedBeat(beatCandidate)
+      }
       ensureBeatAudio()
       const el = audioRef.current
       if (el) {
@@ -1958,7 +2011,19 @@ export function RecordingLab() {
       const state = data?.state || {}
       const beatSnapshot = data?.beat_snapshot || null
 
-      setSelectedBeat(beatSnapshot && beatSnapshot.audioUrl ? beatSnapshot : null)
+      const normalizedSnapshot = normalizeBeatSnapshotOrRow(beatSnapshot)
+      const snapshotUrl = getBeatPlayableUrl(normalizedSnapshot)
+
+      if (snapshotUrl) {
+        setSelectedBeat(normalizedSnapshot)
+      } else if (state?.beatClip?.beatId) {
+        const row = await fetchBeat(state.beatClip.beatId)
+        const normalized = normalizeBeatSnapshotOrRow(row)
+        const url = getBeatPlayableUrl(normalized)
+        setSelectedBeat(url ? normalized : null)
+      } else {
+        setSelectedBeat(null)
+      }
       setBeatVolume(typeof state.beatVolume === 'number' ? state.beatVolume : 0.8)
       setSnapToGrid(typeof state.snapToGrid === 'boolean' ? state.snapToGrid : true)
       setBeatClip(state.beatClip || null)
@@ -2159,7 +2224,7 @@ export function RecordingLab() {
                 snapToGrid={snapToGrid}
                 playheadSec={playheadSec}
                 isPlaying={isTimelinePlaying}
-                beatAudioUrl={selectedBeat?.audioUrl}
+                beatAudioUrl={getBeatPlayableUrl(selectedBeat)}
                 bpm={selectedBeat?.bpm}
                 loopRegion={loopRegion}
                 liveRecordingWaveforms={liveRecordingWaveforms}
