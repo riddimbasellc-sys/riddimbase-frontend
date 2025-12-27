@@ -4,7 +4,7 @@
 //
 // Payload:
 // {
-//   "template": "welcome | bonus_credits | credits_added | purchase_receipt | collab_invite | email_blast",
+//   "template": "welcome | bonus_credits | credits_added | purchase_receipt | collab_invite | free_download | email_blast",
 //   "to": "recipient@email.com" | ["a@b.com", "c@d.com"],
 //   "subject": "Optional override subject",
 //   "data": { "...": "dynamic per template" },
@@ -39,6 +39,7 @@ type TemplateName =
   | 'credits_added'
   | 'purchase_receipt'
   | 'collab_invite'
+  | 'free_download'
   | 'email_blast'
 
 interface AttachmentInput {
@@ -245,6 +246,53 @@ function buildCollabInviteEmail(data: Record<string, unknown> = {}): BuiltEmail 
   return { subject, html, text }
 }
 
+function buildFreeDownloadEmail(data: Record<string, unknown> = {}): BuiltEmail {
+  const displayName = getString(data, 'displayName') || getString(data, 'name') || 'there'
+  const beatTitle = getString(data, 'beatTitle') || getString(data, 'title') || 'your download'
+  const downloadUrl = getString(data, 'downloadUrl') || getString(data, 'url')
+  const producerName = getString(data, 'producerName')
+
+  const subject = `Your free download is ready${beatTitle ? `: ${beatTitle}` : ''}`
+  const text = `Hi ${displayName}, your free download is ready${beatTitle ? `: ${beatTitle}` : ''}.${
+    downloadUrl ? ` Download it here: ${downloadUrl}` : ''
+  }`
+
+  const html = `
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:0;background:#0b0b0b;color:#ffffff;">
+  <tr>
+    <td align="center" style="padding:40px 20px;">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#121212;border-radius:12px;padding:30px;">
+        <tr>
+          <td align="center">
+            <h1 style="color:#ff7a00;margin:0 0 8px 0;font-size:24px;">Free download ready</h1>
+            <p style="font-size:16px;color:#cccccc;margin:0;">
+              Hi ${displayName}${producerName ? ` — thanks for supporting ${producerName}.` : '.'}
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:20px 0;">
+            <p style="font-size:15px;line-height:1.6;margin:0 0 10px 0;">
+              Your free download is ready${beatTitle ? `: <strong>${beatTitle}</strong>` : ''}.
+            </p>
+            ${
+              downloadUrl
+                ? `<div style="margin-top:18px;text-align:center;">
+                     <a href="${downloadUrl}" style="background:#ff7a00;color:#000;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px;display:inline-block;">Download now</a>
+                   </div>`
+                : `<p style="font-size:14px;color:#bbbbbb;margin:0;">(No download link was provided.)</p>`
+            }
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+  `.trim()
+
+  return { subject, html, text }
+}
+
 function buildEmailBlastEmail(data: Record<string, unknown> = {}): BuiltEmail {
   const subject = getString(data, 'subject', 'RiddimBase update')
   const html = getString(data, 'html', '<p>RiddimBase update</p>')
@@ -264,6 +312,8 @@ function buildEmailFromTemplate(template: TemplateName, data: Record<string, unk
       return buildPurchaseReceiptEmail(data)
     case 'collab_invite':
       return buildCollabInviteEmail(data)
+    case 'free_download':
+      return buildFreeDownloadEmail(data)
     case 'email_blast':
       return buildEmailBlastEmail(data)
     default:
