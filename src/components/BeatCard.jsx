@@ -15,6 +15,7 @@ import {
 } from '../services/socialService'
 import { isProducerPro } from '../services/subscriptionService'
 import MiniWavePlayer from './MiniWavePlayer'
+import VerifiedBadge from './VerifiedBadge'
 
 export function BeatCard({
   id,
@@ -445,7 +446,10 @@ export function BeatCard({
               Producer
             </p>
             <p className="truncate text-[11px] font-semibold text-slate-50">
-              {producer || 'Unknown'}
+              <span className="inline-flex items-center gap-1">
+                {producer || 'Unknown'}
+                {pro && <VerifiedBadge className="h-4 w-4 text-sky-300" />}
+              </span>
             </p>
             {collaborator && (
               <p className="truncate text-[10px] text-slate-400">
@@ -455,11 +459,6 @@ export function BeatCard({
           </div>
         </div>
         <div className="flex items-center gap-1">
-          {pro && (
-            <span className="inline-flex items-center rounded-full border border-amber-400/80 bg-amber-500/15 px-2 py-[1px] text-[9px] font-semibold text-amber-200">
-              PRO
-            </span>
-          )}
           {sponsored && (
             <span className="inline-flex items-center rounded-full border border-red-400/80 bg-red-500/15 px-2 py-[1px] text-[9px] font-semibold text-red-200">
               AD

@@ -2,10 +2,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { useBeats } from '../hooks/useBeats'
 import { followerCount } from '../services/socialService'
 import { getTotalPlaysForBeats } from '../services/analyticsService'
+import { supabase } from '../lib/supabaseClient'
+import { isProducerProPlanId } from '../services/subscriptionService'
+import VerifiedBadge from './VerifiedBadge'
 
 export default function TrendingProducers() {
   const { beats } = useBeats()
   const [followersMap, setFollowersMap] = useState({})
+  const [proMap, setProMap] = useState({})
 
   // Group beats by producer
   const byProducer = useMemo(() => {
@@ -23,6 +27,7 @@ export default function TrendingProducers() {
     const producerIds = Object.keys(byProducer)
     if (!producerIds.length) {
       setFollowersMap({})
+      setProMap({})
       return
     }
     let active = true
@@ -36,6 +41,35 @@ export default function TrendingProducers() {
         }
       }
       if (active) setFollowersMap(next)
+    })()
+    return () => {
+      active = false
+    }
+  }, [byProducer])
+
+  useEffect(() => {
+    const producerIds = Object.keys(byProducer)
+    if (!producerIds.length) {
+      setProMap({})
+      return
+    }
+    let active = true
+    ;(async () => {
+      try {
+        const { data: subs } = await supabase
+          .from('subscriptions')
+          .select('user_id, plan_id, status')
+          .in('user_id', producerIds)
+          .in('status', ['active', 'trialing', 'past_due'])
+        if (!active) return
+        const next = {}
+        ;(subs || []).forEach((row) => {
+          if (isProducerProPlanId(row.plan_id)) next[row.user_id] = true
+        })
+        setProMap(next)
+      } catch {
+        if (active) setProMap({})
+      }
     })()
     return () => {
       active = false
@@ -68,7 +102,10 @@ export default function TrendingProducers() {
           >
             <p className="text-xs font-semibold text-emerald-300">Producer</p>
             <p className="mt-1 text-sm font-medium text-slate-200 truncate">
-              {row.pid}
+              <span className="inline-flex items-center gap-1">
+                {row.pid}
+                {proMap[row.pid] && <VerifiedBadge className="h-4 w-4 text-sky-300" />}
+              </span>
             </p>
             <p className="text-[10px] text-slate-400">
               {row.followers} follower{row.followers === 1 ? '' : 's'} •{' '}
