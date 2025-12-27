@@ -38,7 +38,7 @@ export default function ProducerStore() {
     let active = true
     ;(async () => {
       if (producerId || !producerIdParam) return
-      const raw = String(producerIdParam)
+      const raw = decodeURIComponent(String(producerIdParam))
       const candidate = raw.substring(0, 36)
       const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
       if (uuidRegex.test(candidate)) {
@@ -46,13 +46,39 @@ export default function ProducerStore() {
         return
       }
       try {
-        const { data, error } = await supabase
+        const targetSlug = slugify(raw || '')
+        const nameGuess = String(raw || '')
+          .replace(/[-_]+/g, ' ')
+          .trim()
+
+        // Prefer a targeted lookup instead of selecting all profiles (often blocked by RLS).
+        const { data: profs, error: profErr } = await supabase
           .from('profiles')
           .select('id, display_name')
-        if (error || !data) return
-        const targetSlug = slugify(raw || '')
-        const match = data.find((row) => slugify(row.display_name || row.id) === targetSlug)
-        if (match && active) setProducerId(match.id)
+          .ilike('display_name', nameGuess)
+          .limit(10)
+        if (!profErr && Array.isArray(profs) && profs.length) {
+          const match = profs.find((row) => slugify(row.display_name || row.id) === targetSlug)
+          if (match && active) {
+            setProducerId(match.id)
+            return
+          }
+        }
+
+        // Fallback: resolve from public beats table by matching producer display name.
+        const { data: beatRows, error: beatErr } = await supabase
+          .from('beats')
+          .select('user_id, producer')
+          .not('user_id', 'is', null)
+          .ilike('producer', nameGuess)
+          .order('created_at', { ascending: false })
+          .limit(200)
+        if (!beatErr && Array.isArray(beatRows) && beatRows.length) {
+          const match = beatRows.find((row) => slugify(row.producer || '') === targetSlug)
+          if (match?.user_id && active) {
+            setProducerId(match.user_id)
+          }
+        }
       } catch {
         // ignore resolution errors
       }
@@ -79,7 +105,11 @@ export default function ProducerStore() {
     let active = true
     ;(async () => {
       if (!producerId) {
-        // Wait until producerId is resolved (UUID or via slug)
+        // If we can't resolve the producer id (e.g., slug resolution blocked), don't spin forever.
+        if (active) {
+          setLoading(false)
+          setBeats([])
+        }
         return
       }
       try {
@@ -199,7 +229,7 @@ export default function ProducerStore() {
     }, { rootMargin: '1200px' })
     io.observe(el)
     return () => io.disconnect()
-  }, [filteredSorted.length, genre, priceMax, query, fallbackMode])
+  }, [filteredSorted.length, genre, priceMax, query, fallbackMode, beats.length, producerId])
 
   // Persist controls to URL + localStorage
   useEffect(() => {
