@@ -5,8 +5,7 @@ import useSupabaseUser from '../hooks/useSupabaseUser'
 
 const navItems = [
   { label: 'Dashboard', to: '/admin', icon: DashboardIcon },
-  { label: 'Beats', to: '/admin/beats', icon: SparkIcon },
-  { label: 'Users', to: '/admin/users', icon: UsersIcon },
+  { label: 'Analytics', to: '/admin/analytics', icon: SparkIcon },
   { label: 'Payouts', to: '/admin/payouts', icon: WalletIcon },
   { label: 'Coupons', to: '/admin/coupons', icon: TicketIcon },
   { label: 'Banners', to: '/admin/banners', icon: ImageIcon },
@@ -24,7 +23,6 @@ const navItems = [
   { label: 'Footer Links', to: '/admin/footer-links', icon: LinkIcon },
   { label: 'Socials', to: '/admin/socials', icon: SocialIcon },
   { label: 'Recording Lab', to: '/admin/recording-lab/credits', icon: LabIcon },
-  { label: 'Analytics', to: '/admin/analytics', icon: SparkIcon },
   { label: 'Design System', to: '/admin/design', icon: ImageIcon },
   { label: 'Brand & Theme', to: '/admin/theme', icon: ImageIcon },
   { label: 'Email Templates', to: '/admin/email-templates', icon: MailIcon }
