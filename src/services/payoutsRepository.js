@@ -63,6 +63,16 @@ export async function listUserPayouts(userId) {
 
 export async function listAllPayouts() {
   try {
+    const base = import.meta.env.VITE_API_BASE_URL || ''
+    if (base) {
+      const res = await fetch(`${base}/api/admin/payouts`)
+      if (res.ok) {
+        const json = await res.json()
+        const items = Array.isArray(json?.items) ? json.items : []
+        return items.map(mapRow)
+      }
+    }
+
     const { data, error } = await supabase.from('payouts').select('*').order('created_at', { ascending: false })
     if (error) throw error
     return data.map(mapRow)
@@ -73,12 +83,47 @@ export async function listAllPayouts() {
 
 export async function markPayoutCompleted(id) {
   try {
+    const base = import.meta.env.VITE_API_BASE_URL || ''
+    if (base) {
+      const res = await fetch(`${base}/api/admin/payouts/${encodeURIComponent(id)}/approve`, { method: 'POST' })
+      if (res.ok) {
+        const json = await res.json()
+        return json?.payout ? mapRow(json.payout) : null
+      }
+    }
+
     const { data, error } = await supabase.from('payouts').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', id).select().single()
     if (error) throw error
     return mapRow(data)
   } catch (e) {
     const p = localPayouts.find(p => p.id === id)
     if (p) p.status = 'completed'
+    return p || null
+  }
+}
+
+export async function denyPayout(id) {
+  try {
+    const base = import.meta.env.VITE_API_BASE_URL || ''
+    if (base) {
+      const res = await fetch(`${base}/api/admin/payouts/${encodeURIComponent(id)}/deny`, { method: 'POST' })
+      if (res.ok) {
+        const json = await res.json()
+        return json?.payout ? mapRow(json.payout) : null
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('payouts')
+      .update({ status: 'cancelled' })
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return mapRow(data)
+  } catch (e) {
+    const p = localPayouts.find(p => p.id === id)
+    if (p) p.status = 'cancelled'
     return p || null
   }
 }
