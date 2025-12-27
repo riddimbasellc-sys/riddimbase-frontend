@@ -20,8 +20,8 @@ export default function useAdminCounts() {
         setReportsOpen(reports.filter(r => r.status === 'open').length)
       } catch {}
       try {
-        const tickets = listSupportTickets() || []
-        setTicketsOpen(tickets.filter(t => t.status === 'open').length)
+        const tickets = await listSupportTickets() || []
+        setTicketsOpen(tickets.filter((t) => t.status === 'open').length)
       } catch {}
       try {
         const payouts = await listAllPayouts()
