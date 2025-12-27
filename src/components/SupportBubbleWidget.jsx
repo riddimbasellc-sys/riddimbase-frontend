@@ -85,7 +85,7 @@ export default function SupportBubbleWidget() {
       })
       if (!result?.stored) {
         // eslint-disable-next-line no-alert
-        alert('Failed to submit support ticket. Please try again or contact support directly.')
+        alert(`Failed to submit support ticket: ${result?.error || 'Unknown error from database.'}`)
         return
       }
 
