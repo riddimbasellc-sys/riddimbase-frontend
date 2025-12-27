@@ -19,8 +19,13 @@ export function SupportGeneral() {
     const phoneOk = /[0-9]{6,}/.test(form.contactPhone.replace(/[^0-9]/g,''))
     if (!emailOk || !phoneOk) return
     setSubmitting(true)
-    await createSupportTicket({ ...form, createdAt: Date.now(), userId: user?.id || null })
+    const result = await createSupportTicket({ ...form, createdAt: Date.now(), userId: user?.id || null })
     setSubmitting(false)
+    if (!result?.stored) {
+      // eslint-disable-next-line no-alert
+      alert('Failed to create support ticket. Please try again or contact support directly.')
+      return
+    }
     setDone(true)
     setTimeout(()=> { setDone(false); setOpen(false); setForm({ subject:'', category:'general', message:'', contactEmail:'', contactPhone:'' }) }, 1600)
   }
