@@ -1,9 +1,10 @@
-export default function SocialIconRow({ website, instagram, twitterX, youtube, whatsapp, telegram, size = 'xs' }) {
+export default function SocialIconRow({ website, instagram, twitterX, youtube, tiktok, whatsapp, telegram, size = 'xs' }) {
   const items = []
   if (website) items.push({ kind: 'website', href: website })
   if (instagram) items.push({ kind: 'instagram', href: instagram })
   if (twitterX) items.push({ kind: 'twitterX', href: twitterX })
   if (youtube) items.push({ kind: 'youtube', href: youtube })
+  if (tiktok) items.push({ kind: 'tiktok', href: tiktok })
   if (whatsapp) items.push({ kind: 'whatsapp', href: whatsapp })
   if (telegram) items.push({ kind: 'telegram', href: telegram })
 
@@ -34,11 +35,14 @@ function renderIcon(kind, className) {
   switch (kind) {
     case 'instagram':
       return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="5" />
-          <circle cx="12" cy="12" r="4" />
-          <path d="M17 7h.01" />
-        </svg>
+        <img
+          src="/assets/social/instagram.png"
+          alt=""
+          aria-hidden="true"
+          className={className}
+          loading="lazy"
+          decoding="async"
+        />
       )
     case 'twitterX':
       return (
@@ -48,10 +52,25 @@ function renderIcon(kind, className) {
       )
     case 'youtube':
       return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M3 8s0-3 3-3h12c3 0 3 3 3 3v8s0 3-3 3H6c-3 0-3-3-3-3Z" />
-          <path d="m10 9 5 3-5 3V9Z" />
-        </svg>
+        <img
+          src="/assets/social/youtube.png"
+          alt=""
+          aria-hidden="true"
+          className={className}
+          loading="lazy"
+          decoding="async"
+        />
+      )
+    case 'tiktok':
+      return (
+        <img
+          src="/assets/social/tiktok.png"
+          alt=""
+          aria-hidden="true"
+          className={className}
+          loading="lazy"
+          decoding="async"
+        />
       )
     case 'whatsapp':
       return (
@@ -77,4 +96,5 @@ function renderIcon(kind, className) {
       )
   }
 }
+
 
