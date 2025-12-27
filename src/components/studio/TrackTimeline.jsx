@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import AudioClip from './AudioClip'
 
 const BASE_PIXELS_PER_SECOND = 40
 const GRID_STEP_SEC = 0.25
@@ -168,10 +169,15 @@ export default function TrackTimeline({
     e.preventDefault()
 
     const startX = e.clientX
+    const startClientX = e.clientX
+    const startClientY = e.clientY
     const initialStart = clip.startSec || 0
+    let moved = false
 
     const handleMove = (evt) => {
       const deltaX = evt.clientX - startX
+      const deltaY = evt.clientY - startClientY
+      if (!moved && (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3)) moved = true
       const deltaSec = deltaX / pixelsPerSecond
       let nextStart = Math.max(0, initialStart + deltaSec)
       if (snapToGrid) {
@@ -184,9 +190,23 @@ export default function TrackTimeline({
       }
     }
 
-    const handleUp = () => {
+    const handleUp = (evt) => {
       window.removeEventListener('mousemove', handleMove)
       window.removeEventListener('mouseup', handleUp)
+
+      // Click-to-seek (only if it wasn't a drag).
+      if (!moved) {
+        const el = evt?.target?.closest?.('[data-clip-root="true"]')
+        if (el) {
+          const bounds = el.getBoundingClientRect()
+          const x = (evt.clientX - bounds.left) / Math.max(1, bounds.width)
+          const ratio = Math.min(1, Math.max(0, x))
+          const start = clip.startSec || 0
+          const dur = clip.durationSec || 0
+          const next = start + ratio * dur
+          if (Number.isFinite(next)) onSeek?.(next)
+        }
+      }
     }
 
     window.addEventListener('mousemove', handleMove)
@@ -688,6 +708,7 @@ export default function TrackTimeline({
                           <button
                             key={clip.id}
                             type="button"
+                            data-clip-root="true"
                             onMouseDown={(e) => {
                               if (clip.type === 'vocal') {
                                 onSelectVocalTrack?.(clip.id)
@@ -777,16 +798,24 @@ export default function TrackTimeline({
                             />
                             <div className="h-full w-1 bg-gradient-to-b from-red-500 to-amber-400" />
                             <div className="relative flex h-full flex-1 flex-col overflow-hidden px-2 py-1">
-                              {waveformPoints ? (
+                              {clip.url ? (
+                                <div className="absolute inset-1 h-[calc(100%-0.5rem)] w-full">
+                                  <AudioClip
+                                    src={clip.url}
+                                    height={32}
+                                    clipStartSec={clip.startSec || 0}
+                                    clipDurationSec={clip.durationSec || 0}
+                                    isSelected={isSelectedVocalLane && clip.type === 'vocal'}
+                                    onSeek={onSeek}
+                                  />
+                                </div>
+                              ) : waveformPoints ? (
                                 <svg
                                   viewBox="0 0 100 100"
                                   preserveAspectRatio="none"
                                   className="pointer-events-none absolute inset-1 h-[calc(100%-0.5rem)] w-full text-slate-100/80 opacity-80 group-hover:text-red-200/90"
                                 >
-                                  <polygon
-                                    points={waveformPoints}
-                                    className="fill-current"
-                                  />
+                                  <polygon points={waveformPoints} className="fill-current" />
                                 </svg>
                               ) : (
                                 <div className="pointer-events-none absolute inset-1 h-[calc(100%-0.5rem)] w-full rounded-sm bg-gradient-to-r from-slate-600/60 to-slate-400/60" />
