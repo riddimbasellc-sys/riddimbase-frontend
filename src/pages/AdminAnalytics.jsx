@@ -1,6 +1,7 @@
 import AdminLayout from '../components/AdminLayout'
 import { useAdminRole } from '../hooks/useAdminRole'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import KpiCard from '../components/admin/KpiCard'
 import RevenueChart from '../components/admin/RevenueChart'
 import AnalyticsTable from '../components/admin/AnalyticsTable'
@@ -9,6 +10,18 @@ import { fetchSales } from '../services/salesRepository'
 import { listAllPayouts } from '../services/payoutsRepository'
 import { loadPlayCountsForBeats } from '../services/analyticsService'
 import { fetchAdminRecordingLabMetrics } from '../services/adminDashboardRepository'
+import {
+  approveAdminProducer,
+  banAdminUser,
+  fetchAdminUsers,
+  resetAdminPassword,
+} from '../services/adminUsersRepository'
+import { fetchBeats } from '../services/beatsRepository'
+import {
+  adminDeleteBeat,
+  adminFlagBeat,
+  adminHideBeat,
+} from '../services/adminBeatsRepository'
 import { supabase } from '../lib/supabaseClient'
 
 const SERVICE_FEE_RATE = 0.12
@@ -17,6 +30,7 @@ const HOSTING_COST_PER_BEAT_MONTH = 0.02
 
 export function AdminAnalytics() {
   const { isAdmin, loading } = useAdminRole()
+  const navigate = useNavigate()
 
   const [rangeKey, setRangeKey] = useState('30d')
   const [customFrom, setCustomFrom] = useState('')
@@ -29,6 +43,14 @@ export function AdminAnalytics() {
   const [playCounts, setPlayCounts] = useState({})
   const [loadingDashboard, setLoadingDashboard] = useState(false)
   const [labMetrics, setLabMetrics] = useState(null)
+
+  const [adminUsers, setAdminUsers] = useState([])
+  const [adminUsersLoading, setAdminUsersLoading] = useState(false)
+  const [adminUsersError, setAdminUsersError] = useState('')
+
+  const [adminBeats, setAdminBeats] = useState([])
+  const [adminBeatsLoading, setAdminBeatsLoading] = useState(false)
+  const [adminBeatsError, setAdminBeatsError] = useState('')
 
   const revenueRef = useRef(null)
   const beatsRef = useRef(null)
@@ -72,6 +94,185 @@ export function AdminAnalytics() {
       cancelled = true
     }
   }, [isAdmin])
+
+  useEffect(() => {
+    if (!isAdmin) return
+    let cancelled = false
+
+    async function loadUsers() {
+      setAdminUsersLoading(true)
+      setAdminUsersError('')
+      try {
+        const data = await fetchAdminUsers()
+        if (!cancelled) setAdminUsers(Array.isArray(data) ? data : [])
+      } catch (e) {
+        if (!cancelled) {
+          setAdminUsers([])
+          setAdminUsersError(e?.message || 'Failed to load users')
+        }
+      } finally {
+        if (!cancelled) setAdminUsersLoading(false)
+      }
+    }
+
+    loadUsers()
+    return () => {
+      cancelled = true
+    }
+  }, [isAdmin])
+
+  useEffect(() => {
+    if (!isAdmin) return
+    let cancelled = false
+
+    function normalize(rows) {
+      return (rows || []).map((b) => ({
+        id: b.id,
+        title: b.title,
+        producer: b.producer || 'Unknown',
+        userId: b.user_id || null,
+        genre: b.genre || 'Dancehall',
+        bpm: b.bpm || 100,
+        price: b.price || 29,
+        hidden: b.hidden || false,
+        flagged: b.flagged || false,
+        createdAt: b.created_at || null,
+      }))
+    }
+
+    async function loadBeatsList() {
+      setAdminBeatsLoading(true)
+      setAdminBeatsError('')
+      try {
+        const rows = await fetchBeats()
+        if (!cancelled) setAdminBeats(normalize(rows))
+      } catch (e) {
+        if (!cancelled) {
+          setAdminBeats([])
+          setAdminBeatsError(e?.message || 'Failed to load beats')
+        }
+      } finally {
+        if (!cancelled) setAdminBeatsLoading(false)
+      }
+    }
+
+    loadBeatsList()
+    return () => {
+      cancelled = true
+    }
+  }, [isAdmin])
+
+  const reloadAdminUsers = async () => {
+    setAdminUsersLoading(true)
+    setAdminUsersError('')
+    try {
+      const data = await fetchAdminUsers()
+      setAdminUsers(Array.isArray(data) ? data : [])
+    } catch (e) {
+      setAdminUsersError(e?.message || 'Failed to load users')
+    } finally {
+      setAdminUsersLoading(false)
+    }
+  }
+
+  const reloadAdminBeats = async () => {
+    setAdminBeatsLoading(true)
+    setAdminBeatsError('')
+    try {
+      const rows = await fetchBeats()
+      setAdminBeats(
+        (rows || []).map((b) => ({
+          id: b.id,
+          title: b.title,
+          producer: b.producer || 'Unknown',
+          userId: b.user_id || null,
+          genre: b.genre || 'Dancehall',
+          bpm: b.bpm || 100,
+          price: b.price || 29,
+          hidden: b.hidden || false,
+          flagged: b.flagged || false,
+          createdAt: b.created_at || null,
+        })),
+      )
+    } catch (e) {
+      setAdminBeatsError(e?.message || 'Failed to load beats')
+    } finally {
+      setAdminBeatsLoading(false)
+    }
+  }
+
+  const handleViewProducerProfile = (id) => {
+    if (!id) return
+    navigate(`/producer/${id}`)
+  }
+
+  const handleViewBeat = (id) => {
+    if (!id) return
+    navigate(`/beat/${id}`)
+  }
+
+  const handleBanUser = async (id) => {
+    try {
+      await banAdminUser(id)
+      setAdminUsers((prev) => prev.map((u) => (u.id === id ? { ...u, banned: true } : u)))
+    } catch (e) {
+      // eslint-disable-next-line no-alert
+      alert(e?.message || 'Failed to ban user')
+    }
+  }
+
+  const handleApproveProducer = async (id) => {
+    try {
+      await approveAdminProducer(id)
+      setAdminUsers((prev) => prev.map((u) => (u.id === id ? { ...u, producer: true } : u)))
+    } catch (e) {
+      // eslint-disable-next-line no-alert
+      alert(e?.message || 'Failed to approve producer')
+    }
+  }
+
+  const handleResetPassword = async (id) => {
+    try {
+      await resetAdminPassword(id)
+      // eslint-disable-next-line no-alert
+      alert('Password reset email sent (if email templates are configured in Supabase).')
+    } catch (e) {
+      // eslint-disable-next-line no-alert
+      alert(e?.message || 'Failed to reset password')
+    }
+  }
+
+  const handleHideBeat = async (id) => {
+    try {
+      await adminHideBeat(id)
+      await reloadAdminBeats()
+    } catch (e) {
+      // eslint-disable-next-line no-alert
+      alert(e?.message || 'Failed to hide beat')
+    }
+  }
+
+  const handleFlagBeat = async (id) => {
+    try {
+      await adminFlagBeat(id)
+      await reloadAdminBeats()
+    } catch (e) {
+      // eslint-disable-next-line no-alert
+      alert(e?.message || 'Failed to flag beat')
+    }
+  }
+
+  const handleDeleteBeat = async (id) => {
+    // eslint-disable-next-line no-alert
+    if (!window.confirm('Delete this beat permanently?')) return
+    try {
+      await adminDeleteBeat(id)
+      await reloadAdminBeats()
+    } catch (e) {
+      // eslint-disable-next-line no-alert
+      alert(e?.message || 'Failed to delete beat')
+    }
+  }
 
   const range = useMemo(
     () => computeRange(rangeKey, customFrom, customTo),
@@ -620,6 +821,102 @@ export function AdminAnalytics() {
                 </p>
               </div>
             </div>
+
+            <div className="mt-4 rounded-2xl border border-slate-800/80 bg-slate-950/80 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  Manage beats
+                </p>
+                <button
+                  type="button"
+                  onClick={reloadAdminBeats}
+                  className="inline-flex items-center rounded-full border border-slate-700/80 bg-slate-950/80 px-3 py-1 text-[11px] text-slate-200 hover:border-emerald-400/70 hover:text-emerald-200"
+                >
+                  Refresh
+                </button>
+              </div>
+              {adminBeatsError && (
+                <p className="mt-2 text-[11px] text-rose-400">{adminBeatsError}</p>
+              )}
+              {adminBeatsLoading ? (
+                <p className="mt-2 text-[11px] text-slate-500">Loading beats…</p>
+              ) : (
+                <div
+                  className={`mt-3 space-y-3 ${adminBeats.length > 3 ? 'max-h-80 overflow-y-auto pr-1' : ''}`}
+                >
+                  {adminBeats.map((b) => (
+                    <div
+                      key={b.id}
+                      className="flex flex-col gap-2 rounded-xl border border-slate-800/80 bg-slate-900/80 p-3 md:flex-row md:items-center md:justify-between"
+                    >
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() => handleViewBeat(b.id)}
+                          className="text-left text-[11px] font-semibold text-slate-100 hover:text-emerald-200"
+                        >
+                          {b.title || 'Untitled'}
+                          {b.hidden && (
+                            <span className="ml-2 rounded-full bg-slate-800 px-2 py-0.5 text-[10px] text-slate-200">
+                              Hidden
+                            </span>
+                          )}
+                          {b.flagged && (
+                            <span className="ml-2 rounded-full bg-rose-600/20 px-2 py-0.5 text-[10px] text-rose-300">
+                              Flagged
+                            </span>
+                          )}
+                        </button>
+                        <p className="mt-0.5 text-[10px] text-slate-400">
+                          {b.producer} • {b.genre} • {b.bpm} BPM
+                        </p>
+                        {b.createdAt && (
+                          <p className="text-[10px] text-slate-500">
+                            Uploaded {new Date(b.createdAt).toLocaleDateString()}
+                            {b.userId ? ` • User ID: ${b.userId}` : ''}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2 text-[11px]">
+                        <button
+                          type="button"
+                          onClick={() => handleViewBeat(b.id)}
+                          className="rounded-full border border-slate-700/70 bg-slate-800/80 px-3 py-1 text-slate-200 hover:border-emerald-400/70 hover:text-emerald-200"
+                        >
+                          View
+                        </button>
+                        {!b.hidden && (
+                          <button
+                            type="button"
+                            onClick={() => handleHideBeat(b.id)}
+                            className="rounded-full border border-slate-700/70 px-3 py-1 text-slate-300 hover:border-emerald-400/70"
+                          >
+                            Hide
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleFlagBeat(b.id)}
+                          className="rounded-full border border-rose-600/40 px-3 py-1 text-rose-300 hover:bg-rose-600/10"
+                        >
+                          Flag
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteBeat(b.id)}
+                          className="rounded-full border border-slate-700/70 px-3 py-1 text-slate-300 hover:border-rose-500/70"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {adminBeats.length === 0 && (
+                    <p className="text-[11px] text-slate-500">No beats.</p>
+                  )}
+                </div>
+              )}
+            </div>
           </section>
 
           <section
@@ -662,6 +959,100 @@ export function AdminAnalytics() {
                 rows={topProducersRows}
                 emptyLabel="No earning producers yet."
               />
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-slate-800/80 bg-slate-950/80 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  Manage users
+                </p>
+                <button
+                  type="button"
+                  onClick={reloadAdminUsers}
+                  className="inline-flex items-center rounded-full border border-slate-700/80 bg-slate-950/80 px-3 py-1 text-[11px] text-slate-200 hover:border-emerald-400/70 hover:text-emerald-200"
+                >
+                  Refresh
+                </button>
+              </div>
+              {adminUsersError && (
+                <p className="mt-2 text-[11px] text-rose-400">{adminUsersError}</p>
+              )}
+              {adminUsersLoading ? (
+                <p className="mt-2 text-[11px] text-slate-500">Loading users…</p>
+              ) : (
+                <div
+                  className={`mt-3 space-y-3 ${adminUsers.length > 3 ? 'max-h-80 overflow-y-auto pr-1' : ''}`}
+                >
+                  {adminUsers.map((u) => (
+                    <div
+                      key={u.id}
+                      className="flex flex-col gap-2 rounded-xl border border-slate-800/80 bg-slate-900/80 p-3 md:flex-row md:items-center md:justify-between"
+                    >
+                      <div>
+                        <p className="text-[11px] font-semibold text-slate-100">
+                          {u.email}
+                          {u.banned && (
+                            <span className="ml-2 rounded-full bg-rose-600/20 px-2 py-0.5 text-[10px] text-rose-300">
+                              Banned
+                            </span>
+                          )}
+                          {u.producer && !u.banned && (
+                            <span className="ml-2 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-300">
+                              Producer
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-[10px] text-slate-400">ID: {u.id}</p>
+                        {u.createdAt && (
+                          <p className="text-[10px] text-slate-500">
+                            Joined: {new Date(u.createdAt).toLocaleDateString()}
+                            {u.lastSignInAt
+                              ? ` • Last sign-in: ${new Date(u.lastSignInAt).toLocaleDateString()}`
+                              : ''}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2 text-[11px]">
+                        <button
+                          type="button"
+                          onClick={() => handleViewProducerProfile(u.id)}
+                          className="rounded-full border border-slate-700/70 bg-slate-800/80 px-3 py-1 text-slate-200 hover:border-emerald-400/70 hover:text-emerald-200"
+                        >
+                          View Profile
+                        </button>
+                        {!u.banned && (
+                          <button
+                            type="button"
+                            onClick={() => handleBanUser(u.id)}
+                            className="rounded-full border border-rose-600/40 px-3 py-1 text-rose-300 hover:bg-rose-600/10"
+                          >
+                            Ban
+                          </button>
+                        )}
+                        {!u.producer && !u.banned && (
+                          <button
+                            type="button"
+                            onClick={() => handleApproveProducer(u.id)}
+                            className="rounded-full border border-emerald-500/60 px-3 py-1 text-emerald-300 hover:bg-emerald-500/10"
+                          >
+                            Approve Producer
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleResetPassword(u.id)}
+                          className="rounded-full border border-slate-700/70 px-3 py-1 text-slate-300 hover:border-emerald-400/70"
+                        >
+                          Reset Password
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {adminUsers.length === 0 && (
+                    <p className="text-[11px] text-slate-500">No users.</p>
+                  )}
+                </div>
+              )}
             </div>
           </section>
         </div>
