@@ -85,6 +85,16 @@ export function JobDelivery() {
     try {
       const res = await releaseJobFunds(jobId, user?.id || null)
       setEscrow(res)
+
+      // Credit provider earnings server-side (wallet).
+      try {
+        await fetch(`/api/jobs/${jobId}/release`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        })
+      } catch {}
+
       setFeedback('Funds released to provider. Thank you!')
       try {
         if (job?.assignedProviderId) {

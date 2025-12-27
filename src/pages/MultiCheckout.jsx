@@ -2,7 +2,7 @@ import { useCart } from '../context/CartContext'
 import { useState, useEffect } from 'react'
 import { computeCartQuote, processPayment, generateLicense } from '../services/paymentsService'
 import PayPalButtonsGroup from '../components/payments/PayPalButtonsGroup'
-import { recordSale } from '../services/beatsService'
+import { recordBeatSaleSplit } from '../services/paymentsService'
 import { useNavigate } from 'react-router-dom'
 
 export function MultiCheckout() {
@@ -39,7 +39,17 @@ export function MultiCheckout() {
           orderId: res.id,
         })
         licenses.push({ beatId: it.beat.id, license: it.license, pdf: lic })
-        try { recordSale({ beatId: it.beat.id, license: it.license + ' License', buyer: buyerEmail, amount: it.quote?.total || it.beat.price, beatTitle: it.beat.title }) } catch {}
+        // Credit producer/collaborators earnings server-side.
+        // Use a unique sale id per beat to avoid collisions in the split ledger.
+        try {
+          const perItemAmount = Number(it.quote?.total ?? it.beat.price ?? 0)
+          await recordBeatSaleSplit({
+            saleId: `${res.id}_${it.beat.id}`,
+            beatId: it.beat.id,
+            amount: perItemAmount,
+            currency: quote.currency,
+          })
+        } catch {}
       }
       setResult({ success: true, payment: res, licenses })
       clearCart()

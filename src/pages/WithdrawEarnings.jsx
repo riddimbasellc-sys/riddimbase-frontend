@@ -2,13 +2,13 @@ import useSupabaseUser from '../hooks/useSupabaseUser'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BackButton from '../components/BackButton'
-import { computeProducerEarnings } from '../services/beatsService'
 import {
   listUserPayouts,
   createPayout,
   cancelPayout,
 } from '../services/payoutsRepository'
 import { getSubscription } from '../services/subscriptionService'
+import { supabase } from '../lib/supabaseClient'
 
 export function WithdrawEarnings() {
   const { user, loading } = useSupabaseUser()
@@ -68,14 +68,70 @@ export function WithdrawEarnings() {
 
   useEffect(() => {
     if (!user?.id) return
-    ;(async () => {
-      const total = await computeProducerEarnings({
-        userId: user.id,
-        displayName: user.email,
-      })
-      setGross(total || 0)
-    })()
-  }, [user])
+    let active = true
+
+    const load = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('user_wallet')
+          .select('balance')
+          .eq('user_id', user.id)
+          .maybeSingle()
+        if (!active) return
+        if (error) {
+          setGross(0)
+          return
+        }
+        setGross(Number(data?.balance || 0))
+      } catch {
+        if (active) setGross(0)
+      }
+    }
+
+    load()
+
+    // Realtime: update instantly when earnings are credited.
+    const ch = supabase
+      .channel(`wallet:${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'user_wallet', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          const next = payload?.new?.balance
+          if (typeof next === 'number') setGross(next)
+          else load()
+        },
+      )
+      .subscribe()
+
+    return () => {
+      active = false
+      supabase.removeChannel(ch)
+    }
+  }, [user?.id])
+
+  // Realtime: refresh payouts so pending/completed impact available instantly.
+  useEffect(() => {
+    if (!user?.id) return
+    const refresh = async () => {
+      try {
+        setPayouts(await listUserPayouts(user.id))
+      } catch {}
+    }
+
+    const ch = supabase
+      .channel(`payouts:${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'payouts', filter: `user_id=eq.${user.id}` },
+        refresh,
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(ch)
+    }
+  }, [user?.id])
 
   if (loading) {
     return (

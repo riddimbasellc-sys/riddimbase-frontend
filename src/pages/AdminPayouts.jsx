@@ -1,7 +1,7 @@
 import { useAdminRole } from '../hooks/useAdminRole'
 import BackButton from '../components/BackButton'
 import { useState, useEffect } from 'react'
-import { listAllPayouts, markPayoutCompleted } from '../services/payoutsRepository'
+import { listAllPayouts, markPayoutCompleted, denyPayout } from '../services/payoutsRepository'
 import { getSubscription } from '../services/subscriptionService'
 import { addNotification } from '../services/notificationsRepository'
 
@@ -88,6 +88,11 @@ export function AdminPayouts() {
     setItems(await listAllPayouts())
   }
 
+  const deny = async (id) => {
+    await denyPayout(id)
+    setItems(await listAllPayouts())
+  }
+
   return (
     <section className="bg-slate-950/95">
       <div className="mx-auto max-w-5xl px-4 py-10">
@@ -157,6 +162,14 @@ export function AdminPayouts() {
                         className="rounded-full border border-emerald-500/70 bg-emerald-500/10 px-3 py-1 text-emerald-200 hover:bg-emerald-500/20"
                       >
                         Mark Complete
+                      </button>
+                    )}
+                    {p.status === 'pending' && (
+                      <button
+                        onClick={() => deny(p.id)}
+                        className="rounded-full border border-rose-500/60 bg-rose-500/10 px-3 py-1 text-rose-200 hover:bg-rose-500/20"
+                      >
+                        Deny
                       </button>
                     )}
                   </div>
