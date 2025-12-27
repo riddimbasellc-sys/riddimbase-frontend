@@ -23,7 +23,7 @@ export function SupportGeneral() {
     setSubmitting(false)
     if (!result?.stored) {
       // eslint-disable-next-line no-alert
-      alert('Failed to create support ticket. Please try again or contact support directly.')
+      alert(`Failed to create support ticket: ${result?.error || 'Unknown error from database.'}`)
       return
     }
     setDone(true)
