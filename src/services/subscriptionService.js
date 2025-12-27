@@ -76,10 +76,15 @@ export function isPro(planId) {
   )
 }
 
+export function isProducerProPlanId(planId) {
+  const id = String(planId || '').trim().toLowerCase()
+  return id === 'producer-pro' || id === 'pro-yearly' || id === 'pro-producer'
+}
+
 export async function isProducerPro(userId) {
   if (!userId) return false
   const sub = await getSubscription(userId)
-  return !!(sub && isPro(sub.planId))
+  return !!(sub && isProducerProPlanId(sub.planId))
 }
 
 // plan values: 'free' | 'starter' | 'pro'
