@@ -91,7 +91,9 @@ export function AdminUsers() {
         <p className="mt-1 text-sm text-slate-300">
           Live Supabase users with moderation controls and quick profile access.
         </p>
-        <div className="mt-6 space-y-3">
+        <div
+          className={`mt-6 space-y-3 ${users.length > 3 ? 'max-h-[70vh] overflow-y-auto pr-1' : ''}`}
+        >
           {users.map((u) => (
             <div
               key={u.id}

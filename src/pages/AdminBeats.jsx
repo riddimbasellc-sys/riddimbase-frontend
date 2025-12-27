@@ -157,7 +157,9 @@ export function AdminBeats() {
             {error}
           </p>
         )}
-        <div className="mt-6 space-y-3">
+        <div
+          className={`mt-6 space-y-3 ${items.length > 3 ? 'max-h-[70vh] overflow-y-auto pr-1' : ''}`}
+        >
           {items.map((b) => (
             <div
               key={b.id}
