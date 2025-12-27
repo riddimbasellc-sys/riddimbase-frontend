@@ -9,7 +9,7 @@ import TrackTimeline from '../components/studio/TrackTimeline'
 import VocalFxModal from '../components/studio/VocalFxModal'
 import useSupabaseUser from '../hooks/useSupabaseUser'
 import { supabase } from '../lib/supabaseClient'
-import { fetchBeat } from '../services/beatsRepository'
+import { fetchBeat, fetchBeatsByProducerId } from '../services/beatsRepository'
 import '../styles/recordingLab.css'
 
 export function RecordingLab() {
@@ -1028,7 +1028,7 @@ export function RecordingLab() {
     let minStart = null
     let maxEnd = null
 
-    if (beatClip && selectedBeat?.audioUrl) {
+    if (beatClip && getBeatPlayableUrl(selectedBeat)) {
       const s = Number.isFinite(beatClip.startSec) ? beatClip.startSec : 0
       const d = Number.isFinite(beatClip.durationSec) ? beatClip.durationSec : 0
       const e = s + d
@@ -1259,6 +1259,21 @@ export function RecordingLab() {
     let beatCandidate = selectedBeat
     let beatUrl = getBeatPlayableUrl(beatCandidate)
 
+    // If no beat is selected yet, try to auto-select the most recent beat for this user.
+    if (!beatUrl && !beatCandidate && user?.id) {
+      try {
+        const rows = await fetchBeatsByProducerId(user.id, { limit: 10, offset: 0 })
+        const playable = (rows || []).find((r) => !!(r?.audio_url || r?.untagged_url))
+        const normalized = normalizeBeatSnapshotOrRow(playable)
+        const url = getBeatPlayableUrl(normalized)
+        if (url) {
+          beatCandidate = normalized
+          beatUrl = url
+          setSelectedBeat(normalized)
+        }
+      } catch {}
+    }
+
     // If we have a beat clip (e.g., loaded from session) but no hydrated beat snapshot,
     // fetch the beat row so transport can actually play.
     if (!beatUrl && beatClip?.beatId) {
@@ -1376,7 +1391,7 @@ export function RecordingLab() {
     if (beatFxEnabled && !beatTrackState.muted && (!anySolo || beatTrackState.solo)) {
       tasks.push({
         type: 'beat',
-        url: selectedBeat.audioUrl,
+        url: beatUrl,
         clip: beatClip || { startSec: 0, durationSec: undefined },
         fx: beatTrackState.fx,
         volume: typeof beatTrackState.volume === 'number' ? beatTrackState.volume : 1,
@@ -1479,7 +1494,8 @@ export function RecordingLab() {
 
   const buildExportTasks = () => {
     const hasAnyVocalClip = vocalTracks.some((t) => !!(t.clip && t.clip.url))
-    const hasBeatAudio = !!selectedBeat?.audioUrl
+    const beatUrl = getBeatPlayableUrl(selectedBeat)
+    const hasBeatAudio = !!beatUrl
     if (!hasBeatAudio && !hasAnyVocalClip) return []
 
     const anySolo = beatTrackState.solo || vocalTracks.some((t) => t.solo)
@@ -1488,7 +1504,7 @@ export function RecordingLab() {
     if (hasBeatAudio && beatClip && !beatTrackState.muted && (!anySolo || beatTrackState.solo)) {
       tasks.push({
         type: 'beat',
-        url: selectedBeat.audioUrl,
+        url: beatUrl,
         clip: beatClip,
         volume: typeof beatTrackState.volume === 'number' ? beatTrackState.volume : 1,
       })
@@ -1699,7 +1715,7 @@ export function RecordingLab() {
 
   const canRecord = micStatus === 'granted' && hasAudioSupport
   const hasRecording = !!recordingUrl
-  const canPlayArrangement = !!selectedBeat?.audioUrl || vocalTracks.some((t) => !!t.clip)
+  const canPlayArrangement = !!getBeatPlayableUrl(selectedBeat) || vocalTracks.some((t) => !!t.clip)
   const hasEnoughCredits =
     sessionCharged || (typeof creditBalance === 'number' ? creditBalance >= 200 : true)
 
@@ -1779,7 +1795,7 @@ export function RecordingLab() {
         ? {
             id: selectedBeat.id,
             title: selectedBeat.title,
-            audioUrl: selectedBeat.audioUrl,
+            audioUrl: getBeatPlayableUrl(selectedBeat),
             coverUrl: selectedBeat.coverUrl,
             bpm: selectedBeat.bpm,
             producer: selectedBeat.producer,
@@ -1834,7 +1850,7 @@ export function RecordingLab() {
         ? {
             id: selectedBeat.id,
             title: selectedBeat.title,
-            audioUrl: selectedBeat.audioUrl,
+            audioUrl: getBeatPlayableUrl(selectedBeat),
             coverUrl: selectedBeat.coverUrl,
             bpm: selectedBeat.bpm,
             producer: selectedBeat.producer,
@@ -1935,8 +1951,9 @@ export function RecordingLab() {
     let volume = 1
 
     if (isBeat) {
-      if (!selectedBeat?.audioUrl || !beatClip) return
-      url = selectedBeat.audioUrl
+      const beatUrl = getBeatPlayableUrl(selectedBeat)
+      if (!beatUrl || !beatClip) return
+      url = beatUrl
       clipStart = Number.isFinite(beatClip.startSec) ? beatClip.startSec : 0
       clipDur = Number.isFinite(beatClip.durationSec) ? beatClip.durationSec : 4
       baseFx = beatTrackState.fx || createDefaultVocalFx()
