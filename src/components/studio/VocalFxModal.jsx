@@ -77,7 +77,12 @@ export default function VocalFxModal({
                   max={12}
                   step={0.5}
                   value={draft.preGainDb ?? 0}
-                  onChange={(e) => handleChange({ preGainDb: parseFloat(e.target.value) })}
+                  onChange={(e) => {
+                    const raw = parseFloat(e.target.value)
+                    const v = Number.isFinite(raw) ? raw : 0
+                    const clamped = Math.max(-12, Math.min(12, v))
+                    handleChange({ preGainDb: clamped })
+                  }}
                   className="h-24 w-2 cursor-pointer appearance-none rounded-full bg-slate-800 accent-red-500"
                 />
                 <span className="tabular-nums text-slate-400">
@@ -109,7 +114,12 @@ export default function VocalFxModal({
                       max={12}
                       step={0.5}
                       value={draft[band.key] ?? 0}
-                      onChange={(e) => handleChange({ [band.key]: parseFloat(e.target.value) })}
+                      onChange={(e) => {
+                        const raw = parseFloat(e.target.value)
+                        const v = Number.isFinite(raw) ? raw : 0
+                        const clamped = Math.max(-12, Math.min(12, v))
+                        handleChange({ [band.key]: clamped })
+                      }}
                       className="h-24 w-2 cursor-pointer appearance-none rounded-full bg-slate-800 accent-red-500"
                     />
                     <span className="tabular-nums text-slate-400">
@@ -355,11 +365,16 @@ export default function VocalFxModal({
 }
 
 function SliderRow({ label, min, max, step, value, onChange, unit }) {
+  const displayValue =
+    typeof value === 'number' && Number.isFinite(value)
+      ? value.toFixed(2)
+      : '0.00'
+
   return (
     <div>
       <div className="mb-1 flex items-center justify-between text-[10px] text-slate-300">
         <span>{label}</span>
-        <span className="tabular-nums text-slate-400">{value.toFixed ? value.toFixed(2) : value} {unit}</span>
+        <span className="tabular-nums text-slate-400">{displayValue} {unit}</span>
       </div>
       <input
         type="range"
@@ -367,7 +382,12 @@ function SliderRow({ label, min, max, step, value, onChange, unit }) {
         max={max}
         step={step}
         value={value}
-        onChange={(e) => onChange(parseFloat(e.target.value))}
+        onChange={(e) => {
+          const raw = parseFloat(e.target.value)
+          const numeric = Number.isFinite(raw) ? raw : 0
+          const clamped = Math.max(min, Math.min(max, numeric))
+          onChange(clamped)
+        }}
         className="h-1 w-full cursor-pointer appearance-none rounded-full bg-slate-800 accent-red-500"
       />
     </div>
