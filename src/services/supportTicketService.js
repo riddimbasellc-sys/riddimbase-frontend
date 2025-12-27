@@ -79,9 +79,9 @@ export async function createSupportTicket(ticket) {
 
   if (error) {
     console.warn('[supportTicketService] createSupportTicket error', error.message)
-    return { stored: false }
+    return { stored: false, error: error.message }
   }
-  return data
+  return { stored: true, ticket: data }
 }
 
 export async function updateSupportTicket(id, patch) {
