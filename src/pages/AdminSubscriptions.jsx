@@ -2,16 +2,54 @@ import AdminLayout from '../components/AdminLayout'
 import { useAdminRole } from '../hooks/useAdminRole'
 import { useEffect, useState } from 'react'
 import { listPlans } from '../services/plansRepository'
+import { fetchAdminUsers } from '../services/adminUsersRepository'
+import { getUserPlan } from '../services/subscriptionService'
 
 export function AdminSubscriptions() {
   const { isAdmin, loading } = useAdminRole()
   const [plans, setPlans] = useState([])
+  const [users, setUsers] = useState([])
+  const [plansByUser, setPlansByUser] = useState({})
+  const [usersLoading, setUsersLoading] = useState(true)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     ;(async () => {
       setPlans(await listPlans())
     })()
   }, [])
+
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const data = await fetchAdminUsers()
+        setUsers(data || [])
+      } catch {
+        setUsers([])
+      } finally {
+        setUsersLoading(false)
+      }
+    })()
+  }, [])
+
+  useEffect(() => {
+    ;(async () => {
+      if (!users.length) {
+        setPlansByUser({})
+        return
+      }
+      const map = {}
+      for (const u of users) {
+        try {
+          const planId = await getUserPlan(u.id)
+          map[u.id] = planId || 'free'
+        } catch {
+          map[u.id] = 'free'
+        }
+      }
+      setPlansByUser(map)
+    })()
+  }, [users])
 
   if (loading) {
     return (
@@ -34,7 +72,7 @@ export function AdminSubscriptions() {
       title="Subscriptions"
       subtitle="High-level view of membership plans and how producers are using them."
     >
-      <div className="grid gap-6 lg:grid-cols-[1.1fr,0.9fr]">
+      <div className="grid gap-6 xl:grid-cols-[1.1fr,1.1fr]">
         <div className="space-y-4">
           <div className="rounded-2xl border border-slate-800/80 bg-gradient-to-br from-slate-900/90 to-slate-950/90 p-5 shadow-lg">
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-300">
@@ -111,6 +149,89 @@ export function AdminSubscriptions() {
               billing backend.
             </div>
           )}
+        </div>
+        <div className="space-y-3">
+          <div className="rounded-2xl border border-slate-800/80 bg-slate-900/95 p-4 shadow-lg">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-300">
+                  Users
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-100">
+                  Plans by user
+                </p>
+                <p className="mt-0.5 text-[11px] text-slate-400">
+                  See which plan each account is on, similar to BeatStars admin.
+                </p>
+              </div>
+              <div className="w-48">
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by email or id…"
+                  className="w-full rounded-full border border-slate-700/80 bg-slate-900/80 px-3 py-1.5 text-[11px] text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/80 focus:outline-none"
+                />
+              </div>
+            </div>
+            {usersLoading ? (
+              <p className="mt-4 text-[12px] text-slate-400">Loading users…</p>
+            ) : users.length === 0 ? (
+              <p className="mt-4 text-[12px] text-slate-400">No users found.</p>
+            ) : (
+              <div
+                className={`mt-4 space-y-2 ${users.length > 4 ? 'max-h-[60vh] overflow-y-auto pr-1' : ''}`}
+              >
+                {users
+                  .filter((u) => {
+                    if (!search.trim()) return true
+                    const q = search.toLowerCase()
+                    return (
+                      (u.email && u.email.toLowerCase().includes(q)) ||
+                      (u.id && u.id.toLowerCase().includes(q))
+                    )
+                  })
+                  .map((u) => {
+                    const planId = plansByUser[u.id] || 'free'
+                    const isFree = planId === 'free' || !planId
+                    const label = isFree ? 'Free' : planId
+                    const badgeClass = isFree
+                      ? 'border-slate-600/70 bg-slate-800/80 text-slate-200'
+                      : 'border-emerald-400/80 bg-emerald-500/10 text-emerald-300'
+                    return (
+                      <div
+                        key={u.id}
+                        className="flex items-center justify-between gap-3 rounded-xl border border-slate-800/80 bg-slate-950/80 px-3 py-2 text-[11px] text-slate-200"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-[12px] font-semibold text-slate-100">
+                            {u.email || 'No email'}
+                          </p>
+                          <p className="truncate text-[10px] text-slate-500">ID: {u.id}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`inline-flex items-center rounded-full border px-2 py-[2px] text-[10px] font-semibold ${badgeClass}`}
+                          >
+                            {label}
+                          </span>
+                          {u.producer && !u.banned && (
+                            <span className="rounded-full bg-sky-500/10 px-2 py-[2px] text-[10px] font-semibold text-sky-300">
+                              Producer
+                            </span>
+                          )}
+                          {u.banned && (
+                            <span className="rounded-full bg-rose-500/10 px-2 py-[2px] text-[10px] font-semibold text-rose-300">
+                              Banned
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </AdminLayout>
