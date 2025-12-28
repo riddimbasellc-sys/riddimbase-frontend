@@ -291,9 +291,6 @@ export default function AudioClip({
       {!src && (
         <div className="absolute inset-0 rounded-sm bg-gradient-to-r from-slate-600/60 to-slate-400/60" />
       )}
-      {!isReady && src && (
-        <div className="pointer-events-none absolute inset-0 rounded-sm bg-slate-900/60" />
-      )}
     </div>
   )
 }
