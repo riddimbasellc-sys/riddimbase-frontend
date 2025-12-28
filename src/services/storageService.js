@@ -106,3 +106,8 @@ export async function uploadBeatWithMetadata({
   const audioUrl = beat?.audio_url || null
   return { beat, audioUrl }
 }
+
+// Soundkits: archive upload helper (ZIP / RAR)
+export async function uploadSoundkitArchive(file) {
+  return uploadToFolder('soundkits', file)
+}
