@@ -88,6 +88,7 @@ export async function recordSale({ beatId, license, buyer, amount, beatTitle }) 
           beatTitle: beatTitle || beat?.title || String(beatId),
           amount,
           currency: 'USD',
+          beatId,
         },
       })
     }

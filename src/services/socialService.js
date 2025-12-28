@@ -490,6 +490,7 @@ export async function sendMessage({
           snippet:
             (content && content.slice(0, 80)) ||
             (attachmentName ? `[Attachment] ${attachmentName}` : '[Attachment]'),
+          email: profile?.email || null,
         },
       })
     }

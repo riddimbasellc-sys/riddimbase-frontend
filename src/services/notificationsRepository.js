@@ -19,8 +19,22 @@ export async function addNotification({ recipientId, actorId, type, data }) {
 export async function listNotifications(recipientId) {
   if (!recipientId) return []
   if (supabaseAvailable()) {
-    const { data: rows, error } = await supabase.from(TABLE).select('*').eq('user_id', recipientId).order('created_at', { ascending: false }).limit(250)
-    if (!error && rows) return rows.map(r => ({ id: r.id, type: r.type, data: r.data || {}, ts: new Date(r.created_at).getTime(), read: r.read }))
+    const { data: rows, error } = await supabase
+      .from(TABLE)
+      .select('*')
+      .eq('user_id', recipientId)
+      .order('created_at', { ascending: false })
+      .limit(250)
+    if (!error && rows) {
+      return rows.map((r) => ({
+        id: r.id,
+        type: r.type,
+        data: r.data || {},
+        ts: new Date(r.created_at).getTime(),
+        read: r.read,
+        actorId: r.actor_id || null,
+      }))
+    }
     if (error) console.warn('[notificationsRepository] list error', error)
   }
   return []
@@ -39,11 +53,11 @@ export function realtimeSubscribe(recipientId, onEvent) {
   const channel = supabase.channel('public:notifications')
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: TABLE, filter: `user_id=eq.${recipientId}` }, payload => {
       const r = payload.new
-      onEvent({ id: r.id, type: r.type, data: r.data || {}, ts: new Date(r.created_at).getTime(), read: r.read })
+      onEvent({ id: r.id, type: r.type, data: r.data || {}, ts: new Date(r.created_at).getTime(), read: r.read, actorId: r.actor_id || null })
     })
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: TABLE, filter: `user_id=eq.${recipientId}` }, payload => {
       const r = payload.new
-      onEvent({ id: r.id, type: r.type, data: r.data || {}, ts: new Date(r.created_at).getTime(), read: r.read })
+      onEvent({ id: r.id, type: r.type, data: r.data || {}, ts: new Date(r.created_at).getTime(), read: r.read, actorId: r.actor_id || null })
     })
     .subscribe()
   return () => { try { supabase.removeChannel(channel) } catch {} }
