@@ -335,11 +335,22 @@ export function AdminAnalytics() {
 
   const totalSales = sales.length
   const totalBeats = beats.length
-  const totalUsers = profiles.length
 
-  const producers = useMemo(
+  // Derive user + producer counts from adminUsers (auth) when available,
+  // falling back to profiles for older data.
+  const totalUsers = adminUsers.length || profiles.length
+
+  const producerProfiles = useMemo(
     () => profiles.filter((p) => (p.role || '').toLowerCase() === 'producer'),
     [profiles],
+  )
+
+  const producersCount = useMemo(
+    () =>
+      adminUsers.length
+        ? adminUsers.filter((u) => u.producer).length
+        : producerProfiles.length,
+    [adminUsers, producerProfiles],
   )
 
   const beatStats = useMemo(() => {
@@ -522,7 +533,7 @@ export function AdminAnalytics() {
       key: 'activeUsers',
       label: 'Users',
       value: totalUsers.toLocaleString(),
-      sublabel: 'Total registered users',
+      sublabel: 'Total auth users',
       delta: null,
       positive: true,
       icon: UsersIcon,
@@ -531,8 +542,8 @@ export function AdminAnalytics() {
     {
       key: 'producers',
       label: 'Producers',
-      value: producers.length.toLocaleString(),
-      sublabel: 'Profiles with producer role',
+      value: producersCount.toLocaleString(),
+      sublabel: 'Users flagged as producer',
       delta: null,
       positive: true,
       icon: BadgeIcon,
@@ -937,7 +948,7 @@ export function AdminAnalytics() {
               <MiniStat label="Total users" value={totalUsers.toLocaleString()} />
               <MiniStat
                 label="Producers"
-                value={producers.length.toLocaleString()}
+                value={producersCount.toLocaleString()}
               />
               <MiniStat
                 label="Producers with sales"
