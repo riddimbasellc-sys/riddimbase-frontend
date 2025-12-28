@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import useSupabaseUser from '../hooks/useSupabaseUser'
 import {
   listNotifications,
@@ -143,9 +144,11 @@ const ICONS = {
 
 export default function NotificationsBell() {
   const { user } = useSupabaseUser()
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState([])
   const [unread, setUnread] = useState(0)
+  const [actorNames, setActorNames] = useState({})
   const ref = useRef(null)
 
   useEffect(() => {
@@ -204,6 +207,98 @@ export default function NotificationsBell() {
     refresh()
   }
 
+  // Resolve actor display names where the stored data.user/from is generic
+  useEffect(() => {
+    const missingIds = Array.from(
+      new Set(
+        (items || [])
+          .filter(
+            (n) =>
+              n.actorId &&
+              !actorNames[n.actorId] &&
+              (!n.data?.user || n.data.user === 'User' || n.data.user === 'Someone'),
+          )
+          .map((n) => n.actorId),
+      ),
+    )
+
+    if (!missingIds.length) return
+
+    let cancelled = false
+    ;(async () => {
+      try {
+        const { supabase } = await import('../lib/supabaseClient')
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id,display_name,email')
+          .in('id', missingIds)
+
+        if (error || !data || cancelled) return
+        const next = {}
+        for (const row of data) {
+          const name = row.display_name || row.email || null
+          if (row.id && name) next[row.id] = name
+        }
+        if (Object.keys(next).length) {
+          setActorNames((prev) => ({ ...prev, ...next }))
+        }
+      } catch {
+        // ignore lookup failures
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [items, actorNames])
+
+  function handleClick(n) {
+    const beatId = n.data?.beatId
+    const jobId = n.data?.jobId
+
+    if (
+      n.type === 'like' ||
+      n.type === 'favorite' ||
+      n.type === 'comment' ||
+      n.type === 'repost' ||
+      n.type === 'sale'
+    ) {
+      if (beatId) navigate(`/beat/${beatId}`)
+      return
+    }
+
+    if (n.type === 'message') {
+      const email = n.data?.email
+      if (email) navigate(`/chat?email=${encodeURIComponent(email)}`)
+      else navigate('/chat')
+      return
+    }
+
+    if (
+      n.type === 'job-approved' ||
+      n.type === 'job-denied' ||
+      n.type === 'job-accepted' ||
+      n.type === 'job-files' ||
+      n.type === 'job-paid' ||
+      n.type === 'job-proposal' ||
+      n.type === 'job-assigned' ||
+      n.type === 'job-released'
+    ) {
+      if (jobId) navigate(`/jobs/${jobId}`)
+      else navigate('/jobs')
+      return
+    }
+
+    if (n.type === 'follow' && n.actorId) {
+      navigate(`/producer/${n.actorId}`)
+      return
+    }
+
+    if (n.type === 'payout-completed') {
+      navigate('/producer/withdraw')
+    }
+  }
+
   return (
     <div className="relative" ref={ref}>
       <button
@@ -245,124 +340,139 @@ export default function NotificationsBell() {
             )}
           </div>
           <ul className="max-h-72 space-y-2 overflow-auto">
-            {items.slice(0, 25).map((n) => (
-              <li
-                key={n.id}
-                className={`flex gap-2 rounded-lg border border-slate-800/60 p-2 ${
-                  !n.read ? 'bg-slate-800/40' : 'bg-slate-900/40'
-                }`}
-              >
-                {ICONS[n.type]}
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] text-slate-200 truncate">
-                    {n.type === 'sale' && (
-                      <>
-                        Sale:{' '}
-                        <span className="text-emerald-300">
-                          {n.data.currency} {n.data.amount.toFixed(2)}
-                        </span>
-                        {n.data.beatTitle && <> • {n.data.beatTitle}</>}
-                      </>
-                    )}
-                    {n.type === 'like' && (
-                      <>
-                        Like: {n.data.user || 'User'} liked{' '}
-                        <span className="text-pink-300">
-                          {n.data.beatTitle || 'your beat'}
-                        </span>
-                      </>
-                    )}
-                    {n.type === 'favorite' && (
-                      <>
-                        Favorite: {n.data.user || 'User'} saved{' '}
-                        <span className="text-amber-300">
-                          {n.data.beatTitle || 'your beat'}
-                        </span>
-                      </>
-                    )}
-                    {n.type === 'comment' && (
-                      <>
-                        Comment: {n.data.user || 'User'} "{n.data.text}"
-                      </>
-                    )}
-                    {n.type === 'follow' && (
-                      <>
-                        New follower:{' '}
-                        <span className="text-indigo-300">
-                          {n.data.user || 'User'}
-                        </span>
-                      </>
-                    )}
-                    {n.type === 'message' && (
-                      <>
-                        Message from {n.data.from || 'User'}: "
-                        {n.data.snippet || ''}"
-                      </>
-                    )}
-                    {n.type === 'job-approved' && (
-                      <>
-                        Job approved:{' '}
-                        <span className="text-slate-100">
-                          {n.data.title || 'Your job post'}
-                        </span>
-                      </>
-                    )}
-                    {n.type === 'job-denied' && (
-                      <>
-                        Job not approved:{' '}
-                        <span className="text-slate-100">
-                          {n.data.title || 'Your job post'}
-                        </span>
-                      </>
-                    )}
-                    {n.type === 'job-accepted' && (
-                      <>
-                        Proposal accepted for{' '}
-                        <span className="text-slate-100">
-                          {n.data.title || 'a job'}
-                        </span>
-                        {typeof n.data.amount !== 'undefined' && (
-                          <>
-                            {' '}
-                            •{' '}
-                            <span className="text-emerald-300">
-                              ${Number(n.data.amount || 0).toFixed(2)}
-                            </span>
-                          </>
-                        )}
-                      </>
-                    )}
-                    {n.type === 'job-files' && (
-                      <>
-                        Files shared for job{' '}
-                        <span className="text-slate-100">
-                          {n.data.title || ''}
-                        </span>
-                      </>
-                    )}
-                    {n.type === 'job-paid' && (
-                      <>
-                        Job paid:{' '}
-                        <span className="text-emerald-300">
-                          {(n.data.currency || 'USD')}{' '}
-                          {Number(n.data.amount || 0).toFixed(2)}
-                        </span>{' '}
-                        for{' '}
-                        <span className="text-slate-100">
-                          {n.data.title || 'a job'}
-                        </span>
-                      </>
-                    )}
-                    {n.type === 'payout-completed' && (
-                      <>
-                        Payout completed:{' '}
-                        <span className="text-emerald-300">
-                          {(n.data.currency || 'USD')}{' '}
-                          {Number(n.data.amount || 0).toFixed(2)}
-                        </span>
-                      </>
-                    )}
-                  </p>
+            {items.slice(0, 25).map((n) => {
+              const baseName =
+                n.data?.user &&
+                n.data.user !== 'User' &&
+                n.data.user !== 'Someone'
+                  ? n.data.user
+                  : n.data?.from &&
+                    n.data.from !== 'User' &&
+                    n.data.from !== 'Someone'
+                  ? n.data.from
+                  : n.actorId && actorNames[n.actorId]
+                  ? actorNames[n.actorId]
+                  : n.data?.user || n.data?.from || 'Someone'
+
+              const data = { ...n.data, user: baseName, from: baseName }
+
+              return (
+                <li
+                  key={n.id}
+                  onClick={() => handleClick(n)}
+                  className={`flex cursor-pointer gap-2 rounded-lg border border-slate-800/60 p-2 transition hover:border-emerald-400/60 ${
+                    !n.read ? 'bg-slate-800/40' : 'bg-slate-900/40'
+                  }`}
+                >
+                  {ICONS[n.type]}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] text-slate-200 truncate">
+                      {n.type === 'sale' && (
+                        <>
+                          Sale:{' '}
+                          <span className="text-emerald-300">
+                            {data.currency}{' '}
+                            {Number(data.amount || 0).toFixed(2)}
+                          </span>
+                          {data.beatTitle && <> • {data.beatTitle}</>}
+                        </>
+                      )}
+                      {n.type === 'like' && (
+                        <>
+                          Like: {data.user} liked{' '}
+                          <span className="text-pink-300">
+                            {data.beatTitle || 'your beat'}
+                          </span>
+                        </>
+                      )}
+                      {n.type === 'favorite' && (
+                        <>
+                          Favorite: {data.user} saved{' '}
+                          <span className="text-amber-300">
+                            {data.beatTitle || 'your beat'}
+                          </span>
+                        </>
+                      )}
+                      {n.type === 'comment' && (
+                        <>
+                          Comment: {data.user} "{data.text}"
+                        </>
+                      )}
+                      {n.type === 'follow' && (
+                        <>
+                          New follower:{' '}
+                          <span className="text-indigo-300">{data.user}</span>
+                        </>
+                      )}
+                      {n.type === 'message' && (
+                        <>
+                          Message from {data.from}: "{data.snippet || ''}"
+                        </>
+                      )}
+                      {n.type === 'job-approved' && (
+                        <>
+                          Job approved:{' '}
+                          <span className="text-slate-100">
+                            {data.title || 'Your job post'}
+                          </span>
+                        </>
+                      )}
+                      {n.type === 'job-denied' && (
+                        <>
+                          Job not approved:{' '}
+                          <span className="text-slate-100">
+                            {data.title || 'Your job post'}
+                          </span>
+                        </>
+                      )}
+                      {n.type === 'job-accepted' && (
+                        <>
+                          Proposal accepted for{' '}
+                          <span className="text-slate-100">
+                            {data.title || 'a job'}
+                          </span>
+                          {typeof data.amount !== 'undefined' && (
+                            <>
+                              {' '}
+                              •{' '}
+                              <span className="text-emerald-300">
+                                ${Number(data.amount || 0).toFixed(2)}
+                              </span>
+                            </>
+                          )}
+                        </>
+                      )}
+                      {n.type === 'job-files' && (
+                        <>
+                          Files shared for job{' '}
+                          <span className="text-slate-100">
+                            {data.title || ''}
+                          </span>
+                        </>
+                      )}
+                      {n.type === 'job-paid' && (
+                        <>
+                          Job paid:{' '}
+                          <span className="text-emerald-300">
+                            {(data.currency || 'USD')}{' '}
+                            {Number(data.amount || 0).toFixed(2)}
+                          </span>{' '}
+                          for{' '}
+                          <span className="text-slate-100">
+                            {data.title || 'a job'}
+                          </span>
+                        </>
+                      )}
+                      {n.type === 'payout-completed' && (
+                        <>
+                          Payout completed:{' '}
+                          <span className="text-emerald-300">
+                            {(data.currency || 'USD')}{' '}
+                            {Number(data.amount || 0).toFixed(2)}
+                          </span>
+                        </>
+                      )}
+                    </p>
                   <p className="mt-0.5 text-[9px] text-slate-500">
                     {timeAgo(n.ts)}
                   </p>
