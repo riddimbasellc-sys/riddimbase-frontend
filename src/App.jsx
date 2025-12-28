@@ -74,6 +74,7 @@ import { MultiCheckout } from './pages/MultiCheckout'
 import ProducerStore from './pages/ProducerStore'
 import RecordingLab from './pages/RecordingLab'
 import StudioCredits from './pages/StudioCredits'
+import CookieConsent from './components/CookieConsent'
 
 function App() {
   const { isAdmin } = useAdminRole()
@@ -157,6 +158,7 @@ function App() {
         <Route path="/admin/recording-lab/credits" element={<AdminRecordingLabCredits />} />
         <Route path="/admin/design" element={<AdminDesign />} />
         </Routes>
+        <CookieConsent />
       </Layout>
       </CartProvider>
     </ErrorBoundary>
