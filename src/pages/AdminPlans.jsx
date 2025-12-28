@@ -101,7 +101,7 @@ export function AdminPlans() {
               <button type="submit" className="rounded-full bg-emerald-500 px-4 py-2 text-xs font-semibold text-slate-950 hover:bg-emerald-400">{editing ? 'Save Changes' : 'Create Plan'}</button>
               {editing && <button type="button" onClick={resetForm} className="rounded-full bg-slate-700 px-4 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-600">Cancel</button>}
             </div>
-            <p className="mt-2 text-[10px] text-slate-500">Changes are stored locally now—connect Supabase table later for multi-admin sync.</p>
+            <p className="mt-2 text-[10px] text-slate-500">Plans save to Supabase and stay in sync across admins. Local defaults only apply if Supabase is unavailable.</p>
           </form>
         </div>
       </div>
