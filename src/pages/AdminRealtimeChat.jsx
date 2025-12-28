@@ -30,7 +30,11 @@ export function AdminRealtimeChat() {
           typingUsers={chat.typingUsers}
           setTyping={chat.setTyping}
         />
-        <AdminChatRightPanel activeConversationId={chat.activeConversationId} />
+        <AdminChatRightPanel
+          activeConversationId={chat.activeConversationId}
+          blockUser={chat.blockUser}
+          reportUser={chat.reportUser}
+        />
       </div>
     </AdminLayout>
   )
