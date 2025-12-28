@@ -66,6 +66,15 @@ module.exports = {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         display: ['Poppins', 'system-ui', 'sans-serif'],
       },
+      keyframes: {
+        'rb-slide-up': {
+          '0%': { transform: 'translateY(100%)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+      },
+      animation: {
+        'rb-slide-up': 'rb-slide-up 0.35s ease-out forwards',
+      },
     },
   },
   plugins: [],
