@@ -1,10 +1,33 @@
-// Support agent + assignment service backed by Supabase only.
-// Adjust path to existing Supabase client (was ../supabaseClient causing Vite error)
+// Support agent + assignment service backed by Supabase.
+// Reads/writes prefer the backend API when configured so
+// the service-role Supabase key can bypass RLS.
 import { supabase } from '../lib/supabaseClient'
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+
 export async function fetchAgents() {
+  // Prefer server-side admin endpoint when available
+  if (API_BASE) {
+    try {
+      const res = await fetch(`${API_BASE}/admin/support-agents`)
+      if (!res.ok) throw new Error('Failed to fetch agents')
+      const payload = await res.json().catch(() => ({}))
+      const rows = Array.isArray(payload?.agents) ? payload.agents : []
+      return rows
+    } catch (e) {
+      console.warn(
+        '[supportAgentService] admin fetchAgents error',
+        e?.message || e,
+      )
+      // fall through to client-side Supabase as backup
+    }
+  }
+
   try {
-    const { data, error } = await supabase.from('support_agents').select('*').order('created_at', { ascending: true })
+    const { data, error } = await supabase
+      .from('support_agents')
+      .select('*')
+      .order('created_at', { ascending: true })
     if (!error && data) return data
     throw error
   } catch (e) {
@@ -17,10 +40,37 @@ export async function createAgent(agent) {
   const avatarVariant = agent.avatarVariant || 'male'
   const variantMap = {
     male: '/agent-male.svg',
-    female: '/agent-female.svg'
+    female: '/agent-female.svg',
   }
+
+  // Prefer server-side API so inserts bypass RLS
+  if (API_BASE) {
+    try {
+      const res = await fetch(`${API_BASE}/admin/support-agents`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(agent),
+      })
+      const payload = await res.json().catch(() => ({}))
+
+      if (res.ok && payload?.agent) {
+        return payload.agent
+      }
+
+      const msg = payload?.error || `HTTP ${res.status}`
+      console.warn('[supportAgentService] createAgent API error', msg)
+      // fall through to client-side Supabase insert
+    } catch (e) {
+      console.warn(
+        '[supportAgentService] createAgent API exception',
+        e?.message || e,
+      )
+      // fall through to client-side Supabase insert
+    }
+  }
+
   const record = {
-    id: crypto.randomUUID(),
+    // id is optional – let Supabase default if configured
     user_id: agent.userId || null,
     display_name: agent.displayName || agent.name || 'Agent',
     avatar_url: variantMap[avatarVariant] || variantMap.male,
@@ -28,16 +78,20 @@ export async function createAgent(agent) {
     phone: agent.phone || null,
     address: agent.address || null,
     start_date: agent.startDate || null,
-    work_days: agent.workDays || ['Mon','Tue','Wed','Thu','Fri'],
+    work_days: agent.workDays || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
     work_start: agent.workStart || '08:00',
     work_end: agent.workEnd || '17:00',
     status: 'offline',
     last_status_at: new Date().toISOString(),
     active: true,
-    created_at: new Date().toISOString()
   }
+
   try {
-    const { data, error } = await supabase.from('support_agents').insert(record).select().single()
+    const { data, error } = await supabase
+      .from('support_agents')
+      .insert(record)
+      .select()
+      .single()
     if (error) throw error
     return data
   } catch (e) {
