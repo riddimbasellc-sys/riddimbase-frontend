@@ -59,6 +59,34 @@ export async function listSupportTickets() {
 }
 
 export async function createSupportTicket(ticket) {
+  // Prefer server-side API when available so the service-role
+  // Supabase key can bypass RLS for inserts.
+  if (API_BASE) {
+    try {
+      const res = await fetch(`${API_BASE}/support-tickets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ticket),
+      })
+      const payload = await res.json().catch(() => ({}))
+
+      if (res.ok && payload?.stored) {
+        return { stored: true, ticket: payload.ticket }
+      }
+
+      const msg = payload?.error || `HTTP ${res.status}`
+      console.warn('[supportTicketService] createSupportTicket API error', msg)
+      // Fall through to client-side Supabase insert so caller still
+      // receives a detailed error if the API path is misconfigured.
+    } catch (e) {
+      console.warn(
+        '[supportTicketService] createSupportTicket API exception',
+        e?.message || e,
+      )
+      // Fall through to client-side Supabase insert below.
+    }
+  }
+
   const payload = {
     created_by: ticket.userId || null,
     assigned_to: ticket.assignedTo || null,
