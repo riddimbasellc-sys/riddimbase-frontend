@@ -1,6 +1,7 @@
 export default function StudioSidebar({
   micStatus,
   onRequestMic,
+  onDisableMic,
   monitorEnabled,
   onToggleMonitor,
   inputGain,
@@ -11,7 +12,7 @@ export default function StudioSidebar({
 }) {
   const micLabel =
     micStatus === 'granted'
-      ? 'Mic enabled'
+      ? 'Mic enabled (click to disable)'
       : micStatus === 'denied'
       ? 'Mic blocked'
       : 'Enable microphone'
@@ -32,8 +33,18 @@ export default function StudioSidebar({
           {/* TODO: enumerate devices for advanced selection */}
           <button
             type="button"
-            onClick={onRequestMic}
-            title="Request microphone access"
+            onClick={() => {
+              if (micStatus === 'granted' && onDisableMic) {
+                onDisableMic()
+              } else {
+                onRequestMic?.()
+              }
+            }}
+            title={
+              micStatus === 'granted'
+                ? 'Disable microphone and monitoring'
+                : 'Request microphone access'
+            }
             className={`mt-3 w-full rounded-full px-3 py-1.5 text-[11px] font-semibold transition ${
               micStatus === 'granted'
                 ? 'border border-emerald-500/70 text-emerald-300 bg-emerald-500/10'
