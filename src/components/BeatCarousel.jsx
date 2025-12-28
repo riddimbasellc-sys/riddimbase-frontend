@@ -6,6 +6,7 @@ import { ensureExclusive, clearIfCurrent } from '../utils/playbackBus'
 import { slugify } from '../utils/slugify'
 import useSupabaseUser from '../hooks/useSupabaseUser'
 import { toggleLike, likeCount, isLiked } from '../services/socialService'
+import { recordPlay } from '../services/analyticsService'
 
 /**
  * @typedef {Object} Beat
@@ -30,6 +31,7 @@ export function TrendingBeatCard({ beat, onAddedToCart }) {
   const [likes, setLikes] = useState(0)
   const [playing, setPlaying] = useState(false)
   const audioRef = useRef(null)
+  const hasRecordedRef = useRef(false)
 
   useEffect(() => {
     let cancelled = false
@@ -115,6 +117,10 @@ export function TrendingBeatCard({ beat, onAddedToCart }) {
     const audio = audioRef.current
     if (!audio) return
     if (playing) {
+      if (!hasRecordedRef.current && beat.id) {
+        recordPlay(beat.id, beat.userId)
+        hasRecordedRef.current = true
+      }
       // Enforce exclusive playback when starting this audio.
       ensureExclusive(audio)
       audio
