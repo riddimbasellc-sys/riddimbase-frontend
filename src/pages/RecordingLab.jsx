@@ -360,6 +360,37 @@ export function RecordingLab() {
     }
   }
 
+  const disableMic = () => {
+    // Fully tear down mic/monitor graph so user can "turn off" the mic.
+    try {
+      if (mediaRecorderRef.current && recordState === 'recording') {
+        mediaRecorderRef.current.stop()
+      }
+    } catch {}
+    if (mediaStreamRef.current) {
+      try {
+        mediaStreamRef.current.getTracks().forEach((t) => t.stop())
+      } catch {}
+      mediaStreamRef.current = null
+    }
+    if (monitorGainRef.current) {
+      try {
+        monitorGainRef.current.disconnect()
+      } catch {}
+      monitorGainRef.current = null
+    }
+    if (audioContextRef.current) {
+      try {
+        audioContextRef.current.close()
+      } catch {}
+      audioContextRef.current = null
+    }
+    mediaRecorderRef.current = null
+    analyserRef.current = null
+    setMonitorEnabled(false)
+    setMicStatus('idle')
+  }
+
   const ensureRecorder = async () => {
     if (!hasAudioSupport) return null
     if (!mediaRecorderRef.current) {
@@ -2372,6 +2403,7 @@ export function RecordingLab() {
               <StudioSidebar
                 micStatus={micStatus}
                 onRequestMic={requestMic}
+                onDisableMic={disableMic}
                 monitorEnabled={monitorEnabled}
                 onToggleMonitor={toggleMonitor}
                 inputGain={inputGain}
