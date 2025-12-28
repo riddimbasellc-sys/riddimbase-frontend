@@ -341,18 +341,30 @@ export default function NotificationsBell() {
           </div>
           <ul className="max-h-72 space-y-2 overflow-auto">
             {items.slice(0, 25).map((n) => {
-              const baseName =
+              const rawUser =
                 n.data?.user &&
                 n.data.user !== 'User' &&
                 n.data.user !== 'Someone'
                   ? n.data.user
-                  : n.data?.from &&
-                    n.data.from !== 'User' &&
-                    n.data.from !== 'Someone'
+                  : null
+
+              const rawFrom =
+                n.data?.from &&
+                n.data.from !== 'User' &&
+                n.data.from !== 'Someone'
                   ? n.data.from
-                  : n.actorId && actorNames[n.actorId]
-                  ? actorNames[n.actorId]
-                  : n.data?.user || n.data?.from || 'Someone'
+                  : null
+
+              const resolvedActorName =
+                (n.actorId && actorNames[n.actorId]) || null
+
+              const baseName =
+                rawUser ||
+                rawFrom ||
+                resolvedActorName ||
+                n.data?.user ||
+                n.data?.from ||
+                'Someone'
 
               const data = { ...n.data, user: baseName, from: baseName }
 
@@ -473,12 +485,13 @@ export default function NotificationsBell() {
                         </>
                       )}
                     </p>
-                  <p className="mt-0.5 text-[9px] text-slate-500">
-                    {timeAgo(n.ts)}
-                  </p>
-                </div>
-              </li>
-            ))}
+                    <p className="mt-0.5 text-[9px] text-slate-500">
+                      {timeAgo(n.ts)}
+                    </p>
+                  </div>
+                </li>
+              )
+            })}
             {items.length === 0 && (
               <li className="text-[11px] text-slate-500">
                 No notifications yet.
