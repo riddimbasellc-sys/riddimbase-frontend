@@ -19,6 +19,7 @@ import { getSubscription } from '../services/subscriptionService'
 import { queryJobRequests } from '../services/serviceJobRequestsService'
 import { fetchProducerMetrics } from '../services/producerMetricsService'
 import { createBeat, deleteBeat as deleteBeatRemote } from '../services/beatsRepository'
+import { listSoundkitsForUser } from '../services/soundkitsRepository'
 import { uploadArtwork, uploadBundle, uploadFeedAttachment } from '../services/storageService'
 import { createPost } from '../services/feedService'
 import { getCollaboratorWallet, listCollaboratorSplitEntries } from '../services/collabEarningsService'
@@ -1253,25 +1254,7 @@ export function ProducerDashboard() {
           </div>
 
           {subscription?.planId === 'pro' && (
-            <div className="mt-6 rounded-2xl border border-white/10 bg-black/70 bg-rb-gloss-stripes bg-blend-soft-light p-4 shadow-rb-gloss-panel">
-              <div className="flex items-center justify-between gap-3 mb-3">
-                <div>
-                  <h2 className="text-sm font-semibold text-slate-100">Your Soundkits</h2>
-                  <p className="text-[11px] text-slate-400">
-                    Upload drum kits, loop packs and sample folders as part of Producer Pro.
-                  </p>
-                </div>
-                <a
-                  href="/producer/soundkits"
-                  className="rounded-full bg-white px-4 py-1.5 text-[11px] font-semibold text-slate-950 shadow-rb-gloss-btn hover:bg-slate-100"
-                >
-                  Upload Soundkit
-                </a>
-              </div>
-              <p className="text-[11px] text-slate-500">
-                Soundkit management will show here once you start uploading packs.
-              </p>
-            </div>
+            <ProducerSoundkitsPanel userId={user.id} />
           )}
 
           <ProfileShareModal
@@ -1328,6 +1311,85 @@ export function ProducerDashboard() {
         </div>
       </section>
     </ProducerLayout>
+  )
+}
+
+function ProducerSoundkitsPanel({ userId }) {
+  const [kits, setKits] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    if (!userId) return
+    async function load() {
+      setLoading(true)
+      const rows = await listSoundkitsForUser(userId)
+      if (active) {
+        setKits(rows)
+        setLoading(false)
+      }
+    }
+    load()
+    return () => {
+      active = false
+    }
+  }, [userId])
+
+  return (
+    <div className="mt-6 rounded-2xl border border-white/10 bg-black/70 bg-rb-gloss-stripes bg-blend-soft-light p-4 shadow-rb-gloss-panel">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <div>
+          <h2 className="text-sm font-semibold text-slate-100">Your Soundkits</h2>
+          <p className="text-[11px] text-slate-400">
+            Upload drum kits, loop packs and sample folders as part of Producer Pro.
+          </p>
+        </div>
+        <a
+          href="/producer/soundkits"
+          className="rounded-full bg-white px-4 py-1.5 text-[11px] font-semibold text-slate-950 shadow-rb-gloss-btn hover:bg-slate-100"
+        >
+          Upload Soundkit
+        </a>
+      </div>
+      {loading ? (
+        <p className="text-[11px] text-slate-500">Loading your soundkits…</p>
+      ) : kits.length === 0 ? (
+        <p className="text-[11px] text-slate-500">
+          Soundkit management will show here once you start uploading packs.
+        </p>
+      ) : (
+        <div className="mt-2 space-y-2 text-[11px]">
+          {kits.slice(0, 5).map((kit) => (
+            <div
+              key={kit.id}
+              className="flex items-center justify-between rounded-xl border border-slate-800/80 bg-slate-950/80 px-3 py-2"
+            >
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-slate-100">{kit.title}</p>
+                <p className="truncate text-[10px] text-slate-400">
+                  {kit.genre || 'Multi-genre'}
+                </p>
+              </div>
+              <div className="text-right">
+                {kit.is_free ? (
+                  <p className="text-[11px] font-semibold text-emerald-300">Free</p>
+                ) : (
+                  <p className="text-[11px] font-semibold text-slate-50">${'{'}kit.price?.toFixed ? kit.price.toFixed(2) : kit.price || 0{'}'}</p>
+                )}
+                <p className="text-[10px] text-slate-500">
+                  {new Date(kit.created_at).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+          ))}
+          {kits.length > 5 && (
+            <p className="mt-1 text-[10px] text-slate-500">
+              Showing latest 5 packs.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 
