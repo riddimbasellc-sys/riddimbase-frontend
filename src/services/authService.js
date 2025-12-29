@@ -52,3 +52,22 @@ export async function signup(email, password, fullName) {
   return payload
 }
 
+export async function requestPasswordReset(email) {
+  if (!email) {
+    throw new Error('Email is required to reset your password.')
+  }
+
+  const redirectTo =
+    import.meta.env.VITE_WEB_BASE_URL || window.location.origin || undefined
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo,
+  })
+
+  if (error) {
+    throw new Error(error.message || 'Failed to send reset email.')
+  }
+
+  return true
+}
+
