@@ -57,8 +57,9 @@ export async function requestPasswordReset(email) {
     throw new Error('Email is required to reset your password.')
   }
 
-  const redirectTo =
-    import.meta.env.VITE_WEB_BASE_URL || window.location.origin || undefined
+  const base =
+    import.meta.env.VITE_WEB_BASE_URL || window.location.origin || ''
+  const redirectTo = `${base.replace(/\/$/, '')}/reset-password`
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo,
