@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { login as apiLogin } from '../services/authService'
+import { login as apiLogin, requestPasswordReset } from '../services/authService'
 
 export function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [resetLoading, setResetLoading] = useState(false)
+  const [info, setInfo] = useState('')
   const navigate = useNavigate()
 
   function friendlyError(msg) {
@@ -24,6 +26,7 @@ export function Login() {
   const handleLogin = async (e) => {
     e.preventDefault()
     setError('')
+    setInfo('')
     setLoading(true)
 
     try {
@@ -41,6 +44,27 @@ export function Login() {
     } catch (err) {
       setError(friendlyError(err.message))
       setLoading(false)
+    }
+  }
+
+  const handleForgotPassword = async () => {
+    setError('')
+    setInfo('')
+    if (!email) {
+      setError('Enter your email first so we can send a reset link.')
+      return
+    }
+
+    try {
+      setResetLoading(true)
+      await requestPasswordReset(email)
+      setInfo(
+        'If an account exists for this email, a reset link has been sent. Check your inbox and spam folder.',
+      )
+    } catch (err) {
+      setError(friendlyError(err.message))
+    } finally {
+      setResetLoading(false)
     }
   }
 
@@ -80,6 +104,14 @@ export function Login() {
               required
               minLength={6}
             />
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              disabled={resetLoading}
+              className="mt-1 text-[11px] text-slate-400 hover:text-red-300 disabled:opacity-60"
+            >
+              {resetLoading ? 'Sending reset link…' : 'Forgot password?'}
+            </button>
           </div>
           {error && (
             <div className="rounded-md bg-red-500/10 border border-red-500/40 px-3 py-2">
@@ -87,6 +119,11 @@ export function Login() {
               {error.toLowerCase().includes('auth service not configured') && (
                 <p className="mt-1 text-[10px] text-red-200/80">Create a .env.local file with your Supabase keys and restart: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY.</p>
               )}
+            </div>
+          )}
+          {info && !error && (
+            <div className="rounded-md bg-emerald-500/10 border border-emerald-500/40 px-3 py-2">
+              <p className="text-[11px] text-emerald-200 leading-relaxed">{info}</p>
             </div>
           )}
           <button

@@ -38,6 +38,7 @@ export function EditProfile() {
   const [authError, setAuthError] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+    const [showPasswordForm, setShowPasswordForm] = useState(false)
   const [genres, setGenres] = useState([])
   const GENRE_OPTIONS = ['Hip-Hop','Trap','RnB','Afrobeat','Dancehall','Reggae','EDM','Pop','Drill','Funk','Jazz']
   // Cropper state
@@ -385,31 +386,59 @@ export function EditProfile() {
                   </p>
                 </div>
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-300">Change password</label>
-                  <form onSubmit={handleChangePassword} className="mt-1 grid gap-2 md:grid-cols-2 text-[11px]">
-                    <input
-                      type="password"
-                      value={newPassword}
-                      onChange={e => setNewPassword(e.target.value)}
-                      placeholder="New password"
-                      className="rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
-                    />
-                    <input
-                      type="password"
-                      value={confirmPassword}
-                      onChange={e => setConfirmPassword(e.target.value)}
-                      placeholder="Confirm new password"
-                      className="rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
-                    />
-                    <div className="md:col-span-2 flex justify-end">
-                      <button
-                        type="submit"
-                        className="rounded-full border border-slate-700/70 bg-slate-900/80 px-4 py-1.5 text-[11px] font-semibold text-slate-100 hover:border-emerald-400/70 hover:text-emerald-200 transition"
-                      >
-                        Update password
-                      </button>
-                    </div>
-                  </form>
+                  <label className="text-[11px] font-semibold text-slate-300">Password</label>
+                  {!showPasswordForm && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowPasswordForm(true)
+                        setAuthError('')
+                        setAuthMessage('')
+                      }}
+                      className="mt-1 rounded-full border border-slate-700/70 bg-slate-900/80 px-4 py-1.5 text-[11px] font-semibold text-slate-100 hover:border-emerald-400/70 hover:text-emerald-200 transition"
+                    >
+                      Change password
+                    </button>
+                  )}
+                  {showPasswordForm && (
+                    <form onSubmit={handleChangePassword} className="mt-1 grid gap-2 md:grid-cols-2 text-[11px]">
+                      <input
+                        type="password"
+                        value={newPassword}
+                        onChange={e => setNewPassword(e.target.value)}
+                        placeholder="New password"
+                        className="rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                      />
+                      <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={e => setConfirmPassword(e.target.value)}
+                        placeholder="Confirm new password"
+                        className="rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                      />
+                      <div className="md:col-span-2 flex justify-end gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowPasswordForm(false)
+                            setNewPassword('')
+                            setConfirmPassword('')
+                            setAuthError('')
+                            setAuthMessage('')
+                          }}
+                          className="rounded-full border border-slate-700/70 bg-slate-900/80 px-4 py-1.5 text-[11px] font-semibold text-slate-200 hover:border-slate-500/80 transition"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="rounded-full border border-slate-700/70 bg-slate-900/80 px-4 py-1.5 text-[11px] font-semibold text-slate-100 hover:border-emerald-400/70 hover:text-emerald-200 transition"
+                        >
+                          Update password
+                        </button>
+                      </div>
+                    </form>
+                  )}
                 </div>
                 {authError && <p className="text-[10px] text-rose-400">{authError}</p>}
                 {authMessage && <p className="text-[10px] text-emerald-300">{authMessage}</p>}
