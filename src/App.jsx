@@ -51,6 +51,7 @@ import { SupportGeneral } from './pages/support/SupportGeneral'
 import { SupportLicensing } from './pages/support/SupportLicensing'
 import { SupportEarnings } from './pages/support/SupportEarnings'
 import { SupportSafety } from './pages/support/SupportSafety'
+import ResetPassword from './pages/ResetPassword'
 import { AdminAgents } from './pages/AdminAgents'
 import { AdminTickets } from './pages/AdminTickets'
 import { AdminFooterLinks } from './pages/AdminFooterLinks'
@@ -84,6 +85,7 @@ function App() {
       <Layout>
         <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/" element={<LandingPage />} />
         {/* Keep /home for old links but show the same landing experience */}
