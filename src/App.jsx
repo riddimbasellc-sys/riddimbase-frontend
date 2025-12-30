@@ -89,7 +89,7 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/" element={<LandingPage />} />
         {/* Keep /home for old links but show the same landing experience */}
-        <Route path="/home" element={<LandingPage />} />
+        <Route path="/home" element={<Home />} />
         <Route path="/beats" element={<Beats />} />
         <Route path="/feed" element={<Feed />} />
         <Route path="/soundkits" element={<Soundkits />} />
