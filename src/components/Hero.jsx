@@ -11,7 +11,7 @@ export function Hero() {
           </p>
           <h1 className="mt-3 font-display text-3xl font-semibold leading-tight text-slate-50 md:text-5xl">
             Discover & sell authentic{' '}
-            <span className="bg-rb-trop-sunrise bg-clip-text text-transparent drop-shadow-rb-glow">
+              <span className="bg-rb-trop-sunrise bg-clip-text text-transparent drop-shadow-[0_0_28px_rgba(248,113,113,0.9)]">
               Caribbean riddims
             </span>
             .
@@ -73,7 +73,7 @@ export function Hero() {
                   by BeatYaad • TrapHall • 140 BPM
                 </p>
               </div>
-              <span className="ml-auto rounded-full bg-rb-fiery-red/10 px-3 py-1 text-[10px] font-semibold text-rb-sun-gold border border-rb-fiery-red/60 drop-shadow-rb-glow">
+              <span className="ml-auto rounded-full bg-rb-fiery-red/15 px-3 py-1 text-[10px] font-semibold text-rb-sun-gold border border-rb-fiery-red/80 shadow-[0_0_24px_rgba(248,113,113,0.9)]">
                 🔥 Featured
               </span>
             </div>

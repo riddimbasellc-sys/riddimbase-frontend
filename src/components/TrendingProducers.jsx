@@ -10,6 +10,7 @@ export default function TrendingProducers() {
   const { beats } = useBeats()
   const [followersMap, setFollowersMap] = useState({})
   const [proMap, setProMap] = useState({})
+  const [profileNames, setProfileNames] = useState({})
 
   // Group beats by producer
   const byProducer = useMemo(() => {
@@ -41,6 +42,36 @@ export default function TrendingProducers() {
         }
       }
       if (active) setFollowersMap(next)
+    })()
+    return () => {
+      active = false
+    }
+  }, [byProducer])
+
+  // Fetch producer display names so we show usernames instead of raw IDs
+  useEffect(() => {
+    const producerIds = Object.keys(byProducer)
+    if (!producerIds.length) {
+      setProfileNames({})
+      return
+    }
+    let active = true
+    ;(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, display_name, email')
+          .in('id', producerIds)
+        if (error || !data || !active) return
+        const next = {}
+        for (const row of data) {
+          const emailName = (row.email || '').split('@')[0] || null
+          next[row.id] = row.display_name || emailName || row.id
+        }
+        setProfileNames(next)
+      } catch {
+        if (active) setProfileNames({})
+      }
     })()
     return () => {
       active = false
@@ -83,7 +114,7 @@ export default function TrendingProducers() {
       const followers = followersMap[pid] || 0
       // Simple score: followers weighted highest, then plays, then catalog size
       const score = followers * 5 + plays * 1 + beatCount * 2
-      return { pid, beatCount, plays, followers, score }
+        return { pid, beatCount, plays, followers, score }
     })
     return entries
       .sort((a, b) => b.score - a.score)
@@ -103,7 +134,7 @@ export default function TrendingProducers() {
             <p className="text-xs font-semibold text-emerald-300">Producer</p>
             <p className="mt-1 text-sm font-medium text-slate-200 truncate">
               <span className="inline-flex items-center gap-1">
-                {row.pid}
+                {profileNames[row.pid] || row.pid}
                 {proMap[row.pid] && <VerifiedBadge className="h-4 w-4 text-sky-300" />}
               </span>
             </p>
