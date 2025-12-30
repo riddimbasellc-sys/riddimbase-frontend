@@ -8,8 +8,10 @@ import { useSiteSettings } from '../context/SiteSettingsContext'
 import { supabase } from '../lib/supabaseClient'
 import BeatCarousel from '../components/BeatCarousel'
 import { slugify } from '../utils/slugify'
+import useSupabaseUser from '../hooks/useSupabaseUser'
 
 export default function LandingPage() {
+  const { user, loading } = useSupabaseUser()
   const { beats } = useBeats()
   const navigate = useNavigate()
   const [heroSearch, setHeroSearch] = useState('')
@@ -70,6 +72,14 @@ export default function LandingPage() {
     navigate(target)
     setSearchOpen(false)
   }
+
+  useEffect(() => {
+    // If a user is already logged in, treat this as a marketing-only page
+    // and send them to the logged-in home instead of re-showing the landing.
+    if (!loading && user) {
+      navigate('/home', { replace: true })
+    }
+  }, [user, loading, navigate])
 
   useEffect(() => {
     ;(async () => {
