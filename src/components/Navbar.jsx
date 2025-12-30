@@ -45,7 +45,7 @@ export function Navbar({ onMobileMenuToggle = () => {} }) {
         {/* Top studio navigation tabs */}
         <div className="mb-2 flex items-center justify-center gap-2 md:gap-4">
           <NavLink
-            to="/"
+            to={user ? '/home' : '/'}
             className={({ isActive }) =>
               `px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.35em] transition-all duration-200 rounded-full border ${
                 isActive
@@ -89,7 +89,7 @@ export function Navbar({ onMobileMenuToggle = () => {} }) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h10" />
             </svg>
           </button>
-          <Link to="/" className="flex items-center gap-2">
+          <Link to={user ? '/home' : '/'} className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-red-500 via-red-600 to-amber-400 shadow-rb-gloss-btn">
               <span className="text-lg font-black tracking-tight text-white drop-shadow-rb-glow">RB</span>
             </div>
@@ -132,7 +132,7 @@ export function Navbar({ onMobileMenuToggle = () => {} }) {
 
         {/* Desktop row */}
         <div className="hidden items-center justify-between md:flex">
-          <Link to="/" className="flex items-center gap-2">
+          <Link to={user ? '/home' : '/'} className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-red-500 via-red-600 to-amber-400 shadow-rb-gloss-btn">
               <span className="text-lg font-black tracking-tight text-white drop-shadow-rb-glow">RB</span>
             </div>
@@ -156,7 +156,7 @@ export function Navbar({ onMobileMenuToggle = () => {} }) {
             ) : (
               <>
                 <NavLink
-                  to="/"
+                  to={user ? '/home' : '/'}
                   className={({ isActive }) =>
                     `hover:text-emerald-400 ${isActive ? 'text-emerald-400' : ''}`
                   }
