@@ -1,10 +1,49 @@
 import { Link } from 'react-router-dom'
 import { GenreChips } from './GenreChips'
+import { useSiteSettings } from '../context/SiteSettingsContext'
 
 export function Hero() {
+  const { settings } = useSiteSettings()
+  const heroSettings = settings?.hero || {}
+  const banners = heroSettings.banners || []
+  const activeBanner = banners.find((b) => b.active) || banners[0]
+  const mediaUrl = activeBanner?.backgroundUrl || ''
+  const heroBackgroundColor = heroSettings.backgroundColor || '#050505'
+
+  const hasMedia = !!mediaUrl
+  const isVideo = hasMedia && /\.(mp4|webm|ogg|mov)$/i.test(mediaUrl)
+
   return (
-    <section className="border-b border-slate-900/70 bg-rb-trop-radial">
-      <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4 py-8 md:flex-row md:items-center md:py-14">
+    <section
+      className={
+        hasMedia
+          ? 'relative overflow-hidden border-b border-slate-900/70'
+          : 'border-b border-slate-900/70 bg-rb-trop-radial'
+      }
+      style={hasMedia ? { backgroundColor: heroBackgroundColor } : undefined}
+    >
+      {hasMedia && (
+        <>
+          {isVideo ? (
+            <video
+              className="absolute inset-0 h-full w-full object-cover"
+              src={mediaUrl}
+              autoPlay
+              loop
+              muted
+              playsInline
+            />
+          ) : (
+            <img
+              className="absolute inset-0 h-full w-full object-cover"
+              src={mediaUrl}
+              alt={activeBanner?.title || 'Hero background'}
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-950/90 via-slate-950/60 to-slate-950/95" />
+        </>
+      )}
+      <div className="relative mx-auto flex max-w-6xl flex-col gap-10 px-4 py-8 md:flex-row md:items-center md:py-14">
         <div className="flex-1">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-rb-sun-gold drop-shadow-rb-glow">
             RiddimBase • Home of Caribbean Beats
