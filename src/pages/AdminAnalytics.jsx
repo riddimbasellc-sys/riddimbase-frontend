@@ -262,6 +262,24 @@ export function AdminAnalytics() {
     }
   }
 
+  const roleLabelFor = (role) => {
+    if (!role) return ''
+    switch (role) {
+      case 'producer':
+        return 'Producer'
+      case 'artist':
+        return 'Artist'
+      case 'beat maker':
+        return 'Beat Maker'
+      case 'mix-master engineer':
+        return 'Mix/Master Engineer'
+      case 'hybrid':
+        return 'Producer + Artist'
+      default:
+        return role
+    }
+  }
+
   const handleDeleteBeat = async (id) => {
     // eslint-disable-next-line no-alert
     if (!window.confirm('Delete this beat permanently?')) return
@@ -994,71 +1012,76 @@ export function AdminAnalytics() {
                 <div
                   className={`mt-3 space-y-3 ${adminUsers.length > 3 ? 'max-h-80 overflow-y-auto pr-1' : ''}`}
                 >
-                  {adminUsers.map((u) => (
-                    <div
-                      key={u.id}
-                      className="flex flex-col gap-2 rounded-xl border border-slate-800/80 bg-slate-900/80 p-3 md:flex-row md:items-center md:justify-between"
-                    >
-                      <div>
-                        <p className="text-[11px] font-semibold text-slate-100">
-                          {u.email}
-                          {u.banned && (
-                            <span className="ml-2 rounded-full bg-rose-600/20 px-2 py-0.5 text-[10px] text-rose-300">
-                              Banned
-                            </span>
-                          )}
-                          {u.producer && !u.banned && (
-                            <span className="ml-2 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-300">
-                              Producer
-                            </span>
-                          )}
-                        </p>
-                        <p className="text-[10px] text-slate-400">ID: {u.id}</p>
-                        {u.createdAt && (
-                          <p className="text-[10px] text-slate-500">
-                            Joined: {new Date(u.createdAt).toLocaleDateString()}
-                            {u.lastSignInAt
-                              ? ` • Last sign-in: ${new Date(u.lastSignInAt).toLocaleDateString()}`
-                              : ''}
+                  {adminUsers.map((u) => {
+                    const roleLabel = roleLabelFor(u.role)
+                    return (
+                      <div
+                        key={u.id}
+                        className="flex flex-col gap-2 rounded-xl border border-slate-800/80 bg-slate-900/80 p-3 md:flex-row md:items-center md:justify-between"
+                      >
+                        <div>
+                          <p className="text-[11px] font-semibold text-slate-100">
+                            {u.email}
+                            {u.banned && (
+                              <span className="ml-2 rounded-full bg-rose-600/20 px-2 py-0.5 text-[10px] text-rose-300">
+                                Banned
+                              </span>
+                            )}
+                            {!u.banned && roleLabel && (
+                              <span className="ml-2 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-300">
+                                {roleLabel}
+                              </span>
+                            )}
                           </p>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap gap-2 text-[11px]">
-                        <button
-                          type="button"
-                          onClick={() => handleViewProducerProfile(u.id)}
-                          className="rounded-full border border-slate-700/70 bg-slate-800/80 px-3 py-1 text-slate-200 hover:border-emerald-400/70 hover:text-emerald-200"
-                        >
-                          View Profile
-                        </button>
-                        {!u.banned && (
+                          <p className="text-[10px] text-slate-400">ID: {u.id}</p>
+                          {u.createdAt && (
+                            <p className="text-[10px] text-slate-500">
+                              Joined: {new Date(u.createdAt).toLocaleDateString()}
+                              {u.lastSignInAt
+                                ? ` • Last sign-in: ${new Date(u.lastSignInAt).toLocaleDateString()}`
+                                : ''}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2 text-[11px]">
                           <button
                             type="button"
-                            onClick={() => handleBanUser(u.id)}
-                            className="rounded-full border border-rose-600/40 px-3 py-1 text-rose-300 hover:bg-rose-600/10"
+                            onClick={() => handleViewProducerProfile(u.id)}
+                            className="rounded-full border border-slate-700/70 bg-slate-800/80 px-3 py-1 text-slate-200 hover:border-emerald-400/70 hover:text-emerald-200"
                           >
-                            Ban
+                            View Profile
                           </button>
-                        )}
-                        {!u.producer && !u.banned && (
+                          {!u.banned && (
+                            <button
+                              type="button"
+                              onClick={() => handleBanUser(u.id)}
+                              className="rounded-full border border-rose-600/40 px-3 py-1 text-rose-300 hover:bg-rose-600/10"
+                            >
+                              Ban
+                            </button>
+                          )}
+                          {!u.producer && !u.banned && (
+                            <button
+                              type="button"
+                              onClick={() => handleApproveProducer(u.id)}
+                              className="rounded-full border border-emerald-500/60 px-3 py-1 text-emerald-300 hover:bg-emerald-500/10"
+                            >
+                              {roleLabel
+                                ? `Approve ${roleLabel}`
+                                : 'Approve Producer'}
+                            </button>
+                          )}
                           <button
                             type="button"
-                            onClick={() => handleApproveProducer(u.id)}
-                            className="rounded-full border border-emerald-500/60 px-3 py-1 text-emerald-300 hover:bg-emerald-500/10"
+                            onClick={() => handleResetPassword(u.id)}
+                            className="rounded-full border border-slate-700/70 px-3 py-1 text-slate-300 hover:border-emerald-400/70"
                           >
-                            Approve Producer
+                            Reset Password
                           </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => handleResetPassword(u.id)}
-                          className="rounded-full border border-slate-700/70 px-3 py-1 text-slate-300 hover:border-emerald-400/70"
-                        >
-                          Reset Password
-                        </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                   {adminUsers.length === 0 && (
                     <p className="text-[11px] text-slate-500">No users.</p>
                   )}
