@@ -133,6 +133,17 @@ export function RecordingLab() {
     typeof navigator.mediaDevices.getUserMedia === 'function',
   )
 
+  // Best-effort: hint the browser to prefer landscape orientation for the lab.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const orientation = window.screen?.orientation
+    if (orientation && typeof orientation.lock === 'function') {
+      orientation.lock('landscape').catch(() => {
+        // Some browsers require full-screen or ignore this; fail silently.
+      })
+    }
+  }, [])
+
   const stopPlayheadAnimation = () => {
     if (playheadAnimFrameRef.current) {
       try {
@@ -2239,6 +2250,11 @@ export function RecordingLab() {
           </div>
         )}
 
+        {/* Mobile hint: encourage landscape without affecting desktop layout. */}
+        <div className="mt-3 rounded-xl border border-slate-800/80 bg-slate-950/80 px-3 py-2 text-[10px] text-slate-400 lg:hidden">
+          For the smoothest Recording Lab experience on your phone, rotate to landscape. The multitrack timeline scrolls left and right.
+        </div>
+
         <div
           className={`mt-6 flex-1 min-h-0 gap-4 transition-all lg:grid ${
             isArrangementFullscreen
@@ -2399,7 +2415,7 @@ export function RecordingLab() {
             </div>
           </div>
           {!isArrangementFullscreen && (
-            <div className="min-h-0">
+            <div className="min-h-0 hidden lg:block">
               <StudioSidebar
                 micStatus={micStatus}
                 onRequestMic={requestMic}

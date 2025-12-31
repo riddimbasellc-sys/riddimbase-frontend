@@ -225,7 +225,7 @@ export function ProducerProfile() {
           <BackButton />
           <h1 className="font-display text-xl font-semibold text-slate-50 sm:text-2xl">Producer Profile</h1>
         </div>
-        <div className="mt-6 rounded-3xl border border-slate-800/80 bg-slate-900/80 p-6 grid gap-8 md:grid-cols-[1.2fr,1fr]">
+        <div className="mt-6 grid gap-6 rounded-3xl border border-slate-800/80 bg-slate-900/80 p-4 md:grid-cols-[1.2fr,1fr] md:gap-8 md:p-6">
           <div className="space-y-6">
             <div className="flex items-start gap-5">
               <div className="h-28 w-28 overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 via-emerald-400 to-orange-500">

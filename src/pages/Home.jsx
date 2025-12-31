@@ -201,7 +201,7 @@ export function Home() {
                   <a href="/beats" className="text-[11px] font-medium text-emerald-300 hover:text-emerald-200 sm:text-xs">View all</a>
                 </div>
                 {loading && <p className="text-sm text-slate-400">Loading…</p>}
-                <div className="grid gap-3 grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                   {!loading &&
                     trending.map((b) => (
                       <BeatCard
