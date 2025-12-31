@@ -23,8 +23,8 @@ export default function CheckoutModal({ open, onClose, beat, license }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-labelledby="checkout-title">
-      <div className="w-full max-w-lg rb-panel p-5 space-y-5">
+    <div className="fixed inset-0 z-[200] flex items-end justify-center bg-slate-950/80 backdrop-blur-sm p-0 md:items-center md:p-4" role="dialog" aria-modal="true" aria-labelledby="checkout-title">
+      <div className="w-full max-w-lg rb-panel p-5 space-y-5 rounded-t-3xl max-h-[85vh] overflow-y-auto md:rounded-2xl md:max-h-none">
         <div className="flex items-center justify-between">
           <h2 id="checkout-title" className="text-sm font-semibold text-slate-100">Checkout</h2>
           <button onClick={onClose} className="rb-btn-outline">Close</button>

@@ -5,7 +5,7 @@ export default function ShareBeatModal({ beat, onClose }) {
   if (!beat) return null
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
   const slug = slugify(beat.title)
-  const url = `${origin}/beat/${beat.id}-${slug}`
+  const url = `${origin}/beat/${slug || beat.id}`
   const shareText = `Check out my new beat: ${beat.title}`
   const text = encodeURIComponent(`${shareText} - ${url}`)
 
@@ -47,8 +47,8 @@ export default function ShareBeatModal({ beat, onClose }) {
   }, [onClose])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div className="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-950/95 p-5 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-0 md:items-center md:p-4">
+      <div className="w-full max-w-sm rounded-t-2xl border border-slate-800 bg-slate-950/95 p-5 shadow-xl md:rounded-2xl md:mb-0 mb-safe">
         <h2 className="font-display text-lg font-semibold text-slate-100">Beat Uploaded!</h2>
         <p className="mt-1 text-xs text-slate-400">Share your beat instantly:</p>
         <div className="mt-3 flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2">

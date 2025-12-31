@@ -144,6 +144,7 @@ export function TrendingBeatCard({ beat, onAddedToCart }) {
           <img
             src={beat.coverUrl}
             alt={beat.title || 'Beat artwork'}
+            loading="lazy"
             className="h-full w-full object-cover"
           />
         ) : (
@@ -313,16 +314,16 @@ export function BeatCarousel({ beats, onAddedToCart }) {
       {/* Embla viewport */}
       <div
         ref={emblaRef}
-        className="overflow-hidden touch-pan-y overscroll-x-contain"
+        className="overflow-x-auto touch-pan-y overscroll-x-contain scrollbar-hide"
         tabIndex={0}
         onKeyDown={handleKeyDown}
         aria-label="Trending beats carousel"
       >
-        <div className="flex cursor-grab active:cursor-grabbing">
+        <div className="flex gap-4 cursor-grab active:cursor-grabbing snap-x snap-mandatory">
           {beats.map((beat) => (
             <div
               key={beat.id}
-              className="min-w-0 px-1 py-1 shrink-0 grow-0 basis-[80%] sm:basis-[60%] md:basis-1/3 lg:basis-1/5"
+              className="snap-start px-1 py-1 shrink-0 grow-0 min-w-[160px] basis-[70%] sm:basis-[50%] md:basis-1/3 lg:basis-1/5"
             >
               <div className="h-full w-full sm:h-auto">
                 <TrendingBeatCard beat={beat} onAddedToCart={onAddedToCart} />

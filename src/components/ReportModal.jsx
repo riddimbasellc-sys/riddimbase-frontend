@@ -33,8 +33,8 @@ export default function ReportModal({ open, onClose, targetId, type }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-labelledby="report-title">
-      <div className="w-full max-w-md rb-panel p-6">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/80 backdrop-blur-sm p-0 md:items-center md:p-4" role="dialog" aria-modal="true" aria-labelledby="report-title">
+      <div className="w-full max-w-md rb-panel p-6 rounded-t-3xl max-h-[85vh] overflow-y-auto md:rounded-2xl md:max-h-none">
         {!done && (
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
