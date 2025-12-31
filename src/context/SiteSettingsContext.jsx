@@ -8,6 +8,7 @@ import React, {
 } from 'react'
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+const STORAGE_KEY = 'rb_site_settings_v1'
 
 // Default design system settings for RiddimBase
 const defaultSettings = {
@@ -74,18 +75,44 @@ export function SiteSettingsProvider({ children }) {
     async function load() {
       setLoading(true)
       setError(null)
+      let stored = null
+      if (typeof window !== 'undefined') {
+        try {
+          const raw = window.localStorage.getItem(STORAGE_KEY)
+          if (raw) {
+            const parsed = JSON.parse(raw)
+            if (parsed && typeof parsed === 'object') {
+              stored = parsed
+            }
+          }
+        } catch (e) {
+          console.warn('[SiteSettings] failed to parse stored settings', e)
+        }
+      }
       try {
         const endpoint = API_BASE ? `${API_BASE}/api/settings` : '/api/settings'
         const res = await fetch(endpoint)
         if (!res.ok) throw new Error(`Failed to load settings (${res.status})`)
         const data = await res.json()
         if (!cancelled && data) {
-          setSettings((prev) => ({ ...prev, ...data }))
+          const merged = { ...defaultSettings, ...data }
+          setSettings(merged)
+          if (typeof window !== 'undefined') {
+            try {
+              window.localStorage.setItem(STORAGE_KEY, JSON.stringify(merged))
+            } catch (e) {
+              console.warn('[SiteSettings] failed to store settings', e)
+            }
+          }
         }
       } catch (err) {
         console.warn('[SiteSettings] fallback -> defaults:', err.message)
         if (!cancelled) {
-          setSettings(defaultSettings)
+          if (stored) {
+            setSettings({ ...defaultSettings, ...stored })
+          } else {
+            setSettings(defaultSettings)
+          }
           setError(err.message)
         }
       } finally {
@@ -144,11 +171,26 @@ export function SiteSettingsProvider({ children }) {
         })
         if (!res.ok) throw new Error(`Failed to save settings (${res.status})`)
         const data = await res.json()
-        setSettings(data || nextSettings)
+        const merged = data || nextSettings
+        setSettings(merged)
+        if (typeof window !== 'undefined') {
+          try {
+            window.localStorage.setItem(STORAGE_KEY, JSON.stringify(merged))
+          } catch (e) {
+            console.warn('[SiteSettings] failed to store settings after save', e)
+          }
+        }
       } catch (err) {
         console.error('[SiteSettings] save error', err)
         setError(err.message)
         setSettings(nextSettings)
+        if (typeof window !== 'undefined') {
+          try {
+            window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextSettings))
+          } catch (e) {
+            console.warn('[SiteSettings] failed to store fallback settings after save', e)
+          }
+        }
       } finally {
         setSaving(false)
       }
