@@ -439,7 +439,7 @@ export default function TrackTimeline({
 
       <div
         ref={containerRef}
-        className="mt-1 flex-1 overflow-x-auto overflow-y-auto rounded-xl border border-slate-800/80 bg-gradient-to-b from-slate-950/95 to-slate-950/98"
+        className="mt-1 flex-1 overflow-x-auto overflow-y-auto rounded-xl border border-slate-800/80 bg-gradient-to-b from-slate-950/95 to-slate-950/98 touch-pan-x overscroll-x-contain"
         onWheel={handleWheelZoom}
       >
         <div className="relative min-h-full" style={{ minWidth }}>
