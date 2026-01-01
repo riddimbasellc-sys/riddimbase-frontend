@@ -6,6 +6,7 @@ import useUnreadMessages from '../hooks/useUnreadMessages'
 const navItems = [
   { label: 'Dashboard', to: '/producer/dashboard', icon: DashboardIcon },
   { label: 'Upload Beat', to: '/producer/upload', icon: UploadIcon },
+  { label: 'Licenses', to: '/producer/licenses', icon: LicenseIcon },
   { label: 'Withdraw', to: '/producer/withdraw', icon: WalletIcon },
   { label: 'Inbox', to: '/producer/inbox', icon: InboxIcon },
   { label: 'Producer Pro', to: '/producer/pro', icon: SparkIcon }
@@ -80,3 +81,4 @@ function UploadIcon(props){return(<svg viewBox="0 0 24 24" fill="none" stroke="c
 function WalletIcon(props){return(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M20 7H4V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2Z"/><path d="M4 7h16v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7Z"/><path d="M16 12h.01"/></svg>)}
 function SparkIcon(props){return(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/><path d="M6 17l2-2 4 4 6-6 2 2"/><path d="M14 3l7 7-7 7-7-7 7-7Z"/></svg>)}
 function InboxIcon(props){return(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 3h18v13a2 2 0 0 1-2 2h-4l-2 3-2-3H5a2 2 0 0 1-2-2V3Z"/><path d="M7 8h10"/><path d="M7 12h5"/></svg>)}
+function LicenseIcon(props){return(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8"/><path d="M8 11h5"/><path d="M8 15h4"/></svg>)}

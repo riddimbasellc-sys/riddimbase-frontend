@@ -20,8 +20,23 @@ export default function CartPanel({ onClose }) {
               </div>
               <p className="text-[10px] text-slate-400 truncate">{it.beat?.genre} • {it.beat?.bpm} BPM</p>
               <div className="flex items-center gap-2">
-                <select value={it.license} onChange={e=>updateLicense && updateLicense(it.beatId, e.target.value)} className="rounded-lg border border-slate-700/70 bg-slate-950/70 px-2 py-1 text-[11px] text-slate-100">
-                  {['Basic','Premium','Unlimited','Exclusive'].map(l => <option key={l}>{l}</option>)}
+                <select
+                  value={it.license}
+                  onChange={e =>
+                    updateLicense && updateLicense(it.beatId, e.target.value)
+                  }
+                  className="rounded-lg border border-slate-700/70 bg-slate-950/70 px-2 py-1 text-[11px] text-slate-100"
+                >
+                  {(() => {
+                    const lp = it.beat?.licensePrices || it.beat?.license_prices
+                    const keys = lp && typeof lp === 'object' ? Object.keys(lp) : []
+                    const options = keys.length
+                      ? keys
+                      : ['Basic', 'Premium', 'Unlimited', 'Exclusive']
+                    return options.map((l) => (
+                      <option key={l}>{l}</option>
+                    ))
+                  })()}
                 </select>
                 <span className="ml-auto text-[11px] font-semibold text-emerald-300">${it.quote?.total.toFixed(2)}</span>
               </div>
