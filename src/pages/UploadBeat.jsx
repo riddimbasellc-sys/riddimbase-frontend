@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import FilePickerButton from '../components/FilePickerButton'
 import BackButton from '../components/BackButton'
-import { createBeat, countBeatsForUser } from '../services/beatsRepository'
+import { createBeat, countBeatsForUser, countBeatsForUserInCurrentMonth } from '../services/beatsRepository'
 import ShareBeatModal from '../components/ShareBeatModal'
 import { useNavigate } from 'react-router-dom'
 import { uploadArtwork, uploadBundle, uploadBeatWithMetadata } from '../services/storageService'
@@ -62,6 +62,7 @@ export function UploadBeat() {
   const [artworkPreviewUrl, setArtworkPreviewUrl] = useState(null)
   const [audioPreviewUrl, setAudioPreviewUrl] = useState(null)
   const [userBeatsCount, setUserBeatsCount] = useState(0)
+  const [userMonthlyBeatsCount, setUserMonthlyBeatsCount] = useState(0)
   const [producerLicenses, setProducerLicenses] = useState([])
   const [selectedLicenseIds, setSelectedLicenseIds] = useState([])
   const [licenseOverrides, setLicenseOverrides] = useState({})
@@ -104,6 +105,26 @@ export function UploadBeat() {
       active = false
     }
   }, [user?.id])
+
+  // Monthly upload count for Starter plan (100 uploads per month).
+  useEffect(() => {
+    let active = true
+
+    async function loadMonthlyBeatCount() {
+      if (!user?.id || plan !== 'starter') {
+        if (active) setUserMonthlyBeatsCount(0)
+        return
+      }
+      const count = await countBeatsForUserInCurrentMonth(user.id)
+      if (active) setUserMonthlyBeatsCount(count || 0)
+    }
+
+    loadMonthlyBeatCount()
+
+    return () => {
+      active = false
+    }
+  }, [user?.id, plan])
 
   // Load producer license templates for selection
   useEffect(() => {
@@ -309,7 +330,27 @@ export function UploadBeat() {
   }
 
   const remainingFree = Math.max(0, 5 - userBeatsCount)
-  const limitReached = plan === 'free' && userBeatsCount >= 5
+  const isFreePlan = plan === 'free'
+  const isStarterPlan = plan === 'starter'
+  const FREE_UPLOAD_LIMIT = 5
+  const STARTER_UPLOAD_LIMIT = 100
+
+  const usedUploads = isFreePlan
+    ? userBeatsCount
+    : isStarterPlan
+    ? userMonthlyBeatsCount
+    : 0
+
+  const uploadLimit = isFreePlan
+    ? FREE_UPLOAD_LIMIT
+    : isStarterPlan
+    ? STARTER_UPLOAD_LIMIT
+    : null
+
+  const uploadsRemaining =
+    uploadLimit !== null ? Math.max(0, uploadLimit - usedUploads) : null
+
+  const limitReached = uploadLimit !== null && usedUploads >= uploadLimit
 
   const canContinueFromStep1 = !!audioFile
   const canContinueFromStep2 = !!title && !!genre && !!bpm && !!price
@@ -350,14 +391,28 @@ export function UploadBeat() {
           <h1 className="font-display text-2xl font-semibold text-slate-50">Upload Beat</h1>
         </div>
         <p className="mt-1 text-sm text-slate-300">Provide metadata, files & pricing. Preview updates live.</p>
-        {!loading && plan === 'free' && !limitReached && (
+        {!loading && uploadLimit !== null && !limitReached && (
           <div className="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-[11px] text-emerald-300">
-            Free plan: {remainingFree} of 5 complimentary uploads left.
+            {isFreePlan && (
+              <>
+                Free plan: {uploadsRemaining} of {FREE_UPLOAD_LIMIT} complimentary uploads left.
+              </>
+            )}
+            {isStarterPlan && (
+              <>
+                Starter plan: {uploadsRemaining} of {STARTER_UPLOAD_LIMIT} uploads remaining this month.
+              </>
+            )}
           </div>
         )}
         {!loading && limitReached && (
           <div className="mt-4 rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-[11px] text-rose-300">
-            Limit reached (5 uploads). Upgrade for unlimited catalog growth.
+            {isFreePlan && (
+              <>Limit reached ({FREE_UPLOAD_LIMIT} uploads). Upgrade for more catalog growth.</>
+            )}
+            {isStarterPlan && (
+              <>Starter limit reached ({STARTER_UPLOAD_LIMIT} uploads this month). Upgrade to Pro for unlimited uploads.</>
+            )}
             <div className="mt-3 flex gap-2">
               <button onClick={()=>navigate('/pricing')} className="rounded-full bg-emerald-500 px-4 py-2 text-xs font-semibold text-slate-950 hover:bg-emerald-400 transition">View Plans</button>
             </div>
