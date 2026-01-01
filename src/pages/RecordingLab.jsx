@@ -26,6 +26,8 @@ export function RecordingLab() {
   const [insufficientCredits, setInsufficientCredits] = useState(false)
   const [sessionCharged, setSessionCharged] = useState(false)
 
+  const [autosaveEnabled, setAutosaveEnabled] = useState(true)
+
   const [selectedBeat, setSelectedBeat] = useState(null)
   const [beatVolume, setBeatVolume] = useState(0.8)
   const [isBeatPlaying, setIsBeatPlaying] = useState(false)
@@ -2139,14 +2141,14 @@ export function RecordingLab() {
     if (!user?.id) return undefined
 
     const interval = setInterval(() => {
-      if (sessionBusy) return
+      if (!autosaveEnabled || sessionBusy) return
       autoSaveSession()
     }, 60_000)
 
     return () => {
       clearInterval(interval)
     }
-  }, [user?.id, sessionBusy, selectedSessionId, selectedBeat, beatClip, vocalTracks.length])
+  }, [user?.id, autosaveEnabled, sessionBusy, selectedSessionId, selectedBeat, beatClip, vocalTracks.length])
 
   return (
     <section className="studio-shell min-h-screen lg:h-screen lg:overflow-hidden">
@@ -2230,6 +2232,19 @@ export function RecordingLab() {
               title={user ? 'Save current session' : 'Log in to save sessions'}
             >
               {selectedSessionId ? 'Save' : 'Save session'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setAutosaveEnabled((v) => !v)}
+              className={`h-9 rounded-full border px-3 text-[10px] font-semibold uppercase tracking-[0.18em] transition ${
+                autosaveEnabled
+                  ? 'border-emerald-500/70 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/15'
+                  : 'border-slate-700/80 bg-slate-900/80 text-slate-300 hover:border-emerald-400/70'
+              }`}
+              title="Toggle automatic session autosave every 60 seconds"
+            >
+              Autosave: {autosaveEnabled ? 'On' : 'Off'}
             </button>
 
             <span className="rounded-full border border-red-500/70 bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-red-300">Beta</span>
