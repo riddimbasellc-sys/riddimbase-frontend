@@ -277,6 +277,9 @@ export default function AudioClip({
 
   return (
     <div className={`relative ${className}`} style={{ height }}>
+      {!src && (
+        <div className="pointer-events-none absolute inset-0 rounded-sm bg-gradient-to-r from-slate-600/60 to-slate-400/60" />
+      )}
       <div
         ref={hostRef}
         tabIndex={0}
@@ -288,9 +291,6 @@ export default function AudioClip({
         ref={overlayRef}
         className="pointer-events-none absolute inset-0"
       />
-      {!src && (
-        <div className="absolute inset-0 rounded-sm bg-gradient-to-r from-slate-600/60 to-slate-400/60" />
-      )}
     </div>
   )
 }
