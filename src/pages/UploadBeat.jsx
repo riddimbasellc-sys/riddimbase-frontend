@@ -412,8 +412,8 @@ export function UploadBeat() {
                     <div
                       className="mt-2 flex min-h-[160px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-slate-700/80 bg-slate-950/80 p-4 text-center text-[11px] text-slate-300 hover:border-emerald-400/70 hover:bg-slate-950"
                       onClick={() => {
-                        const input = document.getElementById('upload-audio-input') as HTMLInputElement | null
-                        if (input) input.click()
+                        const input = document.getElementById('upload-audio-input')
+                        if (input instanceof HTMLInputElement) input.click()
                       }}
                       onDragOver={(e) => {
                         e.preventDefault()
