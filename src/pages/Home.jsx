@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Hero } from '../components/Hero'
-import { BeatCard } from '../components/BeatCard'
+import { TrendingBeatCard } from '../components/BeatCarousel'
 import { useBeats } from '../hooks/useBeats'
 import FeaturedCarousel from '../components/FeaturedCarousel'
 import GenreFilters from '../components/GenreFilters'
@@ -155,13 +155,7 @@ export function Home() {
                   .filter(b => boostedMap.has(b.id))
                   .slice(0,4)
                   .map(b => (
-                    <BeatCard
-                      key={b.id}
-                      {...b}
-                      coverUrl={b.coverUrl || null}
-                      audioUrl={b.audioUrl}
-                      sponsored={true}
-                    />
+                    <TrendingBeatCard key={b.id} beat={b} />
                   ))}
               </div>
             </section>
@@ -204,13 +198,7 @@ export function Home() {
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                   {!loading &&
                     trending.map((b) => (
-                      <BeatCard
-                        key={b.id}
-                        {...b}
-                        coverUrl={b.coverUrl || null}
-                        audioUrl={b.audioUrl}
-                        square
-                      />
+                      <TrendingBeatCard key={b.id} beat={b} />
                     ))}
                 </div>
               </div>
