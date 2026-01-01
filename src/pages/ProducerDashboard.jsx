@@ -543,9 +543,36 @@ export function ProducerDashboard() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {/* Space reserved for quick actions on wide screens; wraps on mobile */}
+                <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                  <a
+                    href="/producer/upload"
+                    className="rounded-full bg-emerald-500 px-4 py-1.5 font-semibold text-slate-950 shadow-rb-gloss-btn hover:bg-emerald-400"
+                  >
+                    Upload New Beat
+                  </a>
+                  <a
+                    href="/producer/licenses"
+                    className="rounded-full border border-slate-700/80 bg-slate-900/80 px-4 py-1.5 font-medium text-slate-100 hover:border-emerald-400/70"
+                  >
+                    Manage Licenses
+                  </a>
+                  <a
+                    href="/producer/withdraw"
+                    className="rounded-full border border-slate-700/80 bg-slate-900/80 px-4 py-1.5 font-medium text-slate-100 hover:border-emerald-400/70"
+                  >
+                    Withdraw Earnings
+                  </a>
                 </div>
+              </div>
+              {/* Sticky summary stats on desktop */}
+              <div className="mt-4 hidden gap-4 lg:grid lg:grid-cols-4">
+                <StatCard label="Total earnings" value={`$${earnings.toFixed(2)}`} />
+                <StatCard
+                  label="Available balance"
+                  value={`$${availableBalance.toFixed(2)}`}
+                />
+                <StatCard label="Beats in catalog" value={myBeats.length} />
+                <StatCard label="Monthly sales" value={monthSales} />
               </div>
             </div>
 
@@ -687,7 +714,7 @@ export function ProducerDashboard() {
               </div>
             </div>
 
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 overflow-x-hidden">
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 overflow-x-hidden lg:hidden">
             <StatCard label="Total earnings" value={`$${earnings.toFixed(2)}`} />
             <StatCard
               label="Available balance"
@@ -899,12 +926,12 @@ export function ProducerDashboard() {
               </div>
             </div>
             <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-4 space-y-5 shadow-rb-gloss-panel">
-              <h2 className="text-sm font-semibold text-slate-100">Next steps</h2>
+              <h2 className="text-sm font-semibold text-slate-100">Monetization &amp; Payouts</h2>
               <ul className="mt-3 space-y-2 text-xs text-slate-300">
                 <li>• Upload more beats to increase catalog depth.</li>
-                <li>• Create open riddims to attract collaborations.</li>
-                <li>• Configure payout method & withdraw earnings.</li>
-                <li>• Monitor pending withdrawals to manage cash flow.</li>
+                <li>• Configure payout methods and withdraw earnings regularly.</li>
+                <li>• Monitor pending withdrawals and collab wallet to manage cash flow.</li>
+                <li>• Experiment with boosts and jobs to grow reach.</li>
               </ul>
               <a
                 href="/producer/upload"
