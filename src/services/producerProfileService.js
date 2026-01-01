@@ -1,17 +1,15 @@
 import { supabase } from '../lib/supabaseClient'
 
 // Supabase-backed producer profile service.
-// Expects 'profiles' table with columns:
-// id (UUID), display_name, avatar_url, role, youtube_url, bio, website,
-// instagram, twitter_x, country, phone, banner_url.
+// Uses the 'profiles' table as written by EditProfile/useUserProfile.
 
 export async function getProducerProfile(producerId) {
   if (!producerId) return null
   const { data, error } = await supabase
     .from('profiles')
-    .select(
-      'id, display_name, avatar_url, role, youtube_url, bio, website, instagram, twitter_x, country, phone, banner_url',
-    )
+    // Use wildcard so we don't break if new optional columns
+    // (like banner_url) are not yet added to the database.
+    .select('*')
     .eq('id', producerId)
     .maybeSingle()
   if (error) {
@@ -50,13 +48,13 @@ export async function setProducerProfile(producerId, patch) {
     send.twitter_x = patch.twitterX || patch.twitter_x
   if (patch.country) send.country = patch.country
   if (patch.phone) send.phone = patch.phone
+  // Optional banner field; only send if present so we don't
+  // break older schemas that don't have banner_url yet.
    if (patch.bannerUrl || patch.banner_url) send.banner_url = patch.bannerUrl || patch.banner_url
   const { data, error } = await supabase
     .from('profiles')
     .upsert(send)
-    .select(
-      'id, display_name, avatar_url, role, youtube_url, bio, website, instagram, twitter_x, country, phone, banner_url',
-    )
+    .select('*')
     .maybeSingle()
   if (error) {
     console.warn('[producerProfileService] upsert error', error.message)
