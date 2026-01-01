@@ -1,9 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
+import {
+  fetchThreads,
+  fetchProfilesByIds,
+  fetchMessages as fetchPairMessages,
+  sendMessage as sendDirectMessage,
+} from '../../services/socialService'
 
-const PAGE_SIZE = 40
+const PAGE_SIZE = 50
 
-// TODO: Align these table/column names with your actual Supabase schema
+// Producer Inbox hook backed by the existing messages table used by ChatWidget.
+// Conversations are grouped by other user, using fetchThreads + fetchMessages.
 
 export function useProducerChat(currentUser) {
   const [conversations, setConversations] = useState([])
@@ -14,39 +21,53 @@ export function useProducerChat(currentUser) {
   const [hasMore, setHasMore] = useState(true)
   const [typingUsers, setTypingUsers] = useState([])
 
-  // Load conversations for the current producer
+  // Load conversations for the current producer from the existing messages table.
   const refreshConversations = useCallback(async () => {
     if (!currentUser) return
     setConversationsLoading(true)
-    const { data, error } = await supabase
-      .from('chat_participants')
-      .select(
-        'conversation_id, role, chat_conversations(id, last_message_at, last_message_preview, other_user_id, other_user_name, other_user_avatar_url, unread_count)',
-      )
-      .eq('user_id', currentUser.id)
-      .order('chat_conversations.last_message_at', { ascending: false })
+    try {
+      const threads = await fetchThreads({ userId: currentUser.id, limit: 40 })
+      if (!threads || !threads.length) {
+        setConversations([])
+        return
+      }
 
-    if (!error && data) {
-      const mapped = data
-        .map((row) => row.chat_conversations)
-        .filter(Boolean)
-        .map((c) => ({
-          id: c.id,
-          otherUserId: c.other_user_id,
-          otherUserName: c.other_user_name,
-          otherUserAvatarUrl: c.other_user_avatar_url,
-          lastMessagePreview: c.last_message_preview,
-          lastMessageAt: c.last_message_at,
-          unreadCount: c.unread_count,
-        }))
+      const otherIds = threads.map((t) => t.otherUserId)
+      const profiles = await fetchProfilesByIds(otherIds)
+      const profileById = new Map((profiles || []).map((p) => [p.id, p]))
+
+      const mapped = threads.map(({ otherUserId, last }) => {
+        const profile = profileById.get(otherUserId) || {}
+        const displayName =
+          profile.display_name || profile.username || profile.email || 'User'
+        const avatarUrl = profile.avatar_url || null
+        const hasAttachment = !!last.attachment_url
+        const previewBase = last.content && last.content.trim().length > 0 ? last.content : ''
+        const lastMessagePreview =
+          previewBase || (hasAttachment ? '[Attachment]' : '') || ''
+
+        return {
+          id: otherUserId,
+          otherUserId,
+          otherUserName: displayName,
+          otherUserAvatarUrl: avatarUrl,
+          lastMessagePreview,
+          lastMessageAt: last.created_at,
+          // Per-thread unread counts can be added later; default to 0 for now.
+          unreadCount: 0,
+        }
+      })
 
       setConversations(mapped)
       if (!activeConversationId && mapped.length > 0) {
         setActiveConversationId(mapped[0].id)
       }
+    } catch (e) {
+      console.warn('[useProducerChat] refreshConversations failed', e)
+      setConversations([])
+    } finally {
+      setConversationsLoading(false)
     }
-
-    setConversationsLoading(false)
   }, [currentUser, activeConversationId])
 
   useEffect(() => {
@@ -67,94 +88,108 @@ export function useProducerChat(currentUser) {
   }, [activeConversationId, conversations])
 
   const loadMessages = useCallback(
-    async ({ conversationId, before } = {}) => {
-      const id = conversationId || activeConversationId
-      if (!id || !currentUser || messagesLoading) return
+    async ({ otherUserId } = {}) => {
+      const targetId = otherUserId || activeConversationId
+      if (!targetId || !currentUser || messagesLoading) return
       setMessagesLoading(true)
-
-      let query = supabase
-        .from('chat_messages')
-        .select('*')
-        .eq('conversation_id', id)
-        .order('created_at', { ascending: false })
-        .limit(PAGE_SIZE)
-
-      if (before) {
-        query = query.lt('created_at', before)
+      try {
+        const data = await fetchPairMessages({
+          userId: currentUser.id,
+          otherUserId: targetId,
+          limit: PAGE_SIZE,
+        })
+        setMessages(Array.isArray(data) ? data : [])
+        setHasMore(false)
+      } catch (e) {
+        console.warn('[useProducerChat] loadMessages failed', e)
+        setMessages([])
+        setHasMore(false)
+      } finally {
+        setMessagesLoading(false)
       }
-
-      const { data, error } = await query
-      setMessagesLoading(false)
-      if (error || !data) return
-
-      const sorted = [...data].reverse()
-      setMessages((prev) => (before ? [...sorted, ...prev] : sorted))
-      setHasMore(data.length === PAGE_SIZE)
     },
     [activeConversationId, currentUser, messagesLoading],
   )
 
   useEffect(() => {
-    if (!activeConversationId) return
-    loadMessages({ conversationId: activeConversationId })
+    if (!activeConversationId) {
+      setMessages([])
+      return
+    }
+    loadMessages({ otherUserId: activeConversationId })
   }, [activeConversationId, loadMessages])
 
   // TODO: Add realtime subscription + presence for typing indicators
 
   const sendMessage = useCallback(
     async ({ conversationId, text, attachment }) => {
-      if (!currentUser || !conversationId) return
-      let type = 'text'
-      let attachmentFields = {}
+      const otherUserId = conversationId
+      if (!currentUser || !otherUserId) return
 
-      if (attachment) {
-        // TODO: Upload file via your existing upload service and set attachment_url
-        type = attachment.type
-        attachmentFields = {
-          type,
-          // attachment_url: uploadedUrl,
-          attachment_name: attachment.file.name,
+      let attachmentUrl = null
+      let attachmentType = null
+      let attachmentName = null
+
+      if (attachment && attachment.file) {
+        try {
+          // Defer to the same chat attachment upload path used by ChatWidget
+          const { uploadChatAttachment } = await import('../../services/storageService')
+          const { publicUrl } = await uploadChatAttachment(attachment.file)
+          if (publicUrl) {
+            attachmentUrl = publicUrl
+            attachmentType = attachment.file.type || attachment.type || 'file'
+            attachmentName = attachment.file.name
+          }
+        } catch (e) {
+          console.warn('[useProducerChat] attachment upload failed', e)
         }
       }
 
-      const payload = {
-        conversation_id: conversationId,
-        sender_id: currentUser.id,
-        type,
-        content: text || null,
-        ...attachmentFields,
-      }
+      const res = await sendDirectMessage({
+        senderId: currentUser.id,
+        recipientId: otherUserId,
+        content: text,
+        attachmentUrl,
+        attachmentType,
+        attachmentName,
+      })
 
-      const { error } = await supabase.from('chat_messages').insert(payload)
-      if (error) {
-        console.error('sendMessage error', error)
+      if (res?.limitReached) {
+        // socialService already returns a friendly error message
+        // eslint-disable-next-line no-alert
+        alert(
+          res.error ||
+            'Free plan messaging limit reached. Upgrade your plan for unlimited messages.',
+        )
         return
       }
 
-      // Keep conversation list metadata in sync
-      const now = new Date().toISOString()
-      let preview = text || ''
-      if (!preview && attachment) {
-        if (type === 'image') preview = '[Image]'
-        else if (type === 'audio') preview = '[Audio]'
-        else preview = '[File]'
-      }
+      if (!res?.success || !res.message) return
 
-      await supabase
-        .from('chat_conversations')
-        .update({
-          last_message_at: now,
-          last_message_preview: preview,
-        })
-        .eq('id', conversationId)
+      setMessages((prev) => [...prev, res.message])
+      refreshConversations()
     },
-    [currentUser],
+    [currentUser, refreshConversations],
   )
 
-  const clearChat = useCallback(async (conversationId) => {
-    await supabase.from('chat_messages').delete().eq('conversation_id', conversationId)
-    setMessages([])
-  }, [])
+  const clearChat = useCallback(
+    async (otherUserId) => {
+      if (!currentUser || !otherUserId) return
+      try {
+        await supabase
+          .from('messages')
+          .delete()
+          .or(
+            `and(sender_id.eq.${currentUser.id},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${currentUser.id})`,
+          )
+        setMessages([])
+        refreshConversations()
+      } catch (e) {
+        console.warn('[useProducerChat] clearChat failed', e)
+      }
+    },
+    [currentUser, refreshConversations],
+  )
 
   const blockUser = useCallback(
     async (userId) => {
@@ -167,75 +202,34 @@ export function useProducerChat(currentUser) {
     [currentUser],
   )
 
-  // When producer selects a user from search, open existing conversation or create a new one
+  // When producer selects a user from search, open (or create) a conversation based on messages.
   const startConversationWithUser = useCallback(
     async (user) => {
       if (!currentUser || !user?.id) return
 
-      const [{ data: myRows }, { data: theirRows }] = await Promise.all([
-        supabase
-          .from('chat_participants')
-          .select('conversation_id')
-          .eq('user_id', currentUser.id),
-        supabase
-          .from('chat_participants')
-          .select('conversation_id')
-          .eq('user_id', user.id),
-      ])
+      const otherUserId = user.id
 
-      const mine = new Set((myRows || []).map((r) => r.conversation_id))
-      const shared = (theirRows || []).find((r) => mine.has(r.conversation_id))
+      setConversations((prev) => {
+        if (prev.some((c) => c.otherUserId === otherUserId)) return prev
+        return [
+          {
+            id: otherUserId,
+            otherUserId,
+            otherUserName:
+              user.display_name || user.username || user.email || 'User',
+            otherUserAvatarUrl: user.avatar_url || null,
+            lastMessagePreview: null,
+            lastMessageAt: null,
+            unreadCount: 0,
+          },
+          ...prev,
+        ]
+      })
 
-      let conversationId = shared?.conversation_id || null
-      let createdConversation = null
-
-      if (!conversationId) {
-        const { data: created, error: convError } = await supabase
-          .from('chat_conversations')
-          .insert({
-            subject: user.display_name || user.username || user.email || 'Conversation',
-          })
-          .select('*')
-          .single()
-
-        if (convError || !created) return
-
-        conversationId = created.id
-        createdConversation = created
-
-        await supabase.from('chat_participants').insert([
-          { conversation_id: conversationId, user_id: currentUser.id, role: 'producer' },
-          { conversation_id: conversationId, user_id: user.id, role: 'member' },
-        ])
-      }
-
-      if (conversationId && createdConversation) {
-        setConversations((prev) => {
-          if (prev.some((c) => c.id === conversationId)) return prev
-          return [
-            {
-              id: conversationId,
-              otherUserId: user.id,
-              otherUserName:
-                user.display_name || user.username || user.email || 'Conversation',
-              otherUserAvatarUrl: user.avatar_url || null,
-              lastMessagePreview: null,
-              lastMessageAt: null,
-              unreadCount: 0,
-            },
-            ...prev,
-          ]
-        })
-      } else if (conversationId && !createdConversation) {
-        // Ensure list reflects an existing conversation we just reused
-        refreshConversations()
-      }
-
-      if (conversationId) {
-        setActiveConversationId(conversationId)
-      }
+      setActiveConversationId(otherUserId)
+      loadMessages({ otherUserId })
     },
-    [currentUser, refreshConversations],
+    [currentUser, loadMessages],
   )
 
   const reportUser = useCallback(

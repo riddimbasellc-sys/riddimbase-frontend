@@ -1,8 +1,28 @@
 import { useRef, useState } from 'react'
 
+const EMOJI_PICKER_EMOJIS = [
+  '😀',
+  '😃',
+  '😄',
+  '😁',
+  '😆',
+  '😎',
+  '😍',
+  '🤩',
+  '🔥',
+  '🎧',
+  '🎵',
+  '🎶',
+  '🥁',
+  '💰',
+  '✅',
+  '❌',
+]
+
 export function MessageInput({ disabled, onSend }) {
   const [text, setText] = useState('')
   const [attachment, setAttachment] = useState(null)
+  const [emojiOpen, setEmojiOpen] = useState(false)
   const fileInputRef = useRef(null)
 
   const handleKeyDown = (e) => {
@@ -34,9 +54,13 @@ export function MessageInput({ disabled, onSend }) {
     fileInputRef.current?.click()
   }
 
-  // TODO: Wire up an actual emoji picker library
   const handleEmoji = () => {
-    setText((prev) => `${prev}🔥`)
+    setEmojiOpen((open) => !open)
+  }
+
+  const handleEmojiSelect = (emoji) => {
+    setText((prev) => `${prev || ''}${emoji}`)
+    setEmojiOpen(false)
   }
 
   return (
@@ -50,6 +74,22 @@ export function MessageInput({ disabled, onSend }) {
         >
           <span className="text-sm">🙂</span>
         </button>
+        {emojiOpen && (
+          <div className="absolute bottom-full left-0 mb-2 w-64 rounded-2xl border border-slate-800/80 bg-slate-950/95 p-2 text-lg shadow-xl z-20">
+            <div className="flex flex-wrap gap-1">
+              {EMOJI_PICKER_EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => handleEmojiSelect(emoji)}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900/80 hover:bg-slate-800/90"
+                >
+                  <span>{emoji}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <button
           type="button"
           onClick={triggerFile}
