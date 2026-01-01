@@ -11,6 +11,7 @@ import { getSubscription, isProducerProPlanId } from '../services/subscriptionSe
 import { supabase } from '../lib/supabaseClient'
 import YouTubePreview from '../components/YouTubePreview'
 import ProviderReviews from '../components/ProviderReviews'
+import { getTotalPlaysForBeats, loadPlayCountsForBeats } from '../services/analyticsService'
 
 const PAGE_SIZE = 24
 
@@ -36,6 +37,7 @@ export default function ProducerStorefront() {
   const [following, setFollowing] = useState(false)
   const [authPrompt, setAuthPrompt] = useState('')
   const [activeTab, setActiveTab] = useState('beats')
+  const [metricsLoaded, setMetricsLoaded] = useState(false)
 
   // Resolve slug-style producer URLs to an ID (same logic as ProducerProfile)
   useEffect(() => {
@@ -170,6 +172,27 @@ export default function ProducerStorefront() {
     }
   }, [producerId])
 
+  // Load live play metrics for this producer's beats
+  useEffect(() => {
+    const ids = (beats || []).map((b) => b.id).filter(Boolean)
+    if (!ids.length) {
+      setMetricsLoaded(false)
+      return
+    }
+    let active = true
+    ;(async () => {
+      try {
+        await loadPlayCountsForBeats(ids)
+        if (active) setMetricsLoaded(true)
+      } catch {
+        if (active) setMetricsLoaded(false)
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [beats])
+
   const handleLoadMoreBeats = async () => {
     if (!producerId || !beatsHasMore) return
     try {
@@ -251,22 +274,20 @@ export default function ProducerStorefront() {
       totalBeats === 0
         ? 0
         : beats.reduce((sum, b) => sum + (Number(b.bpm) || 0), 0) / totalBeats
-    const totalPlays = beats.reduce(
+    const beatIds = beats.map((b) => b.id).filter(Boolean)
+    const metricsTotal = metricsLoaded ? getTotalPlaysForBeats(beatIds) : 0
+    const fallbackTotal = beats.reduce(
       (sum, b) => sum + (Number(b.play_count || b.playCount || 0) || 0),
       0,
     )
-    const totalSales = beats.reduce(
-      (sum, b) => sum + (Number(b.sales_count || b.salesCount || 0) || 0),
-      0,
-    )
+    const totalPlays = metricsTotal || fallbackTotal
     return {
       totalBeats,
       totalPlays,
-      totalSales,
       avgBpm,
       rating: profile?.rating || null,
     }
-  }, [beats, profile])
+  }, [beats, profile, metricsLoaded])
 
   const ratingLabel = stats.rating ? stats.rating.toFixed(1) : 'New'
 
@@ -363,7 +384,18 @@ export default function ProducerStorefront() {
                       className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-700/80 bg-slate-900/80 text-[11px] text-slate-200 hover:border-emerald-400/70"
                     >
                       <span className="sr-only">Website</span>
-                      <span>🌐</span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        className="h-3.5 w-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                      >
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="M3 12h18" />
+                        <path d="M12 3a15.3 15.3 0 0 1 4 9 15.3 15.3 0 0 1-4 9 15.3 15.3 0 0 1-4-9 15.3 15.3 0 0 1 4-9z" />
+                      </svg>
                     </a>
                   )}
                   {profile?.instagram && (
@@ -378,7 +410,18 @@ export default function ProducerStorefront() {
                       className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-700/80 bg-slate-900/80 text-[11px] text-slate-200 hover:border-emerald-400/70"
                     >
                       <span className="sr-only">Instagram</span>
-                      <span>📸</span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        className="h-3.5 w-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                      >
+                        <rect x="4" y="4" width="16" height="16" rx="4" />
+                        <circle cx="12" cy="12" r="3.5" />
+                        <circle cx="17" cy="7" r="0.8" fill="currentColor" />
+                      </svg>
                     </a>
                   )}
                   {profile?.tiktok && (
@@ -389,7 +432,14 @@ export default function ProducerStorefront() {
                       className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-700/80 bg-slate-900/80 text-[11px] text-slate-200 hover:border-emerald-400/70"
                     >
                       <span className="sr-only">TikTok</span>
-                      <span>🎵</span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        className="h-3.5 w-3.5"
+                        fill="currentColor"
+                      >
+                        <path d="M16.75 4.5c.4 1.2 1.3 2.2 2.5 2.6v3a6.7 6.7 0 01-3.5-1.1v5.5a4.75 4.75 0 11-4.75-4.75c.3 0 .6 0 .9.1v3.1a1.9 1.9 0 10-1.9 1.7A1.9 1.9 0 0012 14V5h3.1c.2.6.9 1 1.65 1.1Z" />
+                      </svg>
                     </a>
                   )}
                   {youtubeUrl && (
@@ -400,7 +450,15 @@ export default function ProducerStorefront() {
                       className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-700/80 bg-slate-900/80 text-[11px] text-slate-200 hover:border-emerald-400/70"
                     >
                       <span className="sr-only">YouTube</span>
-                      <span>▶</span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        className="h-3.5 w-3.5"
+                        fill="currentColor"
+                      >
+                        <path d="M21.6 7.2s-.2-1.5-.8-2.1c-.8-.8-1.7-.8-2.1-.9C15.2 4 12 4 12 4s-3.2 0-6.7.2c-.4.1-1.3.1-2.1.9-.6.6-.8 2.1-.8 2.1S2.2 8.9 2.2 10.6v1.7c0 1.7.2 3.4.2 3.4s.2 1.5.8 2.1c.8.8 1.9.8 2.4.9 1.8.2 7.4.2 7.4.2s3.2 0 6.7-.2c.4-.1 1.3-.1 2.1-.9.6-.6.8-2.1.8-2.1s.2-1.7.2-3.4v-1.7c0-1.7-.2-3.4-.2-3.4Z" />
+                        <path d="M10 14.8V8.8l5 3-5 3Z" />
+                      </svg>
                     </a>
                   )}
                 </div>
@@ -410,11 +468,10 @@ export default function ProducerStorefront() {
         </div>
 
         {/* Stats bar */}
-        <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
           <StatCard label="Total Beats" value={stats.totalBeats} />
           <StatCard label="Total Plays" value={stats.totalPlays} />
-          <StatCard label="Total Sales" value={stats.totalSales} />
-          <StatCard label="Average BPM" value={stats.totalBeats ? stats.avgBpm.toFixed(1) : '—'} />
+          <StatCard label="Average BPM" value={stats.totalBeats ? stats.avgBpm.toFixed(1) : ''} />
           <StatCard label="Rating" value={ratingLabel} />
         </div>
 

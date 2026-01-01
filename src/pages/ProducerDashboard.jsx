@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import ProducerLayout from '../components/ProducerLayout'
 import ProfileShareModal from '../components/ProfileShareModal'
 import { BeatCard } from '../components/BeatCard'
@@ -20,7 +20,7 @@ import { queryJobRequests } from '../services/serviceJobRequestsService'
 import { fetchProducerMetrics } from '../services/producerMetricsService'
 import { createBeat, deleteBeat as deleteBeatRemote } from '../services/beatsRepository'
 import { listSoundkitsForUser } from '../services/soundkitsRepository'
-import { uploadArtwork, uploadBundle, uploadFeedAttachment } from '../services/storageService'
+import { uploadArtwork, uploadBundle, uploadFeedAttachment, uploadStorefrontBanner } from '../services/storageService'
 import { createPost } from '../services/feedService'
 import { getCollaboratorWallet, listCollaboratorSplitEntries } from '../services/collabEarningsService'
 import ChatWidget from '../components/ChatWidget'
@@ -90,6 +90,8 @@ export function ProducerDashboard() {
   const [collabPayoutSubmitting, setCollabPayoutSubmitting] = useState(false)
   const [collabPayoutAmount, setCollabPayoutAmount] = useState('')
   const [collabToast, setCollabToast] = useState('')
+  const bannerFileInputRef = useRef(null)
+  const [bannerUploading, setBannerUploading] = useState(false)
 
   useEffect(() => {
     if (!loading && !user) navigate('/login')
@@ -1049,16 +1051,94 @@ export function ProducerDashboard() {
                   }}
                   className="space-y-3"
                 >
-                  <div>
+                  <div className="space-y-2">
                     <label className="mb-1 block text-[10px] font-semibold text-slate-300">
-                      Banner image URL
+                      Store banner
                     </label>
+                    {storeBanner && (
+                      <div className="relative h-20 overflow-hidden rounded-lg border border-slate-800/80 bg-slate-900/80">
+                        <img
+                          src={storeBanner}
+                          alt="Current storefront banner"
+                          className="h-full w-full object-cover opacity-90"
+                        />
+                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-slate-950/40 via-transparent to-slate-950/40" />
+                      </div>
+                    )}
+                    <div
+                      className="group flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-700/80 bg-slate-900/60 px-3 py-3 text-center hover:border-emerald-400/80 hover:bg-slate-900/90"
+                      onClick={() => bannerFileInputRef.current?.click()}
+                      onDragOver={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                      }}
+                      onDrop={async (e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        const file = e.dataTransfer?.files?.[0]
+                        if (!file) return
+                        try {
+                          setBannerUploading(true)
+                          const { publicUrl } = await uploadStorefrontBanner(file)
+                          setStoreBanner(publicUrl || '')
+                        } catch (err) {
+                          console.error('Failed to upload banner', err)
+                        } finally {
+                          setBannerUploading(false)
+                        }
+                      }}
+                    >
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-800/90 text-emerald-300 shadow-sm">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          className="h-3.5 w-3.5"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                        >
+                          <path d="M12 5v10" />
+                          <path d="M8.5 8.5 12 5l3.5 3.5" />
+                          <rect x="4" y="13" width="16" height="6" rx="2" />
+                        </svg>
+                      </div>
+                      <p className="text-[11px] font-medium text-slate-100">
+                        {bannerUploading ? 'Uploading banner…' : 'Drag & drop banner image'}
+                      </p>
+                      <p className="text-[10px] text-slate-400">
+                        or click to browse · JPG/PNG · 1600x400+
+                      </p>
+                    </div>
                     <input
-                      value={storeBanner}
-                      onChange={(e) => setStoreBanner(e.target.value)}
-                      placeholder="https://…/your-banner.jpg"
-                      className="w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-2 py-1.5 text-[11px] text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/70 focus:outline-none"
+                      ref={bannerFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        try {
+                          setBannerUploading(true)
+                          const { publicUrl } = await uploadStorefrontBanner(file)
+                          setStoreBanner(publicUrl || '')
+                        } catch (err) {
+                          console.error('Failed to upload banner', err)
+                        } finally {
+                          setBannerUploading(false)
+                        }
+                      }}
                     />
+                    <div className="pt-1">
+                      <label className="mb-1 block text-[10px] font-semibold text-slate-400">
+                        Or paste image URL
+                      </label>
+                      <input
+                        value={storeBanner}
+                        onChange={(e) => setStoreBanner(e.target.value)}
+                        placeholder="https://…/your-banner.jpg"
+                        className="w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-2 py-1.5 text-[11px] text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/70 focus:outline-none"
+                      />
+                    </div>
                   </div>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                     <div>
@@ -1098,10 +1178,14 @@ export function ProducerDashboard() {
                   <div className="flex flex-wrap items-center gap-2 pt-1">
                     <button
                       type="submit"
-                      disabled={storeSaving}
+                      disabled={storeSaving || bannerUploading}
                       className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-3 py-1.5 text-[11px] font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-60"
                     >
-                      {storeSaving ? 'Saving…' : 'Save storefront'}
+                      {storeSaving || bannerUploading
+                        ? bannerUploading
+                          ? 'Uploading…'
+                          : 'Saving…'
+                        : 'Save storefront'}
                     </button>
                     <a
                       href={`/profile/edit`}
