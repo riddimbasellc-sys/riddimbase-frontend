@@ -49,7 +49,7 @@ export function ProducerInbox() {
   const canChat = !!user
 
   return (
-    <div className="flex h-full min-h-[480px] max-h-[calc(100vh-6rem)] rounded-3xl border border-slate-800/80 bg-slate-950/95 backdrop-blur-2xl shadow-[0_24px_80px_rgba(15,23,42,0.9)] overflow-hidden">
+    <div className="flex h-full min-h-[480px] max-h-[calc(100vh-8rem)] rounded-3xl border border-slate-800/80 bg-slate-950/95 backdrop-blur-2xl shadow-[0_24px_80px_rgba(15,23,42,0.9)]">
       <ConversationList
         conversations={conversations}
         loading={conversationsLoading}
