@@ -76,6 +76,7 @@ import ProducerStore from './pages/ProducerStore'
 import RecordingLab from './pages/RecordingLab'
 import StudioCredits from './pages/StudioCredits'
 import CookieConsent from './components/CookieConsent'
+import ProducerLicenses from './pages/ProducerLicenses'
 
 function App() {
   const { isAdmin } = useAdminRole()
@@ -105,6 +106,8 @@ function App() {
         <Route path="/producers" element={<Producers />} />
         <Route path="/favorites" element={<Favorites />} />
         <Route path="/producer/upload" element={<UploadBeat />} />
+        <Route path="/producer/licenses" element={<ProducerLicenses />} />
+        <Route path="/dashboard/licenses" element={<ProducerLicenses />} />
         <Route path="/producer/soundkits" element={<UploadSoundkit />} />
         <Route path="/producer/withdraw" element={<WithdrawEarnings />} />
         <Route path="/producer/inbox" element={<ProducerInbox />} />
