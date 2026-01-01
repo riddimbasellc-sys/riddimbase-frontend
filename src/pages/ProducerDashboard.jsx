@@ -65,10 +65,15 @@ export function ProducerDashboard() {
     beatId: null,
     title: '',
   })
-  const { profile } = useUserProfile()
+  const { profile, updateProfile } = useUserProfile()
   const accountType = profile?.accountType || ''
   const roleTokens = accountType.split('+').map(t => t.trim().toLowerCase()).filter(Boolean)
   const isMixEngineer = roleTokens.includes('mix-master engineer') || roleTokens.includes('mixing') || roleTokens.includes('engineer')
+  const [storeBanner, setStoreBanner] = useState(profile?.bannerUrl || '')
+  const [storeInstagram, setStoreInstagram] = useState(profile?.instagram || '')
+  const [storeYoutube, setStoreYoutube] = useState(profile?.youtube || '')
+  const [storeWebsite, setStoreWebsite] = useState(profile?.website || '')
+  const [storeSaving, setStoreSaving] = useState(false)
   const [playCounts, setPlayCounts] = useState({})
   const [statusText, setStatusText] = useState('')
   const [statusUploading, setStatusUploading] = useState(false)
@@ -287,6 +292,15 @@ export function ProducerDashboard() {
   }, [user, metricKind, rangeKey, customFrom, customTo])
 
   const [earnings, setEarnings] = useState(0)
+
+  // Keep storefront form inputs in sync when profile loads/changes
+  useEffect(() => {
+    if (!profile) return
+    setStoreBanner(profile.bannerUrl || '')
+    setStoreInstagram(profile.instagram || '')
+    setStoreYoutube(profile.youtube || '')
+    setStoreWebsite(profile.website || '')
+  }, [profile])
 
   useEffect(() => {
     let active = true
@@ -1013,24 +1027,96 @@ export function ProducerDashboard() {
                 )}
               </div>
               <div className="mt-4 rounded-xl border border-slate-800/80 bg-slate-900/90 p-4 text-xs">
-                <h3 className="text-[11px] font-semibold text-slate-100 mb-1">Storefront</h3>
+                <h3 className="text-[11px] font-semibold text-slate-100 mb-2">Storefront</h3>
                 <p className="text-[11px] text-slate-400 mb-3">
-                  Customize how your public producer store looks and quickly preview it as artists see it.
+                  Update your public store banner and social links directly from your dashboard.
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <a
-                    href={`/profile/edit`}
-                    className="rounded-full border border-slate-700/80 bg-slate-800/80 px-3 py-1.5 text-[11px] font-medium text-slate-200 hover:border-emerald-400/70"
-                  >
-                    Edit branding &amp; socials
-                  </a>
-                  <a
-                    href={`/producer/${user.id}/store`}
-                    className="rounded-full bg-emerald-500 px-3 py-1.5 text-[11px] font-semibold text-slate-950 hover:bg-emerald-400"
-                  >
-                    Preview storefront
-                  </a>
-                </div>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault()
+                    if (!updateProfile) return
+                    try {
+                      setStoreSaving(true)
+                      await updateProfile({
+                        bannerUrl: storeBanner,
+                        instagram: storeInstagram,
+                        youtube: storeYoutube,
+                        website: storeWebsite,
+                      })
+                    } finally {
+                      setStoreSaving(false)
+                    }
+                  }}
+                  className="space-y-3"
+                >
+                  <div>
+                    <label className="mb-1 block text-[10px] font-semibold text-slate-300">
+                      Banner image URL
+                    </label>
+                    <input
+                      value={storeBanner}
+                      onChange={(e) => setStoreBanner(e.target.value)}
+                      placeholder="https://…/your-banner.jpg"
+                      className="w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-2 py-1.5 text-[11px] text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/70 focus:outline-none"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    <div>
+                      <label className="mb-1 block text-[10px] font-semibold text-slate-300">
+                        Instagram
+                      </label>
+                      <input
+                        value={storeInstagram}
+                        onChange={(e) => setStoreInstagram(e.target.value)}
+                        placeholder="@yourhandle or url"
+                        className="w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-2 py-1.5 text-[11px] text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/70 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[10px] font-semibold text-slate-300">
+                        YouTube
+                      </label>
+                      <input
+                        value={storeYoutube}
+                        onChange={(e) => setStoreYoutube(e.target.value)}
+                        placeholder="Channel or video URL"
+                        className="w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-2 py-1.5 text-[11px] text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/70 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[10px] font-semibold text-slate-300">
+                        Website
+                      </label>
+                      <input
+                        value={storeWebsite}
+                        onChange={(e) => setStoreWebsite(e.target.value)}
+                        placeholder="yourdomain.com"
+                        className="w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-2 py-1.5 text-[11px] text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/70 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <button
+                      type="submit"
+                      disabled={storeSaving}
+                      className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-3 py-1.5 text-[11px] font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-60"
+                    >
+                      {storeSaving ? 'Saving…' : 'Save storefront'}
+                    </button>
+                    <a
+                      href={`/profile/edit`}
+                      className="inline-flex items-center gap-1 rounded-full border border-slate-700/80 bg-slate-800/80 px-3 py-1.5 text-[11px] font-medium text-slate-200 hover:border-emerald-400/70"
+                    >
+                      Advanced profile settings
+                    </a>
+                    <a
+                      href={`/producer/${user.id}/store`}
+                      className="inline-flex items-center gap-1 rounded-full border border-slate-700/80 bg-slate-900/80 px-3 py-1.5 text-[11px] font-medium text-slate-200 hover:border-emerald-400/70"
+                    >
+                      Preview storefront
+                    </a>
+                  </div>
+                </form>
               </div>
             </div>
           </div>
