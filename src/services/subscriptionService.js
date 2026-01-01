@@ -11,7 +11,7 @@ export async function getSubscription(userId) {
     const { data, error } = await supabase
       .from('subscriptions')
       .select(
-        'id,user_id,plan_id,status,auto_renew,current_period_end,cancel_at_period_end,provider_subscription_id',
+        'id,user_id,plan_id,status,auto_renew,current_period_end,cancel_at_period_end,provider_subscription_id,billing_cycle',
       )
       .eq('user_id', userId)
       .in('status', ACTIVE_STATUSES)
@@ -34,6 +34,7 @@ export async function getSubscription(userId) {
       expiresAt: data.current_period_end,
       cancelAtPeriodEnd: !!data.cancel_at_period_end,
       providerSubscriptionId: data.provider_subscription_id || null,
+      billingCycle: data.billing_cycle || null,
     }
   } catch (e) {
     console.warn('[subscriptionService] getSubscription exception', e)
