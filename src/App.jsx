@@ -72,7 +72,7 @@ import UploadSoundkit from './pages/UploadSoundkit'
 import Soundkits from './pages/Soundkits'
 import Feed from './pages/Feed'
 import { MultiCheckout } from './pages/MultiCheckout'
-import ProducerStore from './pages/ProducerStore'
+import ProducerStorefront from './pages/ProducerStorefront'
 import RecordingLab from './pages/RecordingLab'
 import StudioCredits from './pages/StudioCredits'
 import CookieConsent from './components/CookieConsent'
@@ -102,7 +102,7 @@ function App() {
         <Route path="/producer/dashboard" element={<ProducerDashboard />} />
         <Route path="/producer/pro" element={<ProducerPro />} />
         <Route path="/producer/:producerId" element={<ProducerProfile />} />
-        <Route path="/producer/:producerId/store" element={<ProducerStore />} />
+        <Route path="/producer/:producerId/store" element={<ProducerStorefront />} />
         <Route path="/producers" element={<Producers />} />
         <Route path="/favorites" element={<Favorites />} />
         <Route path="/producer/upload" element={<UploadBeat />} />
