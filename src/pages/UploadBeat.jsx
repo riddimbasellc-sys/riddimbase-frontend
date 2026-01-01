@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import { uploadArtwork, uploadBundle, uploadAudio, uploadBeatWithMetadata } from '../services/storageService'
 import useUserPlan from '../hooks/useUserPlan'
 import { BeatCard } from '../components/BeatCard'
+import { listProducerLicenses, setBeatLicenses } from '../services/licenseService'
 
 const GENRES = [
   'Dancehall',
@@ -60,6 +61,8 @@ export function UploadBeat() {
   const [artworkPreviewUrl, setArtworkPreviewUrl] = useState(null)
   const [audioPreviewUrl, setAudioPreviewUrl] = useState(null)
   const [userBeatsCount, setUserBeatsCount] = useState(0)
+  const [producerLicenses, setProducerLicenses] = useState([])
+  const [selectedLicenseIds, setSelectedLicenseIds] = useState([])
 
   // cancellation tokens
   const [artworkToken, setArtworkToken] = useState(null)
@@ -93,6 +96,27 @@ export function UploadBeat() {
 
     loadUserBeatCount()
 
+    return () => {
+      active = false
+    }
+  }, [user?.id])
+
+  // Load producer license templates for selection
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      if (!user?.id) {
+        if (active) {
+          setProducerLicenses([])
+          setSelectedLicenseIds([])
+        }
+        return
+      }
+      const rows = await listProducerLicenses(user.id)
+      if (!active) return
+      setProducerLicenses(rows)
+      setSelectedLicenseIds(rows.map((l) => l.id))
+    })()
     return () => {
       active = false
     }
@@ -138,6 +162,10 @@ export function UploadBeat() {
     setError('')
     if (!audioFile) {
       setError('Please upload a preview audio file for your beat.')
+      return
+    }
+    if (!selectedLicenseIds.length) {
+      setError('Select at least one license to offer for this beat. Manage licenses from your Licenses dashboard.')
       return
     }
     setUploadingBeat(true)
@@ -191,12 +219,21 @@ export function UploadBeat() {
     const supabaseUntaggedUrl = untaggedUrl || null
     const supabaseCoverUrl = artworkUrl || null
     const supabaseBundleUrl = bundleUrl || null
-    const licensePrices = {
-      Basic: basicPrice,
-      Premium: premiumPrice,
-      Unlimited: unlimitedPrice,
-      Exclusive: exclusivePrice,
-    }
+    const attachedLicenses = producerLicenses.filter((l) =>
+      selectedLicenseIds.includes(l.id),
+    )
+    const licensePrices = attachedLicenses.length
+      ? attachedLicenses.reduce((acc, lic) => {
+          const key = lic.name
+          if (!key) return acc
+          return { ...acc, [key]: Number(lic.price || 0) }
+        }, {})
+      : {
+          Basic: basicPrice,
+          Premium: premiumPrice,
+          Unlimited: unlimitedPrice,
+          Exclusive: exclusivePrice,
+        }
 
     // 3) Optionally patch Supabase row with extra URLs (untagged / artwork / bundle)
     try {
@@ -215,10 +252,10 @@ export function UploadBeat() {
             audio_url: createdBeat.audio_url,
             untagged_url: supabaseUntaggedUrl,
             cover_url: supabaseCoverUrl,
-            bundle_url: supabaseBundleUrl,
-          bundle_name: bundleFile?.name || createdBeat.bundle_name || null,
-          license_prices: createdBeat.license_prices || licensePrices,
-          free_download: createdBeat.free_download ?? freeDownload,
+      bundle_url: supabaseBundleUrl,
+      bundle_name: bundleFile?.name || createdBeat.bundle_name || null,
+      license_prices: createdBeat.license_prices || licensePrices,
+      free_download: createdBeat.free_download ?? freeDownload,
         })
       }
     } catch (err) {
@@ -240,6 +277,15 @@ export function UploadBeat() {
       }
     } catch (e) {
       console.warn('[UploadBeat] collaborator save failed', e)
+    }
+
+    // Attach selected licenses to beat
+    try {
+      if (createdBeat?.id && selectedLicenseIds.length) {
+        await setBeatLicenses(createdBeat.id, selectedLicenseIds)
+      }
+    } catch (e) {
+      console.warn('[UploadBeat] setBeatLicenses failed', e)
     }
 
     setUploadingBeat(false)
@@ -507,6 +553,72 @@ export function UploadBeat() {
                       <p className="text-[10px] text-slate-500">Full rights · one buyer</p>
                     </div>
                   </div>
+                </div>
+                <div className="mt-5 rounded-2xl border border-slate-800/80 bg-slate-950/80 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        License selection
+                      </p>
+                      <p className="mt-1 text-[11px] text-slate-400">
+                        Choose which of your license templates apply to this beat.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/producer/licenses')}
+                      className="rounded-full border border-slate-700/80 px-3 py-1 text-[10px] font-semibold text-slate-200 hover:border-emerald-400/70 hover:text-emerald-200"
+                    >
+                      Manage Licenses
+                    </button>
+                  </div>
+                  {producerLicenses.length === 0 ? (
+                    <p className="mt-3 text-[11px] text-slate-500">
+                      You have no license templates yet. Create them from the
+                      Licenses page in your producer dashboard.
+                    </p>
+                  ) : (
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      {producerLicenses.map((lic) => {
+                        const active = selectedLicenseIds.includes(lic.id)
+                        return (
+                          <button
+                            key={lic.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedLicenseIds((prev) =>
+                                prev.includes(lic.id)
+                                  ? prev.filter((id) => id !== lic.id)
+                                  : [...prev, lic.id],
+                              )
+                            }}
+                            className={`flex items-center justify-between rounded-xl border px-3 py-2 text-left text-[11px] transition ${
+                              active
+                                ? 'border-emerald-400/80 bg-emerald-500/10 text-emerald-100'
+                                : 'border-slate-800/80 bg-slate-950/80 text-slate-200 hover:border-emerald-400/60'
+                            }`}
+                          >
+                            <div>
+                              <p className="text-[11px] font-semibold">
+                                {lic.name}
+                              </p>
+                              <p className="mt-0.5 text-[10px] text-slate-400">
+                                ${Number(lic.price || 0).toFixed(2)}
+                                {lic.is_exclusive && ' • Exclusive'}
+                              </p>
+                            </div>
+                            <span className="text-[10px] font-semibold">
+                              {active ? 'Selected' : 'Select'}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                  <p className="mt-2 text-[10px] text-slate-500">
+                    Buyers will see one card per selected license on the beat
+                    details page.
+                  </p>
                 </div>
                 {error && <p className="text-xs text-red-400">{error}</p>}
                 <button type="submit" className="mt-2 rounded-full bg-emerald-500 px-6 py-2 text-xs font-semibold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-60" disabled={limitReached || uploadingBeat || (audioProgress>0 && audioProgress<100) || (artworkProgress>0 && artworkProgress<100) || (bundleProgress>0 && bundleProgress<100)}>{uploadingBeat ? 'Saving…' : 'Publish Beat'}</button>

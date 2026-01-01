@@ -28,6 +28,7 @@ import { useCart } from '../context/CartContext'
 import ReportModal from '../components/ReportModal'
 import { useBeats } from '../hooks/useBeats'
 import { getPlayCount, loadPlayCountsForBeats } from '../services/analyticsService'
+import { listLicensesForBeat } from '../services/licenseService'
 
 export function BeatDetails() {
   const params = useParams()
@@ -65,6 +66,7 @@ export function BeatDetails() {
   const [commentText, setCommentText] = useState('')
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false)
   const [plays, setPlays] = useState(0)
+  const [dynamicLicenses, setDynamicLicenses] = useState([])
   const formatCount = (n) => {
     const num = Number(n || 0)
     if (!Number.isFinite(num)) return '0'
@@ -116,6 +118,19 @@ export function BeatDetails() {
       if (producerId) setFollowing(await isFollowing({ followerId: user.id, producerId }))
     }
   })() }, [id, user, producerId])
+  // Load dynamic licenses for this beat (if configured)
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      if (!id) return
+      const rows = await listLicensesForBeat(id)
+      if (!active) return
+      setDynamicLicenses(rows || [])
+    })()
+    return () => {
+      active = false
+    }
+  }, [id])
   // Fallback to Supabase if not in local cache
   useEffect(()=> { (async () => {
     if (locationBeat || !id) return
@@ -281,22 +296,62 @@ export function BeatDetails() {
   }, [beat, allBeats])
 
   const licensePrices = useMemo(() => {
-    const fallback = {
+    if (!beat) return {}
+    const lp = beat.licensePrices || beat.license_prices
+    if (lp && typeof lp === 'object') return lp
+    return {}
+  }, [beat])
+
+  const licenseOptions = useMemo(() => {
+    if (dynamicLicenses && dynamicLicenses.length) {
+      return dynamicLicenses.map((lic) => ({
+        key: lic.name,
+        full: lic.name,
+        desc: lic.notes || 'Custom license set by producer.',
+        price:
+          licensePrices?.[lic.name] != null
+            ? licensePrices[lic.name]
+            : Number(lic.price || beat?.price || 0),
+        meta: lic,
+      }))
+    }
+    // Fallback to legacy four tiers
+    const fallbackPrices = {
       Basic: 29,
       Premium: 59,
       Unlimited: 149,
       Exclusive: 399,
     }
-    if (!beat) return fallback
-    const lp = beat.licensePrices || beat.license_prices
-    if (!lp) return fallback
-    return {
-      Basic: lp.Basic ?? lp.basic ?? fallback.Basic,
-      Premium: lp.Premium ?? lp.premium ?? fallback.Premium,
-      Unlimited: lp.Unlimited ?? lp.unlimited ?? fallback.Unlimited,
-      Exclusive: lp.Exclusive ?? lp.exclusive ?? fallback.Exclusive,
-    }
-  }, [beat])
+    const lp = licensePrices && Object.keys(licensePrices).length
+      ? { ...fallbackPrices, ...licensePrices }
+      : fallbackPrices
+    return [
+      {
+        key: 'Basic',
+        full: 'Basic MP3 License',
+        desc: 'MP3 file, non-exclusive, up to 50k streams.',
+        price: lp.Basic,
+      },
+      {
+        key: 'Premium',
+        full: 'Premium WAV License',
+        desc: 'WAV + MP3, non-exclusive, up to 200k streams.',
+        price: lp.Premium,
+      },
+      {
+        key: 'Unlimited',
+        full: 'Unlimited License',
+        desc: 'Untagged files, unlimited streams, monetization.',
+        price: lp.Unlimited,
+      },
+      {
+        key: 'Exclusive',
+        full: 'Exclusive Rights',
+        desc: 'Full exclusive rights, beat removed after purchase.',
+        price: lp.Exclusive,
+      },
+    ]
+  }, [dynamicLicenses, licensePrices, beat])
 
   return (
     <section className="bg-slate-950/95">
@@ -428,38 +483,18 @@ export function BeatDetails() {
                 </div>
               )}
               <div className="mt-4 grid gap-3 md:grid-cols-2">
-                <LicenseRow
-                  name="Basic"
-                  full="Basic MP3 License"
-                  desc="MP3 file, non-exclusive, up to 50k streams."
-                  price={licensePrices.Basic}
-                  active={selected==='Basic'}
-                  onSelect={()=>setSelected('Basic')}
-                />
-                <LicenseRow
-                  name="Premium"
-                  full="Premium WAV License"
-                  desc="WAV + MP3, non-exclusive, up to 200k streams."
-                  price={licensePrices.Premium}
-                  active={selected==='Premium'}
-                  onSelect={()=>setSelected('Premium')}
-                />
-                <LicenseRow
-                  name="Unlimited"
-                  full="Unlimited License"
-                  desc="Untagged files, unlimited streams, monetization."
-                  price={licensePrices.Unlimited}
-                  active={selected==='Unlimited'}
-                  onSelect={()=>setSelected('Unlimited')}
-                />
-                <LicenseRow
-                  name="Exclusive"
-                  full="Exclusive Rights"
-                  desc="Full exclusive rights, beat removed after purchase."
-                  price={licensePrices.Exclusive}
-                  active={selected==='Exclusive'}
-                  onSelect={()=>setSelected('Exclusive')}
-                />
+                {licenseOptions.map((opt) => (
+                  <LicenseRow
+                    key={opt.key}
+                    name={opt.key}
+                    full={opt.full}
+                    desc={opt.desc}
+                    price={opt.price}
+                    active={selected === opt.key}
+                    onSelect={() => setSelected(opt.key)}
+                    meta={opt.meta}
+                  />
+                ))}
               </div>
               <TermsPreview selected={selected} />
               <div className="mt-4 flex flex-col gap-2">
@@ -492,13 +527,9 @@ export function BeatDetails() {
                   className={`w-full rounded-full px-4 py-2 text-xs font-semibold ${selected ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400' : 'bg-slate-700/60 text-slate-400 cursor-not-allowed'}`}
                 >
                   {selected
-                    ? `Buy Now - $${selected==='Basic'
-                      ? licensePrices.Basic
-                      : selected==='Premium'
-                      ? licensePrices.Premium
-                      : selected==='Unlimited'
-                      ? licensePrices.Unlimited
-                      : licensePrices.Exclusive}`
+                    ? `Buy Now - $${Number(
+                        licensePrices?.[selected] ?? beat?.price ?? 0,
+                      ).toFixed(2)}`
                     : 'Select a License'}
                 </button>
                 <button disabled={!selected} onClick={handleAddToCart} className={`w-full rounded-full px-4 py-2 text-xs font-semibold ${selected ? 'bg-slate-800 text-slate-200 hover:bg-slate-700' : 'bg-slate-700/60 text-slate-400 cursor-not-allowed'}`}>Add to Cart</button>
@@ -604,7 +635,7 @@ export function BeatDetails() {
   )
 }
 
-function LicenseRow({ name, full, desc, price, active, onSelect }) {
+function LicenseRow({ name, full, desc, price, active, onSelect, meta }) {
   const [show, setShow] = useState(false)
   const terms = (LICENSE_TERMS[name] && LICENSE_TERMS[name].length) ? LICENSE_TERMS[name] : DEFAULT_TERMS
   const snippet = terms.slice(0,2)
@@ -614,6 +645,45 @@ function LicenseRow({ name, full, desc, price, active, onSelect }) {
         <div className="flex-1">
           <p className={`text-xs font-semibold ${active ? 'text-emerald-300' : 'text-slate-100'}`}>{full}</p>
           <p className={`mt-0.5 text-[11px] ${active ? 'text-emerald-200/80' : 'text-slate-400'}`}>{desc}</p>
+          {meta && (
+            <div className="mt-1 flex flex-wrap gap-1 text-[10px] text-slate-300">
+              {meta.streams_allowed != null && (
+                <span className="rounded-full bg-slate-900/80 px-2 py-[2px]">
+                  🎧 {meta.streams_allowed.toLocaleString()} streams
+                </span>
+              )}
+              {meta.downloads_allowed != null && (
+                <span className="rounded-full bg-slate-900/80 px-2 py-[2px]">
+                  ⬇ {meta.downloads_allowed.toLocaleString()} downloads
+                </span>
+              )}
+              {meta.distribution_allowed && (
+                <span className="rounded-full bg-slate-900/80 px-2 py-[2px]">
+                  🌐 Distribution
+                </span>
+              )}
+              {meta.radio_allowed && (
+                <span className="rounded-full bg-slate-900/80 px-2 py-[2px]">
+                  📻 Radio
+                </span>
+              )}
+              {meta.music_video_allowed && (
+                <span className="rounded-full bg-slate-900/80 px-2 py-[2px]">
+                  🎬 Music Video
+                </span>
+              )}
+              {meta.stems_included && (
+                <span className="rounded-full bg-slate-900/80 px-2 py-[2px]">
+                  🎚 Stems
+                </span>
+              )}
+              {meta.is_exclusive && (
+                <span className="rounded-full bg-amber-500/15 px-2 py-[2px] text-amber-300">
+                  Exclusive
+                </span>
+              )}
+            </div>
+          )}
           {show && (
             <ul className="mt-1 space-y-0.5">
               {snippet.map((t,i)=>(<li key={i} className="text-[10px] text-slate-500">• {t}</li>))}
