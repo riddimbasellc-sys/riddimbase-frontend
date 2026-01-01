@@ -5,6 +5,7 @@ import {
   fetchProfilesByIds,
   fetchMessages as fetchPairMessages,
   sendMessage as sendDirectMessage,
+  markThreadRead,
 } from '../../services/socialService'
 
 const PAGE_SIZE = 50
@@ -36,6 +37,25 @@ export function useProducerChat(currentUser) {
       const profiles = await fetchProfilesByIds(otherIds)
       const profileById = new Map((profiles || []).map((p) => [p.id, p]))
 
+      // Fetch unread counts per other user (messages where they sent to the current user and read_at is null).
+      const unreadBySender = {}
+      if (otherIds.length) {
+        const { data: unreadRows, error: unreadError } = await supabase
+          .from('messages')
+          .select('sender_id')
+          .eq('recipient_id', currentUser.id)
+          .is('read_at', null)
+          .in('sender_id', otherIds)
+
+        if (!unreadError && Array.isArray(unreadRows)) {
+          unreadRows.forEach((row) => {
+            const sid = row.sender_id
+            if (!sid) return
+            unreadBySender[sid] = (unreadBySender[sid] || 0) + 1
+          })
+        }
+      }
+
       const mapped = threads.map(({ otherUserId, last }) => {
         const profile = profileById.get(otherUserId) || {}
         const displayName =
@@ -53,8 +73,7 @@ export function useProducerChat(currentUser) {
           otherUserAvatarUrl: avatarUrl,
           lastMessagePreview,
           lastMessageAt: last.created_at,
-          // Per-thread unread counts can be added later; default to 0 for now.
-          unreadCount: 0,
+          unreadCount: unreadBySender[otherUserId] || 0,
         }
       })
 
@@ -100,6 +119,18 @@ export function useProducerChat(currentUser) {
         })
         setMessages(Array.isArray(data) ? data : [])
         setHasMore(false)
+
+        // Mark this thread as read now that it has been opened.
+        try {
+          await markThreadRead({ userId: currentUser.id, otherUserId: targetId })
+          setConversations((prev) =>
+            prev.map((c) =>
+              c.otherUserId === targetId ? { ...c, unreadCount: 0 } : c,
+            ),
+          )
+        } catch (e) {
+          console.warn('[useProducerChat] markThreadRead failed', e)
+        }
       } catch (e) {
         console.warn('[useProducerChat] loadMessages failed', e)
         setMessages([])
