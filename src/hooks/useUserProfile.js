@@ -40,6 +40,9 @@ export default function useUserProfile() {
       payload.twitter_x = merged.twitter_x || merged.twitterX || null
     }
     if (merged.youtube !== undefined) payload.youtube = merged.youtube || null
+    if (merged.bannerUrl !== undefined || merged.banner_url !== undefined) {
+      payload.banner_url = merged.banner_url || merged.bannerUrl || null
+    }
     if (merged.genres !== undefined) payload.genres = merged.genres || null
 
     const stored = await upsertProfile(user.id, payload)
@@ -70,6 +73,7 @@ export default function useUserProfile() {
       instagram: profile.instagram || null,
       twitterX: profile.twitter_x || profile.twitterX || null,
       youtube: profile.youtube || profile.youtube_url || null,
+      bannerUrl: profile.banner_url || profile.bannerUrl || null,
       genres: profile.genres || [],
     }
   }, [profile, user])
