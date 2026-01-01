@@ -589,7 +589,10 @@ export async function fetchThreads({ userId, limit = 20 }) {
 
 export async function fetchProfilesByIds(ids = []) {
   if (!ids.length) return []
-  const { data } = await supabase.from('profiles').select('id, display_name, email').in('id', ids)
+  const { data } = await supabase
+    .from('profiles')
+    .select('id, display_name, email, avatar_url, username')
+    .in('id', ids)
   return data || []
 }
 
