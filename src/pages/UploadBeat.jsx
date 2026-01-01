@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import FilePickerButton from '../components/FilePickerButton'
 import BackButton from '../components/BackButton'
 import { createBeat, countBeatsForUser } from '../services/beatsRepository'
 import ShareBeatModal from '../components/ShareBeatModal'
 import { useNavigate } from 'react-router-dom'
-import { uploadArtwork, uploadBundle, uploadAudio, uploadBeatWithMetadata } from '../services/storageService'
+import { uploadArtwork, uploadBundle, uploadBeatWithMetadata } from '../services/storageService'
 import useUserPlan from '../hooks/useUserPlan'
 import { BeatCard } from '../components/BeatCard'
 import { listProducerLicenses, setBeatLicenses } from '../services/licenseService'
+import MiniWavePlayer from '../components/MiniWavePlayer'
 
 const GENRES = [
   'Dancehall',
@@ -63,6 +64,8 @@ export function UploadBeat() {
   const [userBeatsCount, setUserBeatsCount] = useState(0)
   const [producerLicenses, setProducerLicenses] = useState([])
   const [selectedLicenseIds, setSelectedLicenseIds] = useState([])
+  const [licenseOverrides, setLicenseOverrides] = useState({})
+  const [step, setStep] = useState(1)
 
   // cancellation tokens
   const [artworkToken, setArtworkToken] = useState(null)
@@ -71,6 +74,7 @@ export function UploadBeat() {
   const [bundleToken, setBundleToken] = useState(null)
   const navigate = useNavigate()
   const { plan, user, loading } = useUserPlan()
+  const formRef = useRef(null)
 
   useEffect(() => {
     if (!producerName && user) {
@@ -116,6 +120,12 @@ export function UploadBeat() {
       if (!active) return
       setProducerLicenses(rows)
       setSelectedLicenseIds(rows.map((l) => l.id))
+      setLicenseOverrides(
+        rows.reduce((acc, lic) => {
+          acc[lic.id] = Number(lic.price || 0)
+          return acc
+        }, {}),
+      )
     })()
     return () => {
       active = false
@@ -226,7 +236,9 @@ export function UploadBeat() {
       ? attachedLicenses.reduce((acc, lic) => {
           const key = lic.name
           if (!key) return acc
-          return { ...acc, [key]: Number(lic.price || 0) }
+          const override = licenseOverrides[lic.id]
+          const finalPrice = override !== undefined ? override : lic.price
+          return { ...acc, [key]: Number(finalPrice || 0) }
         }, {})
       : {
           Basic: basicPrice,
@@ -299,6 +311,37 @@ export function UploadBeat() {
   const remainingFree = Math.max(0, 5 - userBeatsCount)
   const limitReached = plan === 'free' && userBeatsCount >= 5
 
+  const canContinueFromStep1 = !!audioFile
+  const canContinueFromStep2 = !!title && !!genre && !!bpm && !!price
+  const canContinueFromStep3 = selectedLicenseIds.length > 0
+  const canPublish =
+    canContinueFromStep1 &&
+    canContinueFromStep2 &&
+    canContinueFromStep3 &&
+    !limitReached &&
+    !uploadingBeat &&
+    (!audioProgress || audioProgress === 100) &&
+    (!artworkProgress || artworkProgress === 100) &&
+    (!bundleProgress || bundleProgress === 100)
+
+  const handleNext = () => {
+    setStep((prev) => Math.min(4, prev + 1))
+  }
+
+  const handleBack = () => {
+    setStep((prev) => Math.max(1, prev - 1))
+  }
+
+  const handlePublishClick = () => {
+    if (step < 4) {
+      setStep(4)
+      return
+    }
+    if (formRef.current) {
+      formRef.current.requestSubmit()
+    }
+  }
+
   return (
     <section className="bg-slate-950/95">
       <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-10">
@@ -322,331 +365,671 @@ export function UploadBeat() {
         )}
         {!limitReached && (
           <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr,0.9fr]">
-            {/* Left: form steps */}
-            <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Step 1: Metadata */}
-                <div className="rounded-3xl border border-slate-800/80 bg-slate-900/80 p-6 space-y-5">
-                  <h2 className="text-sm font-semibold text-slate-100 flex items-center gap-2">Metadata <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300">Step 1</span></h2>
-                  <div className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-300">Title</label>
-                    <input value={title} onChange={e=>setTitle(e.target.value)} required className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none" placeholder="e.g. Midnight Rain (TrapHall)" />
-                  </div>
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-300">Producer name</label>
-                    <input
-                      value={producerName}
-                      onChange={e => setProducerName(e.target.value)}
-                      className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
-                      placeholder="e.g. DJ IslandWave"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-300">Genre</label>
-                    <select value={genre} onChange={e=>setGenre(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none">
-                      {GENRES.map(g=> <option key={g}>{g}</option>)}
-                    </select>
-                  </div>
-                    <div>
-                      <label className="text-[11px] font-semibold text-slate-300">BPM</label>
-                      <input type="number" value={bpm} onChange={e=>setBpm(e.target.value)} required className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none" placeholder="140" />
+            {/* Left: multi-step wizard */}
+            <div className="space-y-5">
+              {/* Step indicator */}
+              <div className="rounded-3xl border border-slate-800/80 bg-slate-900/80 p-4 text-[11px] text-slate-300">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-400">Upload flow</p>
+                <div className="mt-3 flex items-center justify-between gap-2">
+                  {[1, 2, 3, 4].map((s, idx) => {
+                    const labels = ['Upload file', 'Beat details', 'Licensing', 'Preview & publish']
+                    const active = step === s
+                    const completed = step > s
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setStep(s)}
+                        className={`flex-1 rounded-full px-2 py-1.5 text-[10px] font-semibold transition border ${
+                          active
+                            ? 'border-emerald-400/90 bg-emerald-500/15 text-emerald-100'
+                            : completed
+                            ? 'border-emerald-400/40 bg-emerald-500/5 text-emerald-200'
+                            : 'border-slate-700/80 bg-slate-900/80 text-slate-300 hover:border-emerald-400/60'
+                        }`}
+                      >
+                        <span className="mr-1 text-[9px] text-slate-400">{`0${s}`}</span>
+                        {labels[idx]}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
+                {/* Step 1: Upload beat file */}
+                {step === 1 && (
+                  <div className="rounded-3xl border border-slate-800/80 bg-slate-900/80 p-6 space-y-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-100">
+                        Upload beat file
+                        <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300">Step 1</span>
+                      </h2>
+                      <p className="hidden text-[10px] text-slate-500 sm:block">
+                        Drag & drop your tagged preview (MP3/WAV).
+                      </p>
                     </div>
-                    <div>
-                      <label className="text-[11px] font-semibold text-slate-300">Key (optional)</label>
-                      <input
-                        value={musicalKey}
-                        onChange={(e) => setMusicalKey(e.target.value)}
-                        className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
-                        placeholder="e.g. F#m"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-semibold text-slate-300">Base Price (USD)</label>
-                      <input type="number" value={price} onChange={e=>setPrice(e.target.value)} required className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none" placeholder="29" />
-                    </div>
-                  </div>
-                <div className="mt-3">
-                  <label className="text-[11px] font-semibold text-slate-300 flex items-center justify-between">
-                    Description <span className="text-[10px] font-normal text-slate-500">(optional)</span>
-                  </label>
-                    <textarea
-                      value={description}
-                      onChange={e=>setDescription(e.target.value)}
-                      rows={3}
-                      className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-[12px] text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/70 focus:outline-none"
-                      placeholder="Describe the mood, instruments, key artists it fits, and any licensing notes."
-                    />
-                  </div>
-                  <div className="mt-3">
-                    <label className="text-[11px] font-semibold text-slate-300 flex items-center justify-between">
-                      Collaborators <span className="text-[10px] font-normal text-slate-500">(optional)</span>
-                    </label>
-                    <div className="mt-2 space-y-2">
-                      {collaborators.map((c, index) => (
-                        <div key={index} className="grid grid-cols-1 gap-2 sm:grid-cols-4">
-                          <input
-                            value={c.email}
-                            onChange={(e) => updateCollaborator(index, 'email', e.target.value)}
-                            className="rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
-                            placeholder="Email (for non‑user collaborator)"
-                          />
-                          <input
-                            value={c.userId}
-                            onChange={(e) => updateCollaborator(index, 'userId', e.target.value)}
-                            className="rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
-                            placeholder="User ID (optional)"
-                          />
-                          <input
-                            value={c.role}
-                            onChange={(e) => updateCollaborator(index, 'role', e.target.value)}
-                            className="rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
-                            placeholder="Role (producer/engineer)"
-                          />
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              value={c.split}
-                              onChange={(e) => updateCollaborator(index, 'split', Number(e.target.value) || 0)}
-                              className="flex-1 rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
-                              placeholder="Split %"
-                            />
+                    <div
+                      className="mt-2 flex min-h-[160px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-slate-700/80 bg-slate-950/80 p-4 text-center text-[11px] text-slate-300 hover:border-emerald-400/70 hover:bg-slate-950"
+                      onClick={() => {
+                        const input = document.getElementById('upload-audio-input') as HTMLInputElement | null
+                        if (input) input.click()
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        const f = e.dataTransfer.files?.[0]
+                        if (f && f.type.startsWith('audio/')) {
+                          setAudioFile(f)
+                          setAudioPreviewUrl(URL.createObjectURL(f))
+                        }
+                      }}
+                    >
+                      {!audioFile && (
+                        <>
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-900/90 text-slate-200 shadow-inner">
+                            ♪
+                          </div>
+                          <p className="mt-3 text-[12px] font-semibold text-slate-100">Drop your beat here</p>
+                          <p className="mt-1 text-[10px] text-slate-500">MP3 or WAV · tagged preview · up to 100MB</p>
+                        </>
+                      )}
+                      {audioFile && (
+                        <div className="w-full space-y-2">
+                          <div className="flex items-center justify-between text-[11px] text-slate-200">
+                            <span className="truncate" title={audioFile.name}>
+                              {audioFile.name}
+                            </span>
                             <button
                               type="button"
-                              onClick={() => removeCollaborator(index)}
-                              className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-700/70 bg-slate-900/80 text-xs font-semibold text-slate-300 hover:border-rose-400/70 hover:text-rose-300"
-                              aria-label="Remove collaborator"
+                              onClick={() => {
+                                setAudioFile(null)
+                                setAudioPreviewUrl(null)
+                                setAudioProgress(0)
+                              }}
+                              className="rounded-full border border-slate-700/80 bg-slate-900/80 px-2 py-0.5 text-[10px] text-slate-300 hover:border-rose-400/70 hover:text-rose-300"
                             >
-                              ×
+                              Remove
                             </button>
                           </div>
+                          {audioPreviewUrl && (
+                            <div className="mt-2 rounded-xl border border-slate-800/80 bg-slate-950/80 p-2">
+                              <MiniWavePlayer
+                                src={audioPreviewUrl}
+                                beatId="preview-upload"
+                                producerId={user?.id || null}
+                                height={32}
+                              />
+                            </div>
+                          )}
+                          {audioProgress > 0 && (
+                            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-800/80">
+                              <div
+                                className="h-full rounded-full bg-emerald-500 transition-all"
+                                style={{ width: `${audioProgress}%` }}
+                              />
+                            </div>
+                          )}
+                          <p className="mt-1 text-[10px] text-slate-500">
+                            We handle background uploading and encoding so artists
+                            get instant streaming.
+                          </p>
                         </div>
-                      ))}
-                      <div className="flex items-center justify-between">
-                        <button type="button" onClick={addCollaborator} className="rb-btn-outline">Add Collaborator</button>
-                        {collaborators.length > 0 && (
-                          <p className={`text-[11px] ${isValidSplit ? 'text-emerald-300' : 'text-rose-300'}`}>Total split: {totalSplit}% {isValidSplit ? '' : '(must equal 100%)'}</p>
+                      )}
+                      <input
+                        id="upload-audio-input"
+                        type="file"
+                        accept="audio/mpeg,audio/wav"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0] || null
+                          if (f) {
+                            setAudioFile(f)
+                            setAudioPreviewUrl(URL.createObjectURL(f))
+                          }
+                        }}
+                      />
+                    </div>
+                    <p className="mt-3 text-[10px] text-slate-500">
+                      This is the preview artists will hear before deciding to
+                      license your beat.
+                    </p>
+                  </div>
+                )}
+
+                {/* Step 2: Beat details & assets */}
+                {step === 2 && (
+                  <div className="rounded-3xl border border-slate-800/80 bg-slate-900/80 p-6 space-y-5">
+                    <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-100">
+                      Beat details
+                      <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300">Step 2</span>
+                    </h2>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <label className="text-[11px] font-semibold text-slate-300">Title</label>
+                        <input
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
+                          required
+                          className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                          placeholder="e.g. Midnight Rain (TrapHall)"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-semibold text-slate-300">Producer name</label>
+                        <input
+                          value={producerName}
+                          onChange={(e) => setProducerName(e.target.value)}
+                          className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                          placeholder="e.g. DJ IslandWave"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-semibold text-slate-300">Genre</label>
+                        <select
+                          value={genre}
+                          onChange={(e) => setGenre(e.target.value)}
+                          className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                        >
+                          {GENRES.map((g) => (
+                            <option key={g}>{g}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-semibold text-slate-300">BPM</label>
+                        <input
+                          type="number"
+                          value={bpm}
+                          onChange={(e) => setBpm(e.target.value)}
+                          required
+                          className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                          placeholder="140"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-semibold text-slate-300">Key (optional)</label>
+                        <input
+                          value={musicalKey}
+                          onChange={(e) => setMusicalKey(e.target.value)}
+                          className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                          placeholder="e.g. F#m"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-semibold text-slate-300">Base Price (USD)</label>
+                        <input
+                          type="number"
+                          value={price}
+                          onChange={(e) => setPrice(e.target.value)}
+                          required
+                          className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                          placeholder="29"
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <label className="flex items-center justify-between text-[11px] font-semibold text-slate-300">
+                        Description <span className="text-[10px] font-normal text-slate-500">(optional)</span>
+                      </label>
+                      <textarea
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        rows={3}
+                        className="mt-1 w-full rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-[12px] text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/70 focus:outline-none"
+                        placeholder="Describe the mood, instruments, key artists it fits, and any licensing notes."
+                      />
+                    </div>
+                    <div className="mt-3">
+                      <label className="flex items-center justify-between text-[11px] font-semibold text-slate-300">
+                        Collaborators <span className="text-[10px] font-normal text-slate-500">(optional)</span>
+                      </label>
+                      <div className="mt-2 space-y-2">
+                        {collaborators.map((c, index) => (
+                          <div key={index} className="grid grid-cols-1 gap-2 sm:grid-cols-4">
+                            <input
+                              value={c.email}
+                              onChange={(e) => updateCollaborator(index, 'email', e.target.value)}
+                              className="rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                              placeholder="Email (for non‑user collaborator)"
+                            />
+                            <input
+                              value={c.userId}
+                              onChange={(e) => updateCollaborator(index, 'userId', e.target.value)}
+                              className="rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                              placeholder="User ID (optional)"
+                            />
+                            <input
+                              value={c.role}
+                              onChange={(e) => updateCollaborator(index, 'role', e.target.value)}
+                              className="rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                              placeholder="Role (producer/engineer)"
+                            />
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                value={c.split}
+                                onChange={(e) =>
+                                  updateCollaborator(
+                                    index,
+                                    'split',
+                                    Number(e.target.value) || 0,
+                                  )
+                                }
+                                className="flex-1 rounded-xl border border-slate-700/70 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                                placeholder="Split %"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeCollaborator(index)}
+                                className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-700/70 bg-slate-900/80 text-xs font-semibold text-slate-300 hover:border-rose-400/70 hover:text-rose-300"
+                                aria-label="Remove collaborator"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="flex items-center justify-between">
+                          <button
+                            type="button"
+                            onClick={addCollaborator}
+                            className="rb-btn-outline"
+                          >
+                            Add Collaborator
+                          </button>
+                          {collaborators.length > 0 && (
+                            <p
+                              className={`text-[11px] ${
+                                isValidSplit ? 'text-emerald-300' : 'text-rose-300'
+                              }`}
+                            >
+                              Total split: {totalSplit}%{' '}
+                              {isValidSplit ? '' : '(must equal 100%)'}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-slate-500">
+                      Choose a clear, searchable title, add a helpful
+                      description, and set an accurate genre for better
+                      discovery.
+                    </p>
+                    <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      <div>
+                        <FilePickerButton
+                          label="Artwork (JPG/PNG/WebP)"
+                          accept="image/*"
+                          onSelect={(f) => {
+                            setArtworkFile(f)
+                            if (f)
+                              startSimulatedUpload(
+                                f,
+                                setArtworkProgress,
+                                setArtworkUrl,
+                                uploadArtwork,
+                                setArtworkToken,
+                              )
+                          }}
+                          onCancel={() =>
+                            cancelUpload(
+                              setArtworkToken,
+                              setArtworkProgress,
+                              setArtworkFile,
+                              setArtworkUrl,
+                            )
+                          }
+                          progress={artworkProgress}
+                          file={artworkFile}
+                        />
+                        {artworkUrl && artworkProgress === 100 && (
+                          <img
+                            src={artworkUrl}
+                            alt="preview"
+                            className="mt-3 h-24 w-24 rounded-xl object-cover ring-1 ring-emerald-500/40"
+                          />
+                        )}
+                      </div>
+                      <div>
+                        <FilePickerButton
+                          label="Beat Bundle (ZIP/RAR)"
+                          accept=".zip,.rar,application/zip,application/x-rar-compressed"
+                          onSelect={(f) => {
+                            setBundleFile(f)
+                            if (f)
+                              startSimulatedUpload(
+                                f,
+                                setBundleProgress,
+                                setBundleUrl,
+                                uploadBundle,
+                                setBundleToken,
+                              )
+                          }}
+                          onCancel={() =>
+                            cancelUpload(
+                              setBundleToken,
+                              setBundleProgress,
+                              setBundleFile,
+                              setBundleUrl,
+                            )
+                          }
+                          progress={bundleProgress}
+                          file={bundleFile}
+                        />
+                        {bundleProgress > 0 && bundleProgress < 100 && (
+                          <p className="mt-2 text-[10px] text-slate-500">
+                            Uploading bundle… {bundleProgress}%
+                          </p>
                         )}
                       </div>
                     </div>
                   </div>
-                <p className="text-[10px] text-slate-500">Choose a clear, searchable title, add a helpful description, and set an accurate genre for better discovery.</p>
-              </div>
-              {/* Step 2: Files */}
-              <div className="rounded-3xl border border-slate-800/80 bg-slate-900/80 p-6 space-y-6">
-                <h2 className="text-sm font-semibold text-slate-100 flex items-center gap-2">Assets <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300">Step 2</span></h2>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <div>
-                    <FilePickerButton
-                      label="Artwork (JPG/PNG/WebP)"
-                      accept="image/*"
-                      onSelect={(f)=>{ setArtworkFile(f); if (f) startSimulatedUpload(f, setArtworkProgress, setArtworkUrl, uploadArtwork, setArtworkToken) }}
-                      onCancel={()=>cancelUpload(setArtworkToken, setArtworkProgress, setArtworkFile, setArtworkUrl)}
-                      progress={artworkProgress}
-                      file={artworkFile}
-                    />
-                    {artworkUrl && artworkProgress === 100 && (
-                      <img src={artworkUrl} alt="preview" className="mt-3 h-24 w-24 rounded-xl object-cover ring-1 ring-emerald-500/40" />
-                    )}
-                  </div>
-                  <div>
-                    <FilePickerButton
-                      label="Tagged Preview (MP3/WAV)"
-                      accept="audio/mpeg,audio/wav"
-                      onSelect={(f)=>{ setAudioFile(f); if (f) startSimulatedUpload(f, setAudioProgress, setAudioUrlRemote, uploadAudio, setAudioToken) }}
-                      onCancel={()=>cancelUpload(setAudioToken, setAudioProgress, setAudioFile, setAudioUrlRemote)}
-                      progress={audioProgress}
-                      file={audioFile}
-                    />
-                    {audioProgress>0 && audioProgress<100 && <p className="mt-2 text-[10px] text-slate-500">Uploading audio… {audioProgress}%</p>}
-                  </div>
-                  <div>
-                    <FilePickerButton
-                      label="Beat Bundle (ZIP/RAR)"
-                      accept=".zip,.rar,application/zip,application/x-rar-compressed"
-                      onSelect={(f)=>{ setBundleFile(f); if (f) startSimulatedUpload(f, setBundleProgress, setBundleUrl, uploadBundle, setBundleToken) }}
-                      onCancel={()=>cancelUpload(setBundleToken, setBundleProgress, setBundleFile, setBundleUrl)}
-                      progress={bundleProgress}
-                      file={bundleFile}
-                    />
-                    {bundleProgress>0 && bundleProgress<100 && <p className="mt-2 text-[10px] text-slate-500">Uploading bundle… {bundleProgress}%</p>}
-                  </div>
-                </div>
-              </div>
-              {/* Step 3: Licensing */}
-              <div className="rounded-3xl border border-slate-800/80 bg-slate-900/80 p-6 space-y-5">
-                <h2 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
-                  Pricing & Licenses
-                  <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300">Step 3</span>
-                </h2>
-                <div className="rounded-xl border border-slate-800/70 bg-slate-950/70 p-3 flex items-center justify-between">
-                  <div>
-                    <p className="text-[11px] font-semibold text-slate-200">Enable Free Download</p>
-                    <p className="text-[10px] text-slate-500">
-                      Shows a download icon and allows instant, free checkout.
-                    </p>
-                  </div>
-                  <label className="inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="sr-only"
-                      checked={freeDownload}
-                      onChange={(e) => setFreeDownload(e.target.checked)}
-                    />
-                    <span
-                      className={`relative inline-block h-5 w-9 rounded-full transition ${
-                        freeDownload ? 'bg-emerald-500' : 'bg-slate-600'
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition ${
-                          freeDownload ? 'right-0.5' : 'left-0.5'
-                        }`}
-                      />
-                    </span>
-                  </label>
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold text-slate-300">License tier pricing</p>
-                  <p className="mt-1 text-[10px] text-slate-500">
-                    Set suggested prices for each license. Basic is typically your starting price, with higher tiers
-                    offering more rights.
-                  </p>
-                  <div className="mt-3 grid gap-3 md:grid-cols-4 text-[11px]">
-                    <div className="rounded-xl border border-slate-800/70 bg-slate-950/70 p-3 flex flex-col gap-1">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">Basic</p>
-                      <input
-                        type="number"
-                        value={basicPrice}
-                        onChange={(e) => setBasicPrice(Number(e.target.value) || 0)}
-                        className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-900/70 px-2 py-1.5 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
-                      />
-                      <p className="text-[10px] text-slate-500">MP3 · entry license</p>
+                )}
+
+                {/* Step 3: Licensing & pricing */}
+                {step === 3 && (
+                  <div className="rounded-3xl border border-slate-800/80 bg-slate-900/80 p-6 space-y-5">
+                    <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-100">
+                      Pricing & licenses
+                      <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300">Step 3</span>
+                    </h2>
+                    <div className="flex flex-col gap-3 rounded-xl border border-slate-800/70 bg-slate-950/70 p-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-[11px] font-semibold text-slate-200">
+                          Enable Free Download
+                        </p>
+                        <p className="text-[10px] text-slate-500">
+                          Shows a download icon and allows instant, free
+                          checkout.
+                        </p>
+                      </div>
+                      <label className="inline-flex cursor-pointer items-center">
+                        <input
+                          type="checkbox"
+                          className="sr-only"
+                          checked={freeDownload}
+                          onChange={(e) => setFreeDownload(e.target.checked)}
+                        />
+                        <span
+                          className={`relative inline-block h-5 w-9 rounded-full transition ${
+                            freeDownload ? 'bg-emerald-500' : 'bg-slate-600'
+                          }`}
+                        >
+                          <span
+                            className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition ${
+                              freeDownload ? 'right-0.5' : 'left-0.5'
+                            }`}
+                          />
+                        </span>
+                      </label>
                     </div>
-                    <div className="rounded-xl border border-slate-800/70 bg-slate-950/70 p-3 flex flex-col gap-1">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">Premium</p>
-                      <input
-                        type="number"
-                        value={premiumPrice}
-                        onChange={(e) => setPremiumPrice(Number(e.target.value) || 0)}
-                        className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-900/70 px-2 py-1.5 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
-                      />
-                      <p className="text-[10px] text-slate-500">MP3 + WAV · mid tier</p>
-                    </div>
-                    <div className="rounded-xl border border-slate-800/70 bg-slate-950/70 p-3 flex flex-col gap-1">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">Unlimited</p>
-                      <input
-                        type="number"
-                        value={unlimitedPrice}
-                        onChange={(e) => setUnlimitedPrice(Number(e.target.value) || 0)}
-                        className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-900/70 px-2 py-1.5 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
-                      />
-                      <p className="text-[10px] text-slate-500">MP3 + WAV + stems</p>
-                    </div>
-                    <div className="rounded-xl border border-slate-800/70 bg-slate-950/70 p-3 flex flex-col gap-1">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">Exclusive</p>
-                      <input
-                        type="number"
-                        value={exclusivePrice}
-                        onChange={(e) => setExclusivePrice(Number(e.target.value) || 0)}
-                        className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-900/70 px-2 py-1.5 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
-                      />
-                      <p className="text-[10px] text-slate-500">Full rights · one buyer</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-5 rounded-2xl border border-slate-800/80 bg-slate-950/80 p-3">
-                  <div className="flex items-center justify-between gap-2">
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                        License selection
+                      <p className="text-[11px] font-semibold text-slate-300">
+                        License tier pricing
                       </p>
-                      <p className="mt-1 text-[11px] text-slate-400">
-                        Choose which of your license templates apply to this beat.
+                      <p className="mt-1 text-[10px] text-slate-500">
+                        Smart defaults you can reuse across beats. Custom
+                        license templates below can override these per beat.
+                      </p>
+                      <div className="mt-3 grid gap-3 text-[11px] md:grid-cols-4">
+                        <div className="flex flex-col gap-1 rounded-xl border border-slate-800/70 bg-slate-950/70 p-3">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
+                            Basic
+                          </p>
+                          <input
+                            type="number"
+                            value={basicPrice}
+                            onChange={(e) =>
+                              setBasicPrice(Number(e.target.value) || 0)
+                            }
+                            className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-900/70 px-2 py-1.5 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                          />
+                          <p className="text-[10px] text-slate-500">
+                            MP3 · entry license
+                          </p>
+                        </div>
+                        <div className="flex flex-col gap-1 rounded-xl border border-slate-800/70 bg-slate-950/70 p-3">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
+                            Premium
+                          </p>
+                          <input
+                            type="number"
+                            value={premiumPrice}
+                            onChange={(e) =>
+                              setPremiumPrice(Number(e.target.value) || 0)
+                            }
+                            className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-900/70 px-2 py-1.5 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                          />
+                          <p className="text-[10px] text-slate-500">
+                            MP3 + WAV · mid tier
+                          </p>
+                        </div>
+                        <div className="flex flex-col gap-1 rounded-xl border border-slate-800/70 bg-slate-950/70 p-3">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
+                            Unlimited
+                          </p>
+                          <input
+                            type="number"
+                            value={unlimitedPrice}
+                            onChange={(e) =>
+                              setUnlimitedPrice(Number(e.target.value) || 0)
+                            }
+                            className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-900/70 px-2 py-1.5 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                          />
+                          <p className="text-[10px] text-slate-500">
+                            MP3 + WAV + stems
+                          </p>
+                        </div>
+                        <div className="flex flex-col gap-1 rounded-xl border border-slate-800/70 bg-slate-950/70 p-3">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
+                            Exclusive
+                          </p>
+                          <input
+                            type="number"
+                            value={exclusivePrice}
+                            onChange={(e) =>
+                              setExclusivePrice(Number(e.target.value) || 0)
+                            }
+                            className="mt-1 w-full rounded-lg border border-slate-700/70 bg-slate-900/70 px-2 py-1.5 text-sm text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                          />
+                          <p className="text-[10px] text-slate-500">
+                            Full rights · one buyer
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-5 rounded-2xl border border-slate-800/80 bg-slate-950/80 p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            License selection
+                          </p>
+                          <p className="mt-1 text-[11px] text-slate-400">
+                            Toggle which license templates apply and override
+                            prices per beat.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => navigate('/producer/licenses')}
+                          className="rounded-full border border-slate-700/80 px-3 py-1 text-[10px] font-semibold text-slate-200 hover:border-emerald-400/70 hover:text-emerald-200"
+                        >
+                          Edit licenses
+                        </button>
+                      </div>
+                      {producerLicenses.length === 0 ? (
+                        <p className="mt-3 text-[11px] text-slate-500">
+                          You have no license templates yet. Create them from
+                          the Licenses page in your producer dashboard.
+                        </p>
+                      ) : (
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                          {producerLicenses.map((lic) => {
+                            const active = selectedLicenseIds.includes(lic.id)
+                            return (
+                              <button
+                                key={lic.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedLicenseIds((prev) =>
+                                    prev.includes(lic.id)
+                                      ? prev.filter((id) => id !== lic.id)
+                                      : [...prev, lic.id],
+                                  )
+                                }}
+                                className={`flex flex-col items-stretch justify-between rounded-xl border px-3 py-2 text-left text-[11px] transition ${
+                                  active
+                                    ? 'border-emerald-400/80 bg-emerald-500/10 text-emerald-100'
+                                    : 'border-slate-800/80 bg-slate-950/80 text-slate-200 hover:border-emerald-400/60'
+                                }`}
+                              >
+                                <div>
+                                  <p className="text-[11px] font-semibold">
+                                    {lic.name}
+                                  </p>
+                                  <p className="mt-0.5 text-[10px] text-slate-400">
+                                    Base: ${Number(lic.price || 0).toFixed(2)}
+                                    {lic.is_exclusive && ' • Exclusive'}
+                                  </p>
+                                  {active && (
+                                    <div className="mt-1 flex items-center gap-2 text-[10px] text-slate-300">
+                                      <span className="text-slate-400">
+                                        This beat price:
+                                      </span>
+                                      <input
+                                        type="number"
+                                        value={
+                                          licenseOverrides[lic.id] ??
+                                          lic.price ??
+                                          0
+                                        }
+                                        onChange={(e) => {
+                                          const v = Number(e.target.value || 0)
+                                          setLicenseOverrides((prev) => ({
+                                            ...prev,
+                                            [lic.id]: v,
+                                          }))
+                                        }}
+                                        className="w-20 rounded-lg border border-slate-700/80 bg-slate-900/80 px-2 py-1 text-[10px] text-slate-100 focus:border-emerald-400/70 focus:outline-none"
+                                      />
+                                      <span className="text-slate-500">
+                                        USD
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400">
+                                  <span className="font-semibold">
+                                    {active ? 'Selected' : 'Tap to select'}
+                                  </span>
+                                </div>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
+                      <p className="mt-2 text-[10px] text-slate-500">
+                        Buyers will see one card per selected license on the
+                        beat details page.
                       </p>
                     </div>
+                    {error && <p className="text-xs text-red-400">{error}</p>}
+                  </div>
+                )}
+
+                {/* Step 4: Visibility & publish */}
+                {step === 4 && (
+                  <div className="rounded-3xl border border-slate-800/80 bg-slate-900/80 p-6 space-y-5">
+                    <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-100">
+                      Preview & publish
+                      <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] text-slate-300">Step 4</span>
+                    </h2>
+                    <p className="text-[11px] text-slate-400">
+                      Review how your beat will appear on the marketplace. You
+                      can go back to adjust any step before publishing.
+                    </p>
+                    <div className="rounded-2xl border border-slate-800/80 bg-slate-950/80 p-4">
+                      <BeatCard
+                        id={999999}
+                        title={title || 'Untitled Beat'}
+                        producer={producerName || user?.email || 'You'}
+                        userId={user?.id || null}
+                        genre={genre}
+                        bpm={bpm || 0}
+                        price={Number(price) || basicPrice}
+                        coverUrl={artworkUrl || null}
+                        audioUrl={audioUrlRemote || audioPreviewUrl || null}
+                        freeDownload={freeDownload}
+                        initialLikes={0}
+                        initialFavs={0}
+                        initialFollowers={0}
+                        noLink
+                        square
+                      />
+                      <p className="mt-3 text-[10px] text-slate-500">
+                        Preview simulates marketplace appearance. Actions are
+                        disabled until this beat is published.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3 text-[11px] text-slate-400">
+                      <div>
+                        <p className="font-semibold text-slate-200">
+                          Before you publish
+                        </p>
+                        <ul className="mt-1 space-y-1">
+                          <li>• Double-check collaborators and split percentages.</li>
+                          <li>• Confirm license prices match your catalog.</li>
+                          <li>• Ensure artwork and bundle files are final.</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Desktop wizard navigation */}
+                <div className="hidden items-center justify-between gap-3 pt-1 text-[11px] text-slate-400 md:flex">
+                  <button
+                    type="button"
+                    onClick={handleBack}
+                    disabled={step === 1}
+                    className="rounded-full border border-slate-700/80 px-4 py-1.5 text-[11px] font-semibold text-slate-200 hover:border-slate-500/80 disabled:opacity-40 disabled:hover:border-slate-700/80"
+                  >
+                    Back
+                  </button>
+                  <div className="flex items-center gap-2">
+                    {step < 4 && (
+                      <button
+                        type="button"
+                        onClick={handleNext}
+                        disabled={
+                          (step === 1 && !canContinueFromStep1) ||
+                          (step === 2 && !canContinueFromStep2) ||
+                          (step === 3 && !canContinueFromStep3)
+                        }
+                        className="rounded-full bg-slate-800 px-4 py-1.5 text-[11px] font-semibold text-slate-100 hover:bg-slate-700 disabled:opacity-40"
+                      >
+                        Next
+                      </button>
+                    )}
                     <button
                       type="button"
-                      onClick={() => navigate('/producer/licenses')}
-                      className="rounded-full border border-slate-700/80 px-3 py-1 text-[10px] font-semibold text-slate-200 hover:border-emerald-400/70 hover:text-emerald-200"
+                      onClick={handlePublishClick}
+                      disabled={!canPublish}
+                      className="rounded-full bg-emerald-500 px-5 py-1.5 text-[11px] font-semibold text-slate-950 shadow-[0_0_25px_rgba(16,185,129,0.45)] hover:bg-emerald-400 disabled:opacity-60"
                     >
-                      Manage Licenses
+                      {uploadingBeat ? 'Saving…' : 'Publish beat'}
                     </button>
                   </div>
-                  {producerLicenses.length === 0 ? (
-                    <p className="mt-3 text-[11px] text-slate-500">
-                      You have no license templates yet. Create them from the
-                      Licenses page in your producer dashboard.
-                    </p>
-                  ) : (
-                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                      {producerLicenses.map((lic) => {
-                        const active = selectedLicenseIds.includes(lic.id)
-                        return (
-                          <button
-                            key={lic.id}
-                            type="button"
-                            onClick={() => {
-                              setSelectedLicenseIds((prev) =>
-                                prev.includes(lic.id)
-                                  ? prev.filter((id) => id !== lic.id)
-                                  : [...prev, lic.id],
-                              )
-                            }}
-                            className={`flex items-center justify-between rounded-xl border px-3 py-2 text-left text-[11px] transition ${
-                              active
-                                ? 'border-emerald-400/80 bg-emerald-500/10 text-emerald-100'
-                                : 'border-slate-800/80 bg-slate-950/80 text-slate-200 hover:border-emerald-400/60'
-                            }`}
-                          >
-                            <div>
-                              <p className="text-[11px] font-semibold">
-                                {lic.name}
-                              </p>
-                              <p className="mt-0.5 text-[10px] text-slate-400">
-                                ${Number(lic.price || 0).toFixed(2)}
-                                {lic.is_exclusive && ' • Exclusive'}
-                              </p>
-                            </div>
-                            <span className="text-[10px] font-semibold">
-                              {active ? 'Selected' : 'Select'}
-                            </span>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  )}
-                  <p className="mt-2 text-[10px] text-slate-500">
-                    Buyers will see one card per selected license on the beat
-                    details page.
-                  </p>
                 </div>
-                {error && <p className="text-xs text-red-400">{error}</p>}
-                <button type="submit" className="mt-2 rounded-full bg-emerald-500 px-6 py-2 text-xs font-semibold text-slate-950 hover:bg-emerald-400 transition disabled:opacity-60" disabled={limitReached || uploadingBeat || (audioProgress>0 && audioProgress<100) || (artworkProgress>0 && artworkProgress<100) || (bundleProgress>0 && bundleProgress<100)}>{uploadingBeat ? 'Saving…' : 'Publish Beat'}</button>
-              </div>
-            </form>
-            {/* Right: Live Preview & Tips */}
+              </form>
+            </div>
+            {/* Right: Tips */}
             <div className="space-y-6">
-              <div className="rounded-3xl border border-slate-800/80 bg-slate-900/80 p-6">
-                <h2 className="text-sm font-semibold text-slate-100 mb-4">Live Preview</h2>
-                <BeatCard
-                  id={999999}
-                  title={title || 'Untitled Beat'}
-                  producer={producerName || user?.email || 'You'}
-                  userId={user?.id || null}
-                  genre={genre}
-                  bpm={bpm || 0}
-                  price={Number(price) || basicPrice}
-                  coverUrl={artworkUrl || null}
-                  audioUrl={audioUrlRemote || null}
-                  freeDownload={freeDownload}
-                  initialLikes={0}
-                  initialFavs={0}
-                  initialFollowers={0}
-                  noLink
-                  square
-                />
-                <p className="mt-3 text-[10px] text-slate-500">Preview simulates marketplace appearance. Actions are disabled for unpublished content.</p>
-              </div>
               <div className="rounded-3xl border border-slate-800/80 bg-slate-900/80 p-6 space-y-3">
                 <h2 className="text-sm font-semibold text-slate-100">Optimization Tips</h2>
                 <ul className="space-y-1 text-[11px] text-slate-400">
@@ -660,6 +1043,31 @@ export function UploadBeat() {
           </div>
         )}
       </div>
+      {/* Mobile sticky action bar */}
+      {!limitReached && (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-800/80 bg-slate-950/95/90 px-3 py-3 backdrop-blur md:hidden">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 text-[11px]">
+            <button
+              type="button"
+              onClick={() => {
+                // Simple draft: keep current state in-memory; real persistence can be added later.
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              }}
+              className="rounded-full border border-slate-700/80 px-4 py-1.5 font-semibold text-slate-200 hover:border-slate-500/80"
+            >
+              Save draft
+            </button>
+            <button
+              type="button"
+              onClick={handlePublishClick}
+              disabled={!canPublish}
+              className="flex-1 rounded-full bg-emerald-500 px-4 py-1.5 text-center font-semibold text-slate-950 shadow-[0_0_22px_rgba(16,185,129,0.5)] hover:bg-emerald-400 disabled:opacity-60"
+            >
+              {uploadingBeat ? 'Saving…' : 'Publish beat'}
+            </button>
+          </div>
+        </div>
+      )}
       <ShareBeatModal beat={shareBeat} onClose={() => { setShareBeat(null); navigate('/producer/dashboard') }} />
     </section>
   )
