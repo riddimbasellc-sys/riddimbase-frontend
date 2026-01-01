@@ -58,13 +58,19 @@ export function useProducerChat(currentUser) {
 
       const mapped = threads.map(({ otherUserId, last }) => {
         const profile = profileById.get(otherUserId) || {}
-        const displayName =
+        let displayName =
           profile.display_name || profile.username || profile.email || 'User'
         const avatarUrl = profile.avatar_url || null
         const hasAttachment = !!last.attachment_url
-        const previewBase = last.content && last.content.trim().length > 0 ? last.content : ''
+        const previewBase =
+          last.content && last.content.trim().length > 0 ? last.content : ''
         const lastMessagePreview =
           previewBase || (hasAttachment ? '[Attachment]' : '') || ''
+
+        // Ticket-originated DMs should appear as coming from Customer Support
+        if (typeof last.content === 'string' && last.content.startsWith('[Ticket ')) {
+          displayName = 'Customer Support'
+        }
 
         return {
           id: otherUserId,
@@ -117,7 +123,15 @@ export function useProducerChat(currentUser) {
           otherUserId: targetId,
           limit: PAGE_SIZE,
         })
-        setMessages(Array.isArray(data) ? data : [])
+        const mappedMessages = Array.isArray(data)
+          ? data.map((m) => ({
+              ...m,
+              // Normalize attachment type for MessageBubble consumption
+              type: m.attachment_type || (m.attachment_url ? 'file' : null),
+            }))
+          : []
+
+        setMessages(mappedMessages)
         setHasMore(false)
 
         // Mark this thread as read now that it has been opened.
