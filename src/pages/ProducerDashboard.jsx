@@ -1012,6 +1012,26 @@ export function ProducerDashboard() {
                   </div>
                 )}
               </div>
+              <div className="mt-4 rounded-xl border border-slate-800/80 bg-slate-900/90 p-4 text-xs">
+                <h3 className="text-[11px] font-semibold text-slate-100 mb-1">Storefront</h3>
+                <p className="text-[11px] text-slate-400 mb-3">
+                  Customize how your public producer store looks and quickly preview it as artists see it.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <a
+                    href={`/profile/edit`}
+                    className="rounded-full border border-slate-700/80 bg-slate-800/80 px-3 py-1.5 text-[11px] font-medium text-slate-200 hover:border-emerald-400/70"
+                  >
+                    Edit branding &amp; socials
+                  </a>
+                  <a
+                    href={`/producer/${user.id}/store`}
+                    className="rounded-full bg-emerald-500 px-3 py-1.5 text-[11px] font-semibold text-slate-950 hover:bg-emerald-400"
+                  >
+                    Preview storefront
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
 
