@@ -13,7 +13,7 @@ const PLAN_DETAILS = {
   starter: {
     name: 'Starter',
     description:
-      'Grow your catalog with up to 100 active beats and monthly analytics.',
+      'Grow your catalog with unlimited active beats and monthly analytics.',
   },
   pro: {
     name: 'Pro',
@@ -133,6 +133,7 @@ export function SubscriptionCheckout() {
               userId: user.id,
               planId,
               providerSubscriptionId: paypalSubId,
+              billingCycle,
             }),
           })
         } catch {

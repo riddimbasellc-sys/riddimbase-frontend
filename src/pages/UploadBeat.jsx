@@ -6,6 +6,7 @@ import ShareBeatModal from '../components/ShareBeatModal'
 import { useNavigate } from 'react-router-dom'
 import { uploadArtwork, uploadBundle, uploadBeatWithMetadata } from '../services/storageService'
 import useUserPlan from '../hooks/useUserPlan'
+import { getSubscription } from '../services/subscriptionService'
 import { BeatCard } from '../components/BeatCard'
 import { listProducerLicenses, setBeatLicenses } from '../services/licenseService'
 import MiniWavePlayer from '../components/MiniWavePlayer'
@@ -63,6 +64,7 @@ export function UploadBeat() {
   const [audioPreviewUrl, setAudioPreviewUrl] = useState(null)
   const [userBeatsCount, setUserBeatsCount] = useState(0)
   const [userMonthlyBeatsCount, setUserMonthlyBeatsCount] = useState(0)
+  const [billingCycle, setBillingCycle] = useState(null)
   const [producerLicenses, setProducerLicenses] = useState([])
   const [selectedLicenseIds, setSelectedLicenseIds] = useState([])
   const [licenseOverrides, setLicenseOverrides] = useState({})
@@ -101,6 +103,27 @@ export function UploadBeat() {
 
     loadUserBeatCount()
 
+    return () => {
+      active = false
+    }
+  }, [user?.id])
+
+  // Load subscription billing cycle so we can treat Starter-yearly as unlimited.
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      if (!user?.id) {
+        if (active) setBillingCycle(null)
+        return
+      }
+      try {
+        const sub = await getSubscription(user.id)
+        if (!active) return
+        setBillingCycle(sub?.billingCycle || null)
+      } catch {
+        if (active) setBillingCycle(null)
+      }
+    })()
     return () => {
       active = false
     }
@@ -335,15 +358,18 @@ export function UploadBeat() {
   const FREE_UPLOAD_LIMIT = 5
   const STARTER_UPLOAD_LIMIT = 100
 
+  const isStarterYearly = isStarterPlan && billingCycle === 'yearly'
+  const isStarterMonthly = isStarterPlan && !isStarterYearly
+
   const usedUploads = isFreePlan
     ? userBeatsCount
-    : isStarterPlan
+    : isStarterMonthly
     ? userMonthlyBeatsCount
     : 0
 
   const uploadLimit = isFreePlan
     ? FREE_UPLOAD_LIMIT
-    : isStarterPlan
+    : isStarterMonthly
     ? STARTER_UPLOAD_LIMIT
     : null
 
@@ -398,7 +424,7 @@ export function UploadBeat() {
                 Free plan: {uploadsRemaining} of {FREE_UPLOAD_LIMIT} complimentary uploads left.
               </>
             )}
-            {isStarterPlan && (
+            {isStarterMonthly && (
               <>
                 Starter plan: {uploadsRemaining} of {STARTER_UPLOAD_LIMIT} uploads remaining this month.
               </>
@@ -410,7 +436,7 @@ export function UploadBeat() {
             {isFreePlan && (
               <>Limit reached ({FREE_UPLOAD_LIMIT} uploads). Upgrade for more catalog growth.</>
             )}
-            {isStarterPlan && (
+            {isStarterMonthly && (
               <>Starter limit reached ({STARTER_UPLOAD_LIMIT} uploads this month). Upgrade to Pro for unlimited uploads.</>
             )}
             <div className="mt-3 flex gap-2">
