@@ -3,14 +3,14 @@ import { supabase } from '../lib/supabaseClient'
 // Supabase-backed producer profile service.
 // Expects 'profiles' table with columns:
 // id (UUID), display_name, avatar_url, role, youtube_url, bio, website,
-// instagram, twitter_x, country, phone.
+// instagram, twitter_x, country, phone, banner_url.
 
 export async function getProducerProfile(producerId) {
   if (!producerId) return null
   const { data, error } = await supabase
     .from('profiles')
     .select(
-      'id, display_name, avatar_url, role, youtube_url, bio, website, instagram, twitter_x, country, phone',
+      'id, display_name, avatar_url, role, youtube_url, bio, website, instagram, twitter_x, country, phone, banner_url',
     )
     .eq('id', producerId)
     .maybeSingle()
@@ -31,6 +31,7 @@ export async function getProducerProfile(producerId) {
     twitterX: data.twitter_x || null,
     country: data.country || null,
     phone: data.phone || null,
+    bannerUrl: data.banner_url || null,
   }
 }
 
@@ -49,11 +50,12 @@ export async function setProducerProfile(producerId, patch) {
     send.twitter_x = patch.twitterX || patch.twitter_x
   if (patch.country) send.country = patch.country
   if (patch.phone) send.phone = patch.phone
+   if (patch.bannerUrl || patch.banner_url) send.banner_url = patch.bannerUrl || patch.banner_url
   const { data, error } = await supabase
     .from('profiles')
     .upsert(send)
     .select(
-      'id, display_name, avatar_url, role, youtube_url, bio, website, instagram, twitter_x, country, phone',
+      'id, display_name, avatar_url, role, youtube_url, bio, website, instagram, twitter_x, country, phone, banner_url',
     )
     .maybeSingle()
   if (error) {
@@ -73,6 +75,7 @@ export async function setProducerProfile(producerId, patch) {
     twitterX: data.twitter_x || null,
     country: data.country || null,
     phone: data.phone || null,
+    bannerUrl: data.banner_url || null,
   }
 }
 

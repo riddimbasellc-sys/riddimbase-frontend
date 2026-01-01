@@ -50,6 +50,7 @@ export async function uploadTestimonialMedia(file) { return uploadToFolder('test
 export async function uploadHeroBackground(file) { return uploadToFolder('hero', file) }
 export async function uploadChatAttachment(file) { return uploadToFolder('chat', file) }
 export async function uploadFeedAttachment(file) { return uploadToFolder('feed', file) }
+export async function uploadStorefrontBanner(file) { return uploadToFolder('storefront-banners', file) }
 
 // New helper: upload beat audio + metadata via backend /beats/upload-beat
 export async function uploadBeatWithMetadata({
