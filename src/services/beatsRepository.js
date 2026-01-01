@@ -52,6 +52,31 @@ export async function countBeatsForUser(userId) {
   }
 }
 
+// Count beats created by this user in the current calendar month.
+// Used for plan-based monthly upload limits (e.g. Starter = 100 uploads/month).
+export async function countBeatsForUserInCurrentMonth(userId) {
+  if (!userId) return 0
+  try {
+    const now = new Date()
+    const startOfMonthUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0))
+
+    const { count, error } = await supabase
+      .from(TABLE)
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .gte('created_at', startOfMonthUtc.toISOString())
+
+    if (error) {
+      console.warn('[beatsRepository] countBeatsForUserInCurrentMonth error', error.message)
+      return 0
+    }
+
+    return typeof count === 'number' ? count : 0
+  } catch {
+    return 0
+  }
+}
+
 export async function deleteBeat(id) {
   if (!id) return false
   const { error } = await supabase.from(TABLE).delete().eq('id', id)
