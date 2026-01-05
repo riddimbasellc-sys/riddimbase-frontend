@@ -128,37 +128,25 @@ export function VisitorAnalytics() {
 
   return (
     <div className="rounded-2xl border border-slate-800/80 bg-gradient-to-br from-slate-950/95 via-slate-950/90 to-slate-950/98 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.9)] flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-rose-400">Live Visitors</p>
-          <p className="mt-1 text-[11px] text-slate-400">Realtime sessions across the site (last 30s).</p>
+          <p className="mt-1 text-[11px] text-slate-400 truncate">Realtime sessions across the site (last 30s).</p>
         </div>
-        <div className="flex items-center gap-2">
-          {RANGE_OPTIONS.map((opt) => (
-            <button
-              key={opt.id}
-              type="button"
-              onClick={() => setRangeId(opt.id)}
-              className={`rounded-full border px-3 py-1 text-[10px] font-medium transition ${
-                rangeId === opt.id
-                  ? 'border-emerald-400/70 bg-emerald-500/10 text-emerald-300'
-                  : 'border-slate-700/70 bg-slate-950/70 text-slate-300 hover:border-slate-500'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => setRangeId('custom')}
-            className={`rounded-full border px-3 py-1 text-[10px] font-medium transition ${
-              rangeId === 'custom'
-                ? 'border-emerald-400/70 bg-emerald-500/10 text-emerald-300'
-                : 'border-slate-700/70 bg-slate-950/70 text-slate-300 hover:border-slate-500'
-            }`}
+        <div className="flex items-center gap-2 text-[11px] text-slate-300">
+          <span className="hidden sm:inline text-slate-400">Range</span>
+          <select
+            value={rangeId}
+            onChange={(e) => setRangeId(e.target.value)}
+            className="rounded-lg border border-slate-700/80 bg-slate-950/90 px-2 py-1 text-[11px] text-slate-100 focus:outline-none focus:border-emerald-400/70"
           >
-            Custom
-          </button>
+            {RANGE_OPTIONS.map((opt) => (
+              <option key={opt.id} value={opt.id}>
+                {opt.label}
+              </option>
+            ))}
+            <option value="custom">Custom range…</option>
+          </select>
         </div>
       </div>
 
@@ -173,7 +161,7 @@ export function VisitorAnalytics() {
       </div>
 
       {rangeId === 'custom' && (
-        <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-300">
+        <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-300">
           <span className="text-slate-400">From</span>
           <input
             type="date"
@@ -191,7 +179,7 @@ export function VisitorAnalytics() {
         </div>
       )}
 
-      <div className="mt-3 rounded-2xl border border-slate-800/80 bg-slate-950/90 p-3 min-h-[120px] flex flex-col justify-between">
+      <div className="mt-3 rounded-2xl border border-slate-800/80 bg-slate-950/90 p-3 min-h-[140px] flex flex-col justify-between">
         {loadingHistory ? (
           <div className="flex-1 flex items-center justify-center text-[11px] text-slate-500">
             Loading visitor history…
