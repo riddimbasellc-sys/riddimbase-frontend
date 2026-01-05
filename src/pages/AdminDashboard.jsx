@@ -6,6 +6,7 @@ import {
   fetchAdminMetrics,
   fetchAdminBoostsSummary,
 } from '../services/adminDashboardRepository'
+import VisitorAnalytics from '../components/VisitorAnalytics.jsx'
 
 export function AdminDashboard() {
   const { isAdmin, loading } = useAdminRole()
@@ -197,6 +198,10 @@ export function AdminDashboard() {
               View Reports
             </Link>
           </div>
+        </Panel>
+
+        <Panel title="Live Visitor Analytics">
+          <VisitorAnalytics />
         </Panel>
 
         <Panel title="Subscriptions Snapshot">
