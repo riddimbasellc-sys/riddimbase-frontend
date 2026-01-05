@@ -77,9 +77,56 @@ import RecordingLab from './pages/RecordingLab'
 import StudioCredits from './pages/StudioCredits'
 import CookieConsent from './components/CookieConsent'
 import ProducerLicenses from './pages/ProducerLicenses'
+import { useEffect } from 'react'
+import { supabase } from './lib/supabaseClient'
 
 function App() {
   const { isAdmin } = useAdminRole()
+  useEffect(() => {
+    const sessionIdKey = 'rb_session'
+    let sessionId = null
+    try {
+      sessionId = window.localStorage.getItem(sessionIdKey)
+    } catch {}
+    if (!sessionId && typeof crypto !== 'undefined' && crypto.randomUUID) {
+      sessionId = crypto.randomUUID()
+      try {
+        window.localStorage.setItem(sessionIdKey, sessionId)
+      } catch {}
+    }
+
+    if (!sessionId) return
+
+    let cancelled = false
+
+    async function trackVisitorOnce() {
+      try {
+        await supabase.from('visitor_sessions').insert({
+          session_id: sessionId,
+          page: window.location.pathname,
+        })
+      } catch {}
+    }
+
+    async function heartbeat() {
+      try {
+        await supabase
+          .from('visitor_sessions')
+          .update({ last_seen: new Date().toISOString() })
+          .eq('session_id', sessionId)
+      } catch {}
+    }
+
+    trackVisitorOnce()
+    const id = window.setInterval(() => {
+      if (!cancelled) heartbeat()
+    }, 15000)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+    }
+  }, [])
   return (
     <ErrorBoundary>
       <CartProvider>
