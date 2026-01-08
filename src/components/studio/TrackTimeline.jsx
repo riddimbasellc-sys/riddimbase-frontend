@@ -48,13 +48,20 @@ export default function TrackTimeline({
   const [waveforms, setWaveforms] = useState({})
   const loadedWaveformsRef = useRef(new Set())
   const [zoom, setZoom] = useState(1)
+  const [verticalZoom, setVerticalZoom] = useState(1)
   const [showVolumeAutomation, setShowVolumeAutomation] = useState(true)
   const [contextMenu, setContextMenu] = useState(null) // { x, y, clip?, lane? }
 
   const liveWaveformsMap = liveRecordingWaveforms || {}
 
   const clampZoom = (value) => {
-    return Math.min(4, Math.max(0.25, value || 1))
+    // Allow a wider musical zoom range while avoiding extremes.
+    return Math.min(6, Math.max(0.2, value || 1))
+  }
+
+  const clampVerticalZoom = (value) => {
+    // Compact lanes for overview, tall lanes for detailed editing.
+    return Math.min(2.4, Math.max(0.5, value || 1))
   }
 
   const pixelsPerSecond = useMemo(
@@ -252,16 +259,37 @@ export default function TrackTimeline({
   }
 
   const handleZoomIn = () => {
-    setZoomAnchored({ nextZoom: zoom * 1.25, anchorTimeSec: playheadSec })
+    setZoomAnchored({ nextZoom: zoom * 1.18, anchorTimeSec: playheadSec })
   }
 
   const handleZoomOut = () => {
-    setZoomAnchored({ nextZoom: zoom / 1.25, anchorTimeSec: playheadSec })
+    setZoomAnchored({ nextZoom: zoom / 1.18, anchorTimeSec: playheadSec })
+  }
+
+  const handleVerticalZoomIn = () => {
+    setVerticalZoom((v) => clampVerticalZoom(v * 1.1))
+  }
+
+  const handleVerticalZoomOut = () => {
+    setVerticalZoom((v) => clampVerticalZoom(v / 1.1))
   }
 
   const handleWheelZoom = (e) => {
+    // Trackpad pinch usually comes through as ctrl/meta + wheel.
     if (!e.ctrlKey && !e.metaKey) return
     e.preventDefault()
+
+    const isVerticalZoomGesture = e.shiftKey
+
+    if (isVerticalZoomGesture) {
+      const delta = e.deltaY
+      setVerticalZoom((prev) => {
+        const factor = delta > 0 ? 1 / 1.08 : delta < 0 ? 1.08 : 1
+        return clampVerticalZoom(prev * factor)
+      })
+      return
+    }
+
     const el = containerRef.current
     const bounds = el?.getBoundingClientRect()
     const mouseX = bounds ? e.clientX - bounds.left : null
@@ -271,8 +299,38 @@ export default function TrackTimeline({
         : playheadSec
 
     const delta = e.deltaY
-    const next = delta > 0 ? zoom / 1.1 : delta < 0 ? zoom * 1.1 : zoom
+    const next = delta > 0 ? zoom / 1.08 : delta < 0 ? zoom * 1.08 : zoom
     setZoomAnchored({ nextZoom: next, anchorTimeSec: anchorTime, anchorClientX: e.clientX })
+  }
+
+  const handleFitToScreen = () => {
+    const el = containerRef.current
+    if (!el) return
+    if (!timelineClips.length) return
+
+    let minStart = Infinity
+    let maxEnd = -Infinity
+    timelineClips.forEach((clip) => {
+      const start = Number.isFinite(clip.startSec) ? clip.startSec : 0
+      const dur = Number.isFinite(clip.durationSec) ? clip.durationSec : 0
+      const end = start + dur
+      if (start < minStart) minStart = start
+      if (end > maxEnd) maxEnd = end
+    })
+
+    if (!Number.isFinite(minStart) || !Number.isFinite(maxEnd) || maxEnd <= minStart) return
+
+    const rangeSec = Math.max(1, maxEnd - minStart)
+    const bounds = el.getBoundingClientRect()
+    const available = Math.max(120, bounds.width - LANE_LABEL_PX - 40)
+    if (!Number.isFinite(available) || available <= 0) return
+
+    const targetPps = available / rangeSec
+    if (!Number.isFinite(targetPps) || targetPps <= 0) return
+
+    const nextZoom = clampZoom(targetPps / BASE_PIXELS_PER_SECOND)
+    const anchorTimeSec = minStart + rangeSec / 2
+    setZoomAnchored({ nextZoom, anchorTimeSec })
   }
 
   const [isScrubbing, setIsScrubbing] = useState(false)
@@ -358,25 +416,54 @@ export default function TrackTimeline({
             <span>{formatTime(playheadSec)}</span>
           </div>
           <div className="flex items-center gap-2">
-          <div className="hidden items-center gap-1 rounded-full border border-slate-800/80 bg-slate-900/80 px-1.5 py-1 text-[9px] text-slate-400 md:flex">
+            <div className="hidden items-center gap-1 rounded-full border border-slate-800/80 bg-slate-900/80 px-1.5 py-1 text-[9px] text-slate-400 md:flex">
+              <span className="ml-0.5 text-[8px] uppercase tracking-[0.16em] text-slate-500">H</span>
+              <button
+                type="button"
+                onClick={handleZoomOut}
+                className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700"
+                title="Horizontal zoom out (Ctrl + scroll down)"
+              >
+                −
+              </button>
+              <span className="w-6 text-center tabular-nums text-slate-500">{clampZoom(zoom).toFixed(1)}x</span>
+              <button
+                type="button"
+                onClick={handleZoomIn}
+                className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700"
+                title="Horizontal zoom in (Ctrl + scroll up)"
+              >
+                +
+              </button>
+            </div>
+            <div className="hidden items-center gap-1 rounded-full border border-slate-800/80 bg-slate-900/80 px-1.5 py-1 text-[9px] text-slate-400 md:flex">
+              <span className="ml-0.5 text-[8px] uppercase tracking-[0.16em] text-slate-500">V</span>
+              <button
+                type="button"
+                onClick={handleVerticalZoomOut}
+                className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700"
+                title="Shorter tracks"
+              >
+                −
+              </button>
+              <span className="w-6 text-center tabular-nums text-slate-500">{clampVerticalZoom(verticalZoom).toFixed(1)}x</span>
+              <button
+                type="button"
+                onClick={handleVerticalZoomIn}
+                className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700"
+                title="Taller tracks"
+              >
+                +
+              </button>
+            </div>
             <button
               type="button"
-              onClick={handleZoomOut}
-              className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700"
-              title="Zoom out (Ctrl + scroll down)"
+              onClick={handleFitToScreen}
+              className="hidden h-7 items-center justify-center rounded-full border border-slate-800/80 bg-slate-900 px-2 text-[9px] font-semibold text-slate-200 hover:border-emerald-400/80 md:inline-flex"
+              title="Fit all clips into view"
             >
-              −
+              ⤢ Fit
             </button>
-            <span className="w-6 text-center tabular-nums text-slate-500">{clampZoom(zoom).toFixed(1)}x</span>
-            <button
-              type="button"
-              onClick={handleZoomIn}
-              className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700"
-              title="Zoom in (Ctrl + scroll up)"
-            >
-              +
-            </button>
-          </div>
           <button
             type="button"
             onClick={() => setShowVolumeAutomation((v) => !v)}
@@ -441,6 +528,7 @@ export default function TrackTimeline({
         ref={containerRef}
         className="mt-1 flex-1 overflow-x-auto overflow-y-auto rounded-xl border border-slate-800/80 bg-gradient-to-b from-slate-950/95 to-slate-950/98 touch-pan-x overscroll-x-contain"
         onWheel={handleWheelZoom}
+        onDoubleClick={handleFitToScreen}
       >
         <div className="relative min-h-full" style={{ minWidth }}>
           {/* Time ruler (sticky gutter + zoomed track area) */}
@@ -496,6 +584,8 @@ export default function TrackTimeline({
                 ? vTrack.volume
                 : 1
               const isSelectedVocalLane = !isBeatLane && lane.trackId === selectedVocalTrackId
+              const baseClipHeight = 40
+              const clipHeight = baseClipHeight * clampVerticalZoom(verticalZoom)
               return (
                 <div key={lane.id} className="flex items-stretch">
                   <div
@@ -588,7 +678,7 @@ export default function TrackTimeline({
                   </div>
                   <div
                     className="relative bg-slate-950/90 py-2 transition-colors hover:bg-slate-900/90 cursor-pointer md:cursor-col-resize"
-                    style={{ width: trackAreaWidth }}
+                    style={{ width: trackAreaWidth, minHeight: clipHeight + 16 }}
                     onMouseDown={(e) => {
                       if (e.button !== 0) return
                       setIsScrubbing(true)
@@ -732,12 +822,12 @@ export default function TrackTimeline({
                                 ? 'Drag to offset beat against vocals'
                                 : 'Drag to align this take on the grid'
                             }
-                            className={`group absolute flex h-10 items-center overflow-hidden rounded-md border bg-gradient-to-r text-left text-[10px] text-slate-100 shadow-md transition-shadow hover:border-red-400/80 hover:shadow-[0_0_16px_rgba(248,113,113,0.5)] ${
+                            className={`group absolute flex items-center overflow-hidden rounded-md border bg-gradient-to-r text-left text-[10px] text-slate-100 shadow-md transition-shadow hover:border-red-400/80 hover:shadow-[0_0_16px_rgba(248,113,113,0.5)] ${
                               isSelectedVocalLane && clip.type === 'vocal'
                                 ? 'border-red-400/80'
                                 : 'border-slate-700/80'
                             }`}
-                            style={{ left, width }}
+                            style={{ left, width, height: clipHeight }}
                           >
                             <div
                               className="absolute inset-y-0 left-0 w-1 cursor-ew-resize bg-slate-100/60/70 group-hover:bg-red-300/80"
@@ -802,7 +892,7 @@ export default function TrackTimeline({
                                 <div className="absolute inset-1 h-[calc(100%-0.5rem)] w-full">
                                   <AudioClip
                                     src={clip.url}
-                                    height={32}
+                                    height={Math.max(24, clipHeight - 8)}
                                     clipStartSec={clip.startSec || 0}
                                     clipDurationSec={clip.durationSec || 0}
                                     isSelected={isSelectedVocalLane && clip.type === 'vocal'}
